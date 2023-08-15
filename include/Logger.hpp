@@ -26,23 +26,17 @@ namespace Log
 	public:
 		enum class LogMode
 		{
-			INFO = 0,
-			WARNING,
-			ERROR,
-			CRITICAL,
-			DEBUG
+			LogINFO = 0,
+			LogWARNING,
+			LogERROR,
+			LogCRITICAL,
+			LogDEBUG
 		};
 
 		Logger() :
 			m_isRunning(true),
 			m_thread(std::bind(&Logger::workFunction, this))
 		{
-			//单例模式
-			if (m_hasCreate)
-				throw std::runtime_error("This logger has create");
-			else
-				m_hasCreate = true;
-
 			if (!openFile())
 				throw std::runtime_error("Can't no open log file.");
 		}
@@ -58,38 +52,38 @@ namespace Log
 
 		template<typename... Args>
 			requires ((StreamType<Args>) && ...)
-		void info(Args&&... args)
+		constexpr void info(Args&&... args)
 		{
-			this->print(LogMode::INFO, std::forward<Args>(args)...);
+			print(LogMode::LogINFO, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 			requires ((StreamType<Args>) && ...)
-		void warning(Args&&... args)
+		constexpr void warning(Args&&... args)
 		{
-			this->print(LogMode::WARNING, std::forward<Args>(args)...);
+			print(LogMode::LogWARNING, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 			requires ((StreamType<Args>) && ...)
-		void error(Args&&... args)
+		constexpr void error(Args&&... args)
 		{
-			this->print(LogMode::ERROR, std::forward<Args>(args)...);
+			print(LogMode::LogERROR, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 			requires ((StreamType<Args>) && ...)
-		void critical(Args&&... args)
+		constexpr void critical(Args&&... args)
 		{
-			this->print(LogMode::CRITICAL, std::forward<Args>(args)...);
+			print(LogMode::LogCRITICAL, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 			requires ((StreamType<Args>) && ...)
-		void debug(Args&&... args)
+		constexpr void debug(Args&&... args)
 		{
 #ifdef _DEBUG
-			this->print(LogMode::DEBUG, std::forward<Args>(args)...);
+			print(LogMode::LogDEBUG, std::forward<Args>(args)...);
 #endif // _DEBUG
 		}
 
@@ -103,19 +97,19 @@ namespace Log
 
 				switch (mode)
 				{
-				case Logger::LogMode::INFO:
+				case Logger::LogMode::LogINFO:
 					modeString = "[INFO]";
 					break;
-				case Logger::LogMode::WARNING:
+				case Logger::LogMode::LogWARNING:
 					modeString = "[WRANING]";
 					break;
-				case Logger::LogMode::ERROR:
+				case Logger::LogMode::LogERROR:
 					modeString = "[ERROR]";
 					break;
-				case Logger::LogMode::CRITICAL:
+				case Logger::LogMode::LogCRITICAL:
 					modeString = "[CRITICAL]";
 					break;
-				case Logger::LogMode::DEBUG:
+				case Logger::LogMode::LogDEBUG:
 					modeString = "[DEBUG]";
 					break;
 				default:
@@ -123,11 +117,11 @@ namespace Log
 				}
 
 				std::cout << generateTimeFormatString() << modeString;
-				((std::cout << args << ' '), ...);
+				((std::cout << args), ...);
 				std::cout << '\n';
 
 				m_file << generateTimeFormatString() << modeString;
-				((m_file << args << ' '), ...);
+				((m_file << args), ...);
 				m_file << std::endl;
 				});
 			m_cv.notify_all();
@@ -181,10 +175,7 @@ namespace Log
 		std::queue<std::function<void()>>	m_msgQueue;
 		std::thread							m_thread;
 
-		static std::atomic<bool>			m_hasCreate;
 	};
-
-	std::atomic<bool> Logger::m_hasCreate(false);
 }
 
 #endif // !LOGGER_HPP

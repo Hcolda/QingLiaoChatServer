@@ -81,12 +81,12 @@ namespace qini
 			return Section(m_sections[sectionName]);
 		}
 
-		friend bool operator ==(const INIObject& ia, const INIObject& ib) const
+		friend bool operator ==(const INIObject& ia, const INIObject& ib)
 		{
 			return ia.m_sections == ib.m_sections;
 		}
 
-		friend bool operator !=(const INIObject& ia, const INIObject& ib) const
+		friend bool operator !=(const INIObject& ia, const INIObject& ib)
 		{
 			return ia.m_sections != ib.m_sections;
 		}

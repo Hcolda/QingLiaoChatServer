@@ -1,27 +1,33 @@
 ﻿#include "init.h"
-#include <iostream>
-#include <Logger.hpp>
-#include <asio.hpp>
 
-#include "network.hpp"
+#include <functional>
 
-Log::Logger logger;
-qls::Network network;
+extern Log::Logger serverLogger;
+extern qls::Network serverNetwork;
+extern qls::SocketFunction serverSocketFunction;
+extern qcrypto::pkey::PrivateKey serverPrivateKey;
 
-int qls::init()
+namespace qls
 {
-    std::system("chcp 65001");
-    logger.info("服务器Log系统启动成功！");
+    int init()
+    {
+        std::system("chcp 65001");
+        serverLogger.info("服务器Log系统启动成功！");
 
-	try
-	{
-		logger.info("服务器监听正在启动！");
-		network.run("0.0.0.0", 55555);
-	}
-	catch (const std::exception& e)
-	{
-		logger.error(e.what());
-	}
+        try
+        {
+            serverLogger.info("服务器监听正在启动！");
+            serverNetwork.setFunctions(std::bind(&SocketFunction::accecptFunction, &serverSocketFunction, std::placeholders::_1),
+                                       std::bind(&SocketFunction::receiveFunction, &serverSocketFunction, std::placeholders::_1, std::placeholders::_2),
+                                       std::bind(&SocketFunction::closeFunction, &serverSocketFunction, std::placeholders::_1));
+            serverNetwork.run("0.0.0.0", 55555);
+        }
+        catch (const std::exception& e)
+        {
+            serverLogger.error(e.what());
+            return -1;
+        }
 
-    return 0;
+        return 0;
+    }
 }
