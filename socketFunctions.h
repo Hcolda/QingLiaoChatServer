@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include <shared_mutex>
 #include <atomic>
+#include <memory>
+
+#include "network.h"
 
 namespace qls
 {
@@ -14,25 +17,41 @@ namespace qls
         ~SocketFunction() = default;
 
         asio::awaitable<void> accecptFunction(asio::ip::tcp::socket& socket);
-        asio::awaitable<void> receiveFunction(asio::ip::tcp::socket& socket, std::string data);
+        asio::awaitable<void> receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<Network::Package::DataPackage> pack);
         asio::awaitable<void> closeFunction(asio::ip::tcp::socket& socket);
+    };
 
-    protected:
-        struct SocketDataStructure
+    class SocketService
+    {
+    public:
+        struct LocalAES
         {
-            // 加密等级 1rsa 2aes 0无
-            std::atomic<int> has_encrypt = 0;
-
-            //要到2等级才能使用以下数据
-
-            // uuid
+            std::string                             AESKey;
+            std::string                             AESiv;
+            qcrypto::AES<qcrypto::AESMode::CBC_256> AES;
+            std::atomic<bool>                       hasAESKeys = false;
+        };
+        struct LocalUser
+        {
             std::string uuid;
-            // token
             std::string token;
+            std::atomic<bool> has_login = false;
         };
 
+        SocketService(asio::ip::tcp::socket& socket);
+        ~SocketService();
+
+        void setAESKeys(const std::string key, const std::string& iv);
+
+        static asio::awaitable<void> echo(asio::ip::tcp::socket socket, const Network::SocketDataStructure& sds);
+
     private:
-        std::unordered_map<std::string, SocketDataStructure>    m_socketMap;
-        std::shared_mutex                                       m_shared_mutex;
+        // socket
+        asio::ip::tcp::socket&  m_socket;
+        // aes
+        LocalAES                m_aes;
+        // user
+        LocalUser               m_user;
+        
     };
 }

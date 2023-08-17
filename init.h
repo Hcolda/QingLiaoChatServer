@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <Logger.hpp>
-#include "network.hpp"
+#include "network.h"
 
 #include "socketFunctions.h"
 

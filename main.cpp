@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <Logger.hpp>
 #include <QuqiCrypto.hpp>
-#include "network.hpp"
+#include "network.h"
 #include "socketFunctions.h"
 #include "init.h"
 

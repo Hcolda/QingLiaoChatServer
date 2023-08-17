@@ -149,11 +149,13 @@
   <ItemGroup>
     <ClCompile Include="init.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="network.cpp" />
     <ClCompile Include="socketFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="definition.hpp" />
     <ClInclude Include="init.h" />
-    <ClInclude Include="network.hpp" />
+    <ClInclude Include="network.h" />
     <ClInclude Include="socketFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

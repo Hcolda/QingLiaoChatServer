@@ -305,11 +305,14 @@ public:
 
         BIO_write(shared_bio.get(), (const char*)pemData.c_str(), int(pemData.size()));
 
-        auto pointer = key.shared_pkey_.get();
+
+        auto pointer = EVP_PKEY_new();
         if (!PEM_read_bio_PUBKEY(shared_bio.get(), &pointer, nullptr, nullptr))
         {
+            EVP_PKEY_free(pointer);
             return false;
         }
+        key.shared_pkey_ = std::shared_ptr<EVP_PKEY>(pointer, [](EVP_PKEY* pkey) {EVP_PKEY_free(pkey); });
 
         return true;
     }
@@ -323,8 +326,11 @@ public:
         auto pointer = key.shared_pkey_.get();
         if (!PEM_read_bio_PrivateKey(shared_bio.get(), &pointer, nullptr, nullptr))
         {
+            EVP_PKEY_free(pointer);
             return false;
         }
+        key.shared_pkey_ = std::shared_ptr<EVP_PKEY>(pointer, [](EVP_PKEY* pkey) {EVP_PKEY_free(pkey); });
+
         return true;
     }
 

@@ -17,7 +17,7 @@ public:
 
     ~Base64() = default;
 
-    bool encrypt(const std::string& in, std::string& out, bool enc)
+    static bool encrypt(const std::string& in, std::string& out, bool enc)
     {
         if (enc)
         {
@@ -50,10 +50,10 @@ public:
             int mlen = 0;
             out.resize(in.size());
             int ret = EVP_DecodeUpdate(shared_ctx.get(), (unsigned char*)out.data(), &mlen, (const unsigned char*)in.data(), int(in.size()));
-            if (ret != 1)
+            /*if (ret != 1)
             {
                 return false;
-            }
+            }*/
 
             // 结束解密操作
             int flen = 0;

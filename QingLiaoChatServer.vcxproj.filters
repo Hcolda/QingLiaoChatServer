@@ -24,15 +24,21 @@
     <ClCompile Include="socketFunctions.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="network.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="init.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="network.hpp">
+    <ClInclude Include="network.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="socketFunctions.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="definition.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
