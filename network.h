@@ -24,6 +24,17 @@ namespace qls
     using asio::use_awaitable;
     namespace this_coro = asio::this_coro;
 
+    /*
+    * @brief 读取socket地址到string
+    * @param socket
+    * @return string socket的地址
+    */
+    static inline std::string socket2ip(const asio::ip::tcp::socket& s)
+    {
+        auto ep = s.remote_endpoint();
+        return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
+    }
+
     class Network
     {
     public:
@@ -56,9 +67,9 @@ namespace qls
                 * @param data 数据包中需要存的二进制数据
                 * @return 带自动回收的数据包
                 */
-                static std::shared_ptr<DataPackage> makePackage(const std::string& data)
+                static std::shared_ptr<DataPackage> makePackage(std::string_view data)
                 {
-                    static std::hash<std::string> hash;
+                    static std::hash<std::string_view> hash;
                     std::shared_ptr<DataPackage> package((DataPackage*)new char[sizeof(DataPackage) + data.size()] { 0 });
                     package->length = int(sizeof(DataPackage) + data.size());
                     std::memcpy(package->data, data.data(), data.size());
@@ -73,7 +84,7 @@ namespace qls
                 */
                 static std::shared_ptr<DataPackage> stringToPackage(const std::string& data)
                 {
-                    static std::hash<std::string> hash;
+                    static std::hash<std::string_view> hash;
                     // 数据包过小
                     if (data.size() < sizeof(DataPackage)) throw std::logic_error("data is too small!");
 
@@ -212,6 +223,24 @@ namespace qls
                 m_buffer = m_buffer.substr(firstMsgLength());
 
                 return result;
+            }
+
+            /*
+            * @brief 读取类中buffer数据
+            * @return string buffer
+            */
+            const std::string& readBuffer() const
+            {
+                return m_buffer;
+            }
+
+            /*
+            * @brief 设置buffer
+            * @param buffer
+            */
+            void setBuffer(const std::string& b)
+            {
+                m_buffer = b;
             }
 
             /*

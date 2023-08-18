@@ -12,23 +12,12 @@ extern qls::Network serverNetwork;
 extern qls::SocketFunction serverSocketFunction;
 extern qcrypto::pkey::PrivateKey serverPrivateKey;
 
-/*
-* @brief 读取socket地址到string
-* @param socket
-* @return string socket的地址
-*/
-static inline std::string socket2ip(const asio::ip::tcp::socket& s)
-{
-    auto ep = s.remote_endpoint();
-    return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
-}
-
 asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
 {
     auto executor = co_await asio::this_coro::executor;
 
     // socket加密结构体
-    SocketDataStructure sds;
+    std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
     // string地址，以便数据处理
     std::string addr = socket2ip(socket);
 
@@ -55,16 +44,15 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
         }
 
         char data[8192];
-        Package package;
         for (;;)
         {
             do
             {
                 std::size_t n = co_await socket.async_read_some(asio::buffer(data), use_awaitable);
-                package.write({ data,n });
-            } while (!package.canRead());
+                sds->package.write({ data,n });
+            } while (!sds->package.canRead());
 
-            while (package.canRead())
+            while (sds->package.canRead())
             {
                 std::shared_ptr<Network::Package::DataPackage> datapack;
 
@@ -76,7 +64,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                         // 数据包
                         datapack = std::shared_ptr<Network::Package::DataPackage>(
                             Network::Package::DataPackage::stringToPackage(
-                                package.read()));
+                                sds->package.read()));
                     }
                     catch (const std::exception& e)
                     {
@@ -89,100 +77,121 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
 
                 // 加密检测
                 {
-                    switch (sds.has_encrypt)
+                    // 加密检测函数 lambda
+                    auto encryptFunction = [&]() -> asio::awaitable<int> {
+                        switch (sds->has_encrypt)
+                        {
+                        case 0:
+                        {
+                            std::string out;
+                            if (!qcrypto::pkey::decrypt(datapack->getData(datapack), out, serverPrivateKey))
+                            {
+                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                closeFunction_(socket);
+                                socket.close();
+                                co_return 0;
+                            }
+
+                            // 读取aes密钥
+                            try
+                            {
+                                qjson::JObject json = qjson::JParser::fastParse(out);
+                                std::string lout;
+                                if (!qcrypto::Base64::encrypt(json["aeskey"].getString(), lout, false))
+                                {
+                                    serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                    closeFunction_(socket);
+                                    socket.close();
+                                    co_return 0;
+                                }
+                                sds->AESKey = lout;
+
+                                if (!qcrypto::Base64::encrypt(json["aesiv"].getString(), lout, false))
+                                {
+                                    serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                    closeFunction_(socket);
+                                    socket.close();
+                                    co_return 0;
+                                }
+                                sds->AESiv = lout;
+
+                                // 加密等级改为1 
+                                sds->has_encrypt = 1;
+                            }
+                            catch (const std::exception& e)
+                            {
+                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
+                                closeFunction_(socket);
+                                socket.close();
+                                co_return 0;
+                            }
+                            co_return 1;
+                        }
+                        break;
+                        case 1:
+                        {
+                            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
+                            std::string out;
+                            if (!aes.encrypt(datapack->getData(datapack), out, sds->AESKey, sds->AESiv, false) || out != "hello server")
+                            {
+                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                closeFunction_(socket);
+                                socket.close();
+                                co_return 0;
+                            }
+
+                            // 发送hello client给客户端
+                            {
+                                std::string data;
+                                aes.encrypt("hello client", data, sds->AESKey, sds->AESiv, true);
+                                auto pack = Network::Package::DataPackage::makePackage(data);
+                                co_await socket.async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
+                            }
+
+                            // 加密等级改为2
+                            sds->has_encrypt = 2;
+                            co_return 2;
+                        }
+                        break;
+                        case 2:
+                        {
+                            /*代码需要修改！！！此处代码已经过时*/
+                            /*代码需要修改！！！此处代码已经过时*/
+                            /*代码需要修改！！！此处代码已经过时*/
+                            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
+                            std::string out;
+                            if (!aes.encrypt(datapack->getData(datapack), out, sds->AESKey, sds->AESiv, false))
+                            {
+                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                closeFunction_(socket);
+                                socket.close();
+                                co_return 0;
+                            }
+                            co_await receiveFunction_(socket, out, datapack);
+                            co_return 2;
+                        }
+                        break;
+                        default:
+                            throw std::logic_error(ERROR_WITH_STACKTRACE("m_socketMap[addr].has_encrypt: a invalid value"));
+                        }
+                    };
+
+                    // 1是加密到一半 2是完全加密
+                    int code = co_await encryptFunction();
+                    switch (code)
                     {
                     case 0:
-                    {
-                        std::string out;
-                        if (!qcrypto::pkey::decrypt(datapack->getData(datapack), out, serverPrivateKey))
-                        {
-                            serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
-                            closeFunction_(socket);
-                            socket.close();
-                            co_return;
-                        }
-
-                        // 读取aes密钥
-                        try
-                        {
-                            qjson::JObject json = qjson::JParser::fastParse(out);
-                            std::string lout;
-                            if (!qcrypto::Base64::encrypt(json["aeskey"].getString(), lout, false))
-                            {
-                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
-                                closeFunction_(socket);
-                                socket.close();
-                                co_return;
-                            }
-                            sds.AESKey = lout;
-
-                            if (!qcrypto::Base64::encrypt(json["aesiv"].getString(), lout, false))
-                            {
-                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
-                                closeFunction_(socket);
-                                socket.close();
-                                co_return;
-                            }
-                            sds.AESiv = lout;
-
-                            // 加密等级改为1 
-                            sds.has_encrypt = 1;
-                        }
-                        catch (const std::exception& e)
-                        {
-                            serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
-                            closeFunction_(socket);
-                            socket.close();
-                            co_return;
-                        }
-                        continue;
-                    }
-                    break;
+                        co_return;
                     case 1:
-                    {
-                        qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
-                        std::string out;
-                        if (!aes.encrypt(datapack->getData(datapack), out, sds.AESKey, sds.AESiv, false) || out != "hello server")
-                        {
-                            serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
-                            closeFunction_(socket);
-                            socket.close();
-                            co_return;
-                        }
-
-                        // 发送hello client给客户端
-                        {
-                            std::string data;
-                            aes.encrypt("hello client", data, sds.AESKey, sds.AESiv, true);
-                            auto pack = Network::Package::DataPackage::makePackage(data);
-                            co_await socket.async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
-                        }
-
-                        // 加密等级改为2
-                        sds.has_encrypt = 2;
                         continue;
-                    }
-                    break;
                     case 2:
                     {
-                        /*代码需要修改！！！此处代码已经过时*/
-                        /*代码需要修改！！！此处代码已经过时*/
-                        /*代码需要修改！！！此处代码已经过时*/
-                        qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
-                        std::string out;
-                        if (!aes.encrypt(datapack->getData(datapack), out, sds.AESKey, sds.AESiv, false))
-                        {
-                            serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
-                            closeFunction_(socket);
-                            socket.close();
-                            co_return;
-                        }
-                        co_await receiveFunction_(socket, out, datapack);
-                        continue;
+                        // 将socket所有权交给新类
+                        asio::co_spawn(executor, SocketService::echo(std::move(socket), std::move(sds)), asio::detached);
+                        co_return;
                     }
-                    break;
                     default:
-                        throw std::logic_error(ERROR_WITH_STACKTRACE("m_socketMap[addr].has_encrypt: a invalid value"));
+                        break;
                     }
                 }
             }

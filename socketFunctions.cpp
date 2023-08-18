@@ -55,11 +55,7 @@ namespace qls
     {
     }
 
-    /*
-    * @brief 设置aes key iv
-    * @param key aes的key
-    * @param iv aes的iv
-    */
+    
     void SocketService::setAESKeys(const std::string key, const std::string& iv)
     {
         m_aes.AESKey = key;
@@ -67,15 +63,62 @@ namespace qls
         m_aes.hasAESKeys = true;
     }
 
-    /*
-    * @brief 将socket所有权交到SocketService中
-    * @param socket asio::socket类
-    * @param sds Network::SocketDataStructure类
-    * @return asio协程 asio::awaitable<void>
-    */
-    asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket, const Network::SocketDataStructure& sds)
+    asio::awaitable<std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>>
+        SocketService::async_receive(asio::ip::tcp::socket& socket)
     {
+        std::string addr = socket2ip(socket);
+        char buffer[8192]{ 0 };
+        // 接收数据
+        do
+        {
+            size_t size = co_await socket.async_read_some(asio::buffer(buffer), asio::use_awaitable);
+            m_package.write({ buffer, size });
+        } while (!m_package.canRead());
+
+        std::shared_ptr<Network::Package::DataPackage> datapack;
+
+        // 检测数据包是否正常
+        {
+            // 数据包
+            try
+            {
+                datapack = std::shared_ptr<Network::Package::DataPackage>(
+                    Network::Package::DataPackage::stringToPackage(
+                        m_package.read()));
+            }
+            catch (const std::exception& e)
+            {
+                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
+                co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), nullptr};
+            }
+        }
+
+        std::string out;
+        if (!m_aes.AES.encrypt(datapack->getData(datapack), out, m_aes.AESKey, m_aes.AESiv, false))
+        {
+            serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
+            co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), datapack};
+        }
+        co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{out, datapack};
+    }
+
+    asio::awaitable<size_t> SocketService::async_send(asio::ip::tcp::socket& socket, std::string_view data, long long requestID, int type, int sequence)
+    {
+        std::string out;
+        m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
+        auto pack = Network::Package::DataPackage::makePackage(out);
+        pack->requestID = requestID;
+        pack->sequence = sequence;
+        pack->type = type;
+        co_return co_await socket.async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
+    }
+    
+    asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds)
+    {
+        if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
         SocketService socketService(socket);
+        socketService.setAESKeys(sds->AESKey, sds->AESiv);
+        socketService.setPackageBuffer(sds->package);
 
         co_return;
     }

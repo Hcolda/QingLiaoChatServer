@@ -98,7 +98,7 @@ public:
     }
 
 protected:
-    bool _encrypt(const std::string& in, std::string& out, const std::string& key, const std::string& ivec, const EVP_CIPHER* ciper, bool enc)
+    bool _encrypt(std::string_view in, std::string& out, std::string_view key, std::string_view ivec, const EVP_CIPHER* ciper, bool enc)
     {
         std::lock_guard<std::mutex> lock(ctx_mutex_);
 
@@ -172,7 +172,7 @@ public:
     AES() = default;
     ~AES() = default;
 
-    bool encrypt(const std::string& in, std::string& out, const std::string& key, const std::string& ivec, bool enc)
+    bool encrypt(std::string_view in, std::string& out, std::string_view key, std::string_view ivec, bool enc)
     {
         // 根据key大小创建EVP_CIPHER
         const EVP_CIPHER* cipher = nullptr;
@@ -267,7 +267,7 @@ public:
     AES() = default;
     ~AES() = default;
 
-    bool encrypt(const std::string& in, std::string& out, const std::string& key, bool enc)
+    bool encrypt(std::string_view in, std::string& out, std::string_view key, bool enc)
     {
         if (AESModeLimit[(int)AESMode::ECB_128] != key.size())
             return false;
@@ -283,7 +283,7 @@ public:
     AES() = default;
     ~AES() = default;
 
-    bool encrypt(const std::string& in, std::string& out, const std::string& key, bool enc)
+    bool encrypt(std::string_view in, std::string& out, std::string_view key, bool enc)
     {
         if (AESModeLimit[(int)AESMode::ECB_192] != key.size())
             return false;
@@ -299,7 +299,7 @@ public:
     AES() = default;
     ~AES() = default;
 
-    bool encrypt(const std::string& in, std::string& out, const std::string& key, bool enc)
+    bool encrypt(std::string_view in, std::string& out, std::string_view key, bool enc)
     {
         if (AESModeLimit[(int)AESMode::ECB_256] != key.size())
             return false;
