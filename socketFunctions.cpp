@@ -15,8 +15,8 @@ namespace qls
 {
     asio::awaitable<void> SocketFunction::accecptFunction(asio::ip::tcp::socket& socket)
     {
-        serverLogger.info(socket.remote_endpoint().address().to_string(),
-            ":", socket.remote_endpoint().port(), "连接至服务器");
+        serverLogger.info("[", socket.remote_endpoint().address().to_string(),
+            ":", socket.remote_endpoint().port(), "]", "连接至服务器");
         co_return;
     }
 
@@ -30,8 +30,8 @@ namespace qls
 
     asio::awaitable<void> SocketFunction::closeFunction(asio::ip::tcp::socket& socket)
     {
-        serverLogger.info(socket.remote_endpoint().address().to_string(),
-            ":", socket.remote_endpoint().port(), "从服务器断开连接");
+        serverLogger.info("[", socket.remote_endpoint().address().to_string(),
+            ":", socket.remote_endpoint().port(), "]", "从服务器断开连接");
         co_return;
     }
 }
@@ -69,11 +69,14 @@ namespace qls
         std::string addr = socket2ip(socket);
         char buffer[8192]{ 0 };
         // 接收数据
-        do
+        if (!m_package.canRead())
         {
-            size_t size = co_await socket.async_read_some(asio::buffer(buffer), asio::use_awaitable);
-            m_package.write({ buffer, size });
-        } while (!m_package.canRead());
+            do
+            {
+                size_t size = co_await socket.async_read_some(asio::buffer(buffer), asio::use_awaitable);
+                m_package.write({ buffer, size });
+            } while (!m_package.canRead());
+        }
 
         std::shared_ptr<Network::Package::DataPackage> datapack;
 
@@ -119,6 +122,34 @@ namespace qls
         SocketService socketService(socket);
         socketService.setAESKeys(sds->AESKey, sds->AESiv);
         socketService.setPackageBuffer(sds->package);
+
+
+        // 地址
+        std::string addr = socket2ip(socket);
+
+        for (;;)
+        {
+            auto [data, pack] = co_await socketService.async_receive(socket);
+
+            // 判断包是否可用
+            if (pack.get() == nullptr)
+            {
+                // 数据接收错误
+                serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
+                socket.close();
+                co_return;
+            }
+            else if (data.empty())
+            {
+                // 数据成功接收但是无法aes解密
+                serverLogger.warning("[", addr, "]", "data is invalid");
+                continue;
+            }
+
+            // 成功解密成功接收
+            serverLogger.info("[", addr, "]", "send msg: ", data);
+            continue;
+        }
 
         co_return;
     }

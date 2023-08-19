@@ -16,7 +16,7 @@ namespace qls
 
         try
         {
-            serverLogger.info("服务器监听正在启动！");
+            serverLogger.info("服务器监听正在启动，地址：", "0.0.0.0", ":", 55555);
             serverNetwork.setFunctions(std::bind(&SocketFunction::accecptFunction, &serverSocketFunction, std::placeholders::_1),
                                        std::bind(&SocketFunction::receiveFunction, &serverSocketFunction, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                                        std::bind(&SocketFunction::closeFunction, &serverSocketFunction, std::placeholders::_1));

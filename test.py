@@ -1,11 +1,6 @@
-import socket, struct, time
+import requests
 
-s = socket.socket()
+s = requests.Session()
 
-s.connect(("127.0.0.1", 55555))
-
-s.send("\0\0\0\0\0\0\0\0\0\0\0\0\0\0".encode())
-print(s.recv(4096))
-print(s.recv(4096))
-
-s.close()
+r = s.post("https://testapi.hcolda.com/api.php?type=server&commend=aeskey", {"serverid":'', 'serverkey':'', 'uuid':'225BD9F9-493D-F9E5-50A4-9BE0C59FB859'})
+print(r.json())

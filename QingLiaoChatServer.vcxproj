@@ -157,6 +157,7 @@
     <ClInclude Include="init.h" />
     <ClInclude Include="network.h" />
     <ClInclude Include="socketFunctions.h" />
+    <ClInclude Include="websiteFunctions.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
