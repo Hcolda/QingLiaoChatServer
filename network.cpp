@@ -6,6 +6,7 @@
 
 #include "socketFunctions.h"
 #include "definition.hpp"
+#include "websiteFunctions.hpp"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -35,13 +36,13 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
         co_await acceptFunction_(socket);
 
         // 发送pem密钥给客户端
-        {
+        /*{
             std::string pem;
             qcrypto::PEM::PEMWritePublicKey(qcrypto::pkey::PublicKey(serverPrivateKey), pem);
             auto pack = Network::Package::DataPackage::makePackage(pem);
 
             co_await socket.async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
-        }
+        }*/
 
         char data[8192];
         for (;;)
@@ -77,7 +78,52 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
 
                 // 加密检测
                 {
-                    // 加密检测函数 lambda
+                    // 加密检测函数 lambda（新）
+                    auto encryptFunction_2 = [&]() -> asio::awaitable<int> {
+                        
+                        if (sds->has_encrypt == 0)
+                        {
+                            sds->uuid = datapack->getData(datapack);
+
+                            WebFunction web;
+                            auto [key, iv] = web.getAESKey(sds->uuid);
+
+                            std::string key1, iv1;
+                            qcrypto::Base64::encrypt(key, key1, false);
+                            qcrypto::Base64::encrypt(iv, iv1, false);
+
+                            sds->AESKey = key1;
+                            sds->AESiv = iv1;
+
+                            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
+                            std::string out;
+                            aes.encrypt("hello client", out, sds->AESKey, sds->AESiv, true);
+                            auto sendpack = Package::DataPackage::makePackage(out);
+                            sendpack->requestID = datapack->requestID;
+                            co_await socket.async_send(asio::buffer(sendpack->packageToString(sendpack)), asio::use_awaitable);
+
+                            sds->has_encrypt = 1;
+                            co_return 1;
+                        }
+                        else if (sds->has_encrypt == 1)
+                        {
+                            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
+                            std::string out;
+                            if (!aes.encrypt(datapack->getData(datapack), out, sds->AESKey, sds->AESiv, false) || out != "hello server")
+                            {
+                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                closeFunction_(socket);
+                                socket.close();
+                                co_return 0;
+                            }
+
+                            sds->has_encrypt = 2;
+                            co_return 2;
+                        }
+                        else co_return 2;
+                        };
+
+                    // 加密检测函数 lambda（旧）
                     auto encryptFunction = [&]() -> asio::awaitable<int> {
                         switch (sds->has_encrypt)
                         {
@@ -177,7 +223,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                     };
 
                     // 1是加密到一半 2是完全加密
-                    int code = co_await encryptFunction();
+                    int code = co_await encryptFunction_2();
                     switch (code)
                     {
                     case 0:

@@ -14,6 +14,11 @@ namespace qls
         std::system("chcp 65001");
         serverLogger.info("服务器Log系统启动成功！");
 
+        {
+            serverLogger.info("testing...");
+
+        }
+
         try
         {
             serverLogger.info("服务器监听正在启动，地址：", "0.0.0.0", ":", 55555);

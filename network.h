@@ -267,6 +267,8 @@ namespace qls
         {
             // 用于接收数据包
             Network::Package package;
+            // 用于接收密钥
+            std::string uuid;
 
             // 加密等级 1rsa 2aes 0无
             std::atomic<int> has_encrypt = 0;

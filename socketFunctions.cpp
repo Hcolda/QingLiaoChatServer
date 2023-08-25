@@ -127,28 +127,42 @@ namespace qls
         // 地址
         std::string addr = socket2ip(socket);
 
-        for (;;)
+        try
         {
-            auto [data, pack] = co_await socketService.async_receive(socket);
+            for (;;)
+            {
+                auto [data, pack] = co_await socketService.async_receive(socket);
 
-            // 判断包是否可用
-            if (pack.get() == nullptr)
-            {
-                // 数据接收错误
-                serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
-                socket.close();
-                co_return;
-            }
-            else if (data.empty())
-            {
-                // 数据成功接收但是无法aes解密
-                serverLogger.warning("[", addr, "]", "data is invalid");
+                // 判断包是否可用
+                if (pack.get() == nullptr)
+                {
+                    // 数据接收错误
+                    serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
+                    socket.close();
+                    co_return;
+                }
+                else if (data.empty())
+                {
+                    // 数据成功接收但是无法aes解密
+                    serverLogger.warning("[", addr, "]", "data is invalid");
+                    continue;
+                }
+
+                // 成功解密成功接收
+                serverLogger.info("[", addr, "]", "send msg: ", data);
                 continue;
             }
-
-            // 成功解密成功接收
-            serverLogger.info("[", addr, "]", "send msg: ", data);
-            continue;
+        }
+        catch (const std::exception& e)
+        {
+            if (!strcmp(e.what(), "End of file"))
+            {
+                serverLogger.info(std::format("[{}]与服务器断开连接", addr));
+            }
+            else
+            {
+                serverLogger.warning(std::string(e.what()));
+            }
         }
 
         co_return;
