@@ -46,9 +46,11 @@ namespace qls
 // SocketService
 namespace qls
 {
-    SocketService::SocketService(asio::ip::tcp::socket& socket) :
-        m_socket(socket)
+    SocketService::SocketService(std::shared_ptr<asio::ip::tcp::socket> socket_ptr) :
+        m_socket_ptr(socket_ptr)
     {
+        if (m_socket_ptr.get() == nullptr)
+            throw std::logic_error("socket_ptr is nullptr");
     }
 
     SocketService::~SocketService()
@@ -64,16 +66,16 @@ namespace qls
     }
 
     asio::awaitable<std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>>
-        SocketService::async_receive(asio::ip::tcp::socket& socket)
+        SocketService::async_receive()
     {
-        std::string addr = socket2ip(socket);
+        std::string addr = socket2ip(*m_socket_ptr);
         char buffer[8192]{ 0 };
         // 接收数据
         if (!m_package.canRead())
         {
             do
             {
-                size_t size = co_await socket.async_read_some(asio::buffer(buffer), asio::use_awaitable);
+                size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
                 m_package.write({ buffer, size });
             } while (!m_package.canRead());
         }
@@ -105,7 +107,7 @@ namespace qls
         co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{out, datapack};
     }
 
-    asio::awaitable<size_t> SocketService::async_send(asio::ip::tcp::socket& socket, std::string_view data, long long requestID, int type, int sequence)
+    asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
     {
         std::string out;
         m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
@@ -113,32 +115,68 @@ namespace qls
         pack->requestID = requestID;
         pack->sequence = sequence;
         pack->type = type;
-        co_return co_await socket.async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
+        co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
+    }
+
+    asio::awaitable<void> SocketService::proccess(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
+        const std::string& data,
+        std::shared_ptr<Network::Package::DataPackage> pack)
+    {
+        switch (pack->requestID)
+        {
+        case 1:
+        {
+            // json文本类型
+        }
+            break;
+        case 2:
+        {
+            // 文件类型
+        }
+        break;
+        case 3:
+        {
+            // 二进制流类型
+        }
+        break;
+        default:
+        {
+            // 没有这种类型，返回错误
+        }
+            break;
+        }
+        co_return;
     }
     
     asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds)
     {
         if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
-        SocketService socketService(socket);
+        std::shared_ptr<asio::ip::tcp::socket> socket_ptr = std::make_shared<asio::ip::tcp::socket>(std::move(socket));
+
+        SocketService socketService(socket_ptr);
         socketService.setAESKeys(sds->AESKey, sds->AESiv);
         socketService.setPackageBuffer(sds->package);
 
-
         // 地址
-        std::string addr = socket2ip(socket);
+        std::string addr = socket2ip(*socket_ptr);
 
         try
         {
+            // 将用户个人信息发送到客户端
+            {
+
+            }
+
             for (;;)
             {
-                auto [data, pack] = co_await socketService.async_receive(socket);
+                auto [data, pack] = co_await socketService.async_receive();
 
                 // 判断包是否可用
                 if (pack.get() == nullptr)
                 {
                     // 数据接收错误
                     serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
-                    socket.close();
+                    socket_ptr->close();
                     co_return;
                 }
                 else if (data.empty())
@@ -149,7 +187,7 @@ namespace qls
                 }
 
                 // 成功解密成功接收
-                serverLogger.info("[", addr, "]", "send msg: ", data);
+                co_await socketService.proccess(socket_ptr, data, pack);
                 continue;
             }
         }

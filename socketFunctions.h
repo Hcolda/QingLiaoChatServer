@@ -38,7 +38,7 @@ namespace qls
             std::atomic<bool> has_login = false;
         };
 
-        SocketService(asio::ip::tcp::socket& socket);
+        SocketService(std::shared_ptr<asio::ip::tcp::socket> socket_ptr);
         ~SocketService();
 
         /*
@@ -54,7 +54,7 @@ namespace qls
         * @return asio协程 std::string, std::shared_ptr<Network::Package::DataPackage>
         */
         asio::awaitable<std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>>
-            async_receive(asio::ip::tcp::socket& socket);
+            async_receive();
 
         /*
         * @brief 异步发送消息
@@ -65,11 +65,19 @@ namespace qls
         * @param sequence = -1
         * @return size 实际发送长度
         */
-        asio::awaitable<size_t> async_send(asio::ip::tcp::socket& socket,
+        asio::awaitable<size_t> async_send(
             std::string_view data,
             long long  requestID = 0,
             int        type = 0,
             int        sequence = -1);
+
+        /*
+        * @brief 处理函数
+        * @param socket
+        * @param data 解密后的数据
+        * @param pack 原始数据包
+        */
+        asio::awaitable<void> proccess(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const std::string& data, std::shared_ptr<Network::Package::DataPackage> pack);
 
         /*
         * @brief 设置package
@@ -89,8 +97,8 @@ namespace qls
         static asio::awaitable<void> echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds);
 
     private:
-        // socket
-        asio::ip::tcp::socket&  m_socket;
+        // socket ptr
+        std::shared_ptr<asio::ip::tcp::socket> m_socket_ptr;
         // aes
         LocalAES                m_aes;
         // user

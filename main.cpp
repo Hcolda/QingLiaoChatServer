@@ -5,17 +5,14 @@
 #include "socketFunctions.h"
 #include "init.h"
 
+// 服务器log系统
 Log::Logger serverLogger;
+// 服务器网络系统
 qls::Network serverNetwork;
+// 服务器socket函数系统（废弃）
 qls::SocketFunction serverSocketFunction;
+// 服务器rsa密钥（废弃）
 qcrypto::pkey::PrivateKey serverPrivateKey(qcrypto::pkey::KeyGenerator::generateRSA(2048));
-
-/*
-* 待定清单：
-* 1. socketFunction需要修改（加入数据包），加入加密功能
-* 2. config 需要做
-* 3. 加密功能完成之后登录注册的搭建
-*/
 
 int main()
 {
