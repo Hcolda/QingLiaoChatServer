@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="JsonMsgProcess.cpp" />
     <ClCompile Include="room.cpp" />
     <ClCompile Include="init.cpp" />
     <ClCompile Include="main.cpp" />
@@ -154,6 +155,7 @@
     <ClCompile Include="socketFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="JsonMsgProcess.h" />
     <ClInclude Include="room.h" />
     <ClInclude Include="definition.hpp" />
     <ClInclude Include="init.h" />
