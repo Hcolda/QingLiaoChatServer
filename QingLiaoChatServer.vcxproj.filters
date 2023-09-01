@@ -36,6 +36,12 @@
     <ClCompile Include="SQLProcess.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="include\Ini.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="include\Json.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="init.h">

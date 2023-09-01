@@ -147,6 +147,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="include\Ini.cpp" />
+    <ClCompile Include="include\Json.cpp" />
     <ClCompile Include="JsonMsgProcess.cpp" />
     <ClCompile Include="room.cpp" />
     <ClCompile Include="init.cpp" />

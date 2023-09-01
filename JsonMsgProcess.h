@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <string>
-#include <Json.hpp>
+#include <Json.h>
 
 namespace qls
 {
