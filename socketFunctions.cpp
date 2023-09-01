@@ -118,10 +118,18 @@ namespace qls
         co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
     }
 
-    asio::awaitable<void> SocketService::proccess(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
+    asio::awaitable<void> SocketService::process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
         const std::string& data,
         std::shared_ptr<Network::Package::DataPackage> pack)
     {
+        if (this->m_jsonProcess.get() == nullptr)
+        {
+            // 获取用户的id
+            long long user_id = 0;
+            this->m_jsonProcess = std::make_shared<JsonMessageProcess>(user_id);
+            co_return;
+        }
+
         switch (pack->requestID)
         {
         case 1:
@@ -162,11 +170,6 @@ namespace qls
 
         try
         {
-            // 将用户个人信息发送到客户端
-            {
-
-            }
-
             for (;;)
             {
                 auto [data, pack] = co_await socketService.async_receive();
@@ -187,7 +190,7 @@ namespace qls
                 }
 
                 // 成功解密成功接收
-                co_await socketService.proccess(socket_ptr, data, pack);
+                co_await socketService.process(socket_ptr, data, pack);
                 continue;
             }
         }

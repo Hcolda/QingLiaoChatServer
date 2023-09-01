@@ -26,7 +26,7 @@ namespace qls
 
         struct User
         {
-            std::string id;
+            long long id;
             Equipment equipment = Equipment::Unknown;
         };
 

@@ -26,12 +26,6 @@ namespace qls
         static qjson::JObject getUserPublicInfo(long long user_id);
 
         /*
-        * @brief 获取用户登录时需要的初始信息
-        * @return 返回的消息的json类
-        */
-        qjson::JObject getLoginInfo();
-
-        /*
         * @brief 处理json消息总函数
         * @param json类
         * @return 返回的消息的json类

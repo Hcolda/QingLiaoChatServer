@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "network.h"
+#include "JsonMsgProcess.h"
 
 namespace qls
 {
@@ -77,7 +78,7 @@ namespace qls
         * @param data 解密后的数据
         * @param pack 原始数据包
         */
-        asio::awaitable<void> proccess(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const std::string& data, std::shared_ptr<Network::Package::DataPackage> pack);
+        asio::awaitable<void> process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const std::string& data, std::shared_ptr<Network::Package::DataPackage> pack);
 
         /*
         * @brief 设置package
@@ -98,12 +99,14 @@ namespace qls
 
     private:
         // socket ptr
-        std::shared_ptr<asio::ip::tcp::socket> m_socket_ptr;
+        std::shared_ptr<asio::ip::tcp::socket>  m_socket_ptr;
+        // JsonMsgProcess
+        std::shared_ptr<JsonMessageProcess>     m_jsonProcess;
         // aes
-        LocalAES                m_aes;
+        LocalAES                                m_aes;
         // user
-        LocalUser               m_user;
+        LocalUser                               m_user;
         // package
-        Network::Package        m_package;
+        Network::Package                        m_package;
     };
 }
