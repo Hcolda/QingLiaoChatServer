@@ -181,7 +181,7 @@ namespace qini
 		*/
 		Section operator [](const std::string sectionName)
 		{
-			if (m_sections.find(sectionName) == m_sections.end()) throw std::logic_error("Invalid Section Name");
+			//if (m_sections.find(sectionName) == m_sections.end()) throw std::logic_error("Invalid Section Name");
 			return Section(m_sections[sectionName]);
 		}
 
@@ -232,10 +232,12 @@ namespace qini
 		*/
 		static INIObject fastParse(std::string_view data);
 
-		/*INIObject parse(std::ifstream& file)
-		{
-			INIObject localObject;
-		}*/
+		/*
+		* @brief 解析数据
+		* @param file 文件
+		* @return INIObject ini数据
+		*/
+		static INIObject fastParse(std::ifstream& infile);
 
 	protected:
 		bool skipSpace(std::string_view::iterator& i, std::string_view data, long long& error_line);

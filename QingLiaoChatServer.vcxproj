@@ -121,7 +121,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>capi.lib;dasync.lib;legacy.lib;libapps.lib;libcommon.lib;libcrypto.lib;libdefault.lib;liblegacy.lib;libssl.lib;libtestutil.lib;loader_attic.lib;openssl.lib;ossltest.lib;p_test.lib;padlock.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>capi.lib;dasync.lib;legacy.lib;libapps.lib;libcommon.lib;libcrypto.lib;libdefault.lib;liblegacy.lib;libssl.lib;libtestutil.lib;loader_attic.lib;openssl.lib;ossltest.lib;p_test.lib;padlock.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,7 +143,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>capi.lib;dasync.lib;legacy.lib;libapps.lib;libcommon.lib;libcrypto.lib;libdefault.lib;liblegacy.lib;libssl.lib;libtestutil.lib;loader_attic.lib;openssl.lib;ossltest.lib;p_test.lib;padlock.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>capi.lib;dasync.lib;legacy.lib;libapps.lib;libcommon.lib;libcrypto.lib;libdefault.lib;liblegacy.lib;libssl.lib;libtestutil.lib;loader_attic.lib;openssl.lib;ossltest.lib;p_test.lib;padlock.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

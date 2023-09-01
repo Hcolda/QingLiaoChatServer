@@ -68,6 +68,22 @@ INIObject qini::INIParser::fastParse(std::string_view data)
 	return parser.parse(data);
 }
 
+INIObject qini::INIParser::fastParse(std::ifstream& infile)
+{
+	if (!infile) throw std::runtime_error("can't open file");
+	static INIParser parser;
+
+	infile.seekg(0, std::ios_base::end);
+	size_t size = infile.tellg();
+	infile.seekg(0, std::ios_base::beg);
+	std::string buffer;
+	buffer.resize(size);
+	infile.read(buffer.data(), size);
+	infile.close();
+
+	return std::move(fastParse(buffer));
+}
+
 bool INIParser::skipSpace(std::string_view::iterator& i, std::string_view data, long long& error_line)
 {
 	while (i != data.end() && (*i == ' ' || *i == '\n' || *i == '\t' || *i == ';' || *i == '#'))
@@ -83,7 +99,7 @@ bool INIParser::skipSpace(std::string_view::iterator& i, std::string_view data, 
 		}
 	}
 
-	return i != data.end();
+	return i != data.end() && *i != '\0';
 }
 
 std::string INIParser::getString(std::string_view::iterator& i, std::string_view data, long long error_line)

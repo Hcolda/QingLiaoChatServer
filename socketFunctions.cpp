@@ -5,6 +5,7 @@
 #include <Json.h>
 
 #include "definition.hpp"
+#include "websiteFunctions.hpp"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -135,21 +136,25 @@ namespace qls
         case 1:
         {
             // json文本类型
+            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess->processJsonMessage(data)));
         }
             break;
         case 2:
         {
             // 文件类型
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")));// 暂时返回错误
         }
         break;
         case 3:
         {
             // 二进制流类型
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")));// 暂时返回错误
         }
         break;
         default:
         {
             // 没有这种类型，返回错误
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")));
         }
             break;
         }
