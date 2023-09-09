@@ -33,9 +33,6 @@
     <ClCompile Include="JsonMsgProcess.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SQLProcess.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="include\Ini.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -65,7 +62,7 @@
     <ClInclude Include="JsonMsgProcess.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="SQLProcess.h">
+    <ClInclude Include="SQLProcess.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
