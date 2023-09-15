@@ -4,7 +4,7 @@
 
 namespace room
 {
-    bool BaseRoom::joinBaseRoom(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const BaseUser& user)
+    bool BaseRoom::joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUser& user)
     {
         if (socket_ptr.get() == nullptr) return false;
 
@@ -13,7 +13,7 @@ namespace room
         return true;
     }
 
-    bool BaseRoom::leaveBaseRoom(std::shared_ptr<asio::ip::tcp::socket> socket_ptr)
+    bool BaseRoom::leaveBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
         if (socket_ptr.get() == nullptr) return false;
 
@@ -79,11 +79,16 @@ namespace qls
     {
     }
 
-    bool PrivateRoom::joinRoom(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const User& user)
+    bool PrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
         if (user.id != m_user_id_1 || user.id != m_user_id_2)
             return false;
         return joinBaseRoom(socket_ptr, user);
+    }
+
+    bool PrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    {
+        return leaveBaseRoom(socket_ptr);
     }
 
     asio::awaitable<bool> PrivateRoom::sendData(const std::string& message, long long user_id)
