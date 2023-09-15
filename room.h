@@ -6,12 +6,16 @@
 #include <thread>
 #include <atomic>
 #include <memory>
+#include <vector>
 #include <unordered_map>
 #include <queue>
 #include "network.h"
 
-namespace qls
+namespace room
 {
+    /*
+    * @brief 基类房间
+    */
     class BaseRoom
     {
     public:
@@ -24,10 +28,12 @@ namespace qls
             Ios
         };
 
-        struct User
+        struct BaseUser
         {
             long long id;
             Equipment equipment = Equipment::Unknown;
+            char key[32 + 1]{ 0 };
+            char iv[16 + 1]{ 0 };
         };
 
         BaseRoom() = default;
@@ -39,7 +45,7 @@ namespace qls
         * @param user 用户数据
         * @return true成功 false失败
         */
-        bool joinBaseRoom(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const User& user);
+        bool joinBaseRoom(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const BaseUser& user);
         
         /*
         * @brief 离开房间
@@ -56,9 +62,41 @@ namespace qls
         asio::awaitable<bool> baseSendData(const std::string& data);
 
     private:
-        std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>, User>    m_userMap;
-        std::queue<std::shared_ptr<asio::ip::tcp::socket>>                  m_userDeleteQueue;
-        std::shared_mutex                                                   m_userMap_mutex;
+        std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>, BaseUser>    m_userMap;
+        std::queue<std::shared_ptr<asio::ip::tcp::socket>>                      m_userDeleteQueue;
+        std::shared_mutex                                                       m_userMap_mutex;
+    };
+}
+
+namespace qls
+{
+    /*
+    * @brief 私聊房间
+    */
+    class PrivateRoom : public room::BaseRoom
+    {
+    public:
+        struct User : public room::BaseRoom::BaseUser {};
+
+        PrivateRoom(long long user_id_1, long long user_id_2);
+        ~PrivateRoom() = default;
+
+        /*
+        * @brief 加入私聊房间
+        * @param socket_ptr socket指针
+        * @param user 用户数据
+        */
+        bool joinRoom(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const User& user);
+
+        /*
+        * @brief 广播消息
+        * @param message 发送的消息（非二进制数据）
+        * @param user_id 发送者user_id
+        */
+        asio::awaitable<bool> sendData(const std::string& message, long long user_id);
+
+    private:
+        const long long m_user_id_1, m_user_id_2;
     };
 }
 
