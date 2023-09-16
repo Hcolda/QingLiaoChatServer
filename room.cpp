@@ -4,7 +4,7 @@
 
 namespace room
 {
-    bool BaseRoom::joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUser& user)
+    bool BaseRoom::joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user)
     {
         if (socket_ptr.get() == nullptr) return false;
 
@@ -91,7 +91,7 @@ namespace qls
 
     bool BasePrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
-        if (user.id != m_user_id_1 || user.id != m_user_id_2)
+        if (user.user_id != m_user_id_1 || user.user_id != m_user_id_2)
             return false;
         return joinBaseRoom(socket_ptr, user);
     }
