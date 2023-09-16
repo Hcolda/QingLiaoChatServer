@@ -23,6 +23,16 @@ namespace room
         return true;
     }
 
+    bool BaseRoom::baseMuteMember(long long user_id, const std::chrono::minutes& minutes)
+    {
+        return false;
+    }
+
+    bool BaseRoom::baseUnmuteMember(long long user_id)
+    {
+        return false;
+    }
+
     asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data)
     {
         bool queueEmpty = true;
@@ -73,25 +83,25 @@ namespace room
 
 namespace qls
 {
-    PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2) :
+    BasePrivateRoom::BasePrivateRoom(long long user_id_1, long long user_id_2) :
         m_user_id_1(user_id_1),
         m_user_id_2(user_id_2)
     {
     }
 
-    bool PrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
+    bool BasePrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
         if (user.id != m_user_id_1 || user.id != m_user_id_2)
             return false;
         return joinBaseRoom(socket_ptr, user);
     }
 
-    bool PrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    bool BasePrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
         return leaveBaseRoom(socket_ptr);
     }
 
-    asio::awaitable<bool> PrivateRoom::sendData(const std::string& message, long long user_id)
+    asio::awaitable<bool> BasePrivateRoom::sendData(const std::string& message, long long user_id)
     {
         qjson::JObject json;
         json["type"] = "private_message";
@@ -100,5 +110,30 @@ namespace qls
         std::string out;
 
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
+    }
+
+    bool BaseGroupRoom::baseAddMember(long long user_id)
+    {
+        return false;
+    }
+
+    bool BaseGroupRoom::baseRemoveMember(long long user_id)
+    {
+        return false;
+    }
+
+    bool BaseGroupRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
+    {
+        return false;
+    }
+
+    bool BaseGroupRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    {
+        return false;
+    }
+
+    asio::awaitable<bool> BaseGroupRoom::sendData(const std::string& message, long long user_id)
+    {
+        co_return false;
     }
 }
