@@ -8,7 +8,6 @@
 #include <shared_mutex>
 #include <condition_variable>
 #include <string>
-#include <print>
 #include <memory>
 
 #include <QuqiCrypto.hpp>
@@ -353,7 +352,7 @@ namespace qls
             }
             catch (const std::exception& e)
             {
-                std::print("Exception: {}\n", e.what());
+                std::printf("Exception: %s\n", e.what());
             }
         }
 

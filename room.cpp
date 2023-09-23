@@ -1,8 +1,9 @@
 ﻿#include "room.h"
 
 #include <QuqiCrypto.hpp>
+#include <Json.h>
 
-namespace room
+namespace qls
 {
     bool BaseRoom::joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user)
     {
@@ -118,12 +119,9 @@ namespace room
 
         co_return true;
     }
-}
 
-#include <Json.h>
+    // BasePrivateRoom
 
-namespace qls
-{
     BasePrivateRoom::BasePrivateRoom(long long user_id_1, long long user_id_2) :
         m_user_id_1(user_id_1),
         m_user_id_2(user_id_2)
@@ -162,6 +160,8 @@ namespace qls
 
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
+
+    // BaseGroupRoom
 
     BaseGroupRoom::BaseGroupRoom(long long group_id) :
         m_group_id(group_id) {}

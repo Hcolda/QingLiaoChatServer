@@ -12,7 +12,7 @@
 #include <queue>
 #include <chrono>
 
-namespace room
+namespace qls
 {
     /*
     * @brief 基类房间
@@ -47,7 +47,7 @@ namespace room
         * @return true成功 | false失败
         */
         bool joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user);
-        
+
         /*
         * @brief 用户连接离开房间
         * @param socket_ptr socket指针
@@ -75,17 +75,14 @@ namespace room
         std::queue<std::shared_ptr<asio::ip::tcp::socket>>                      m_userDeleteQueue;
         std::shared_mutex                                                       m_userMap_mutex;
     };
-}
 
-namespace qls
-{
     /*
     * @brief 私聊房间基类
     */
-    class BasePrivateRoom : public room::BaseRoom
+    class BasePrivateRoom : public qls::BaseRoom
     {
     public:
-        struct User : public room::BaseRoom::BaseUserSetting {};
+        struct User : public qls::BaseRoom::BaseUserSetting {};
 
         BasePrivateRoom(long long user_id_1, long long user_id_2);
         ~BasePrivateRoom() = default;
@@ -128,10 +125,10 @@ namespace qls
     /*
     * @brief 群聊房间
     */
-    class BaseGroupRoom : public room::BaseRoom
+    class BaseGroupRoom : public qls::BaseRoom
     {
     public:
-        struct User : public room::BaseRoom::BaseUserSetting {};
+        struct User : public qls::BaseRoom::BaseUserSetting {};
 
         BaseGroupRoom(long long group_id);
         ~BaseGroupRoom() = default;
