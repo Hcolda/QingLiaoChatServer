@@ -7,7 +7,7 @@
 #include <format>
 #include <mariadb/conncpp.hpp>
 
-namespace qls
+namespace quqisql
 {
     class SQLDBProcess
     {
@@ -52,8 +52,10 @@ namespace qls
                     {"password", m_password}
                     });
 
-                sql::SQLString url(std::format("jdbc:mariadb://{}:{}/{}", m_host, m_port, m_database_name));
-                m_sqlconnection = std::shared_ptr<sql::Connection>(driver->connect(url, properties));
+                sql::SQLString url(std::format("jdbc:mariadb://{}:{}/{}", m_host, m_port, m_database_name).c_str());
+                m_sqlconnection = std::shared_ptr<sql::Connection>(
+                    driver->connect(url, properties),
+                    [](sql::Connection* conn){conn->close(); });
             }
             catch (...)
             {
@@ -156,34 +158,34 @@ namespace qls
         {
             switch (parameter_type<Ty>::value)
             {
-            case qls::SQLDBProcess::parameter_type_n::Unknown:
+            case quqisql::SQLDBProcess::parameter_type_n::Unknown:
                 throw std::logic_error("unknown type");
                 break;
-            case qls::SQLDBProcess::parameter_type_n::Int:
+            case quqisql::SQLDBProcess::parameter_type_n::Int:
                 pp->setInt(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::Short:
+            case quqisql::SQLDBProcess::parameter_type_n::Short:
                 pp->setShort(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::Int64:
+            case quqisql::SQLDBProcess::parameter_type_n::Int64:
                 pp->setInt64(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::UInt:
+            case quqisql::SQLDBProcess::parameter_type_n::UInt:
                 pp->setUInt(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::UInt64:
+            case quqisql::SQLDBProcess::parameter_type_n::UInt64:
                 pp->setUInt64(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::Float:
+            case quqisql::SQLDBProcess::parameter_type_n::Float:
                 pp->setFloat(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::Double:
+            case quqisql::SQLDBProcess::parameter_type_n::Double:
                 pp->setDouble(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::String:
+            case quqisql::SQLDBProcess::parameter_type_n::String:
                 pp->setString(pos, value);
                 break;
-            case qls::SQLDBProcess::parameter_type_n::Boolean:
+            case quqisql::SQLDBProcess::parameter_type_n::Boolean:
                 pp->setBoolean(pos, value);
                 break;
             default:

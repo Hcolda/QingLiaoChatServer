@@ -37,7 +37,7 @@ public:
   Driver() {}
   virtual ~Driver(){}
 
-  virtual Connection* connect(const SQLString& url, Properties& props)=0;
+  virtual Connection* connect(const SQLString& url, const Properties& props)=0;
   virtual Connection* connect(const SQLString& host, const SQLString& user, const SQLString& pwd)=0;
   virtual Connection* connect(const Properties& props)=0;
   virtual bool acceptsURL(const SQLString& url)=0;

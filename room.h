@@ -46,14 +46,14 @@ namespace qls
         * @param user 用户数据
         * @return true成功 | false失败
         */
-        bool joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user);
+        bool baseJoinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user);
 
         /*
         * @brief 用户连接离开房间
         * @param socket_ptr socket指针
         * @return true成功 | false失败
         */
-        bool leaveBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
+        bool baseLeaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
 
         /*
         * @brief 发送消息给类中所有用户（广播）
@@ -138,14 +138,14 @@ namespace qls
         * @param user_id 用户id
         * @return true 添加成功 | false 添加失败
         */
-        bool baseAddMember(long long user_id);
+        bool addMember(long long user_id);
 
         /*
         * @brief 从群聊中移除用户
         * @param user_id 用户id
         * @return true 移除成功 | false 移除失败
         */
-        bool baseRemoveMember(long long user_id);
+        bool removeMember(long long user_id);
 
         /*
         * @brief 将用户连接加入群聊房间

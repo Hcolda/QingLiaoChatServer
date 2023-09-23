@@ -5,7 +5,7 @@
 
 namespace qls
 {
-    bool BaseRoom::joinBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user)
+    bool BaseRoom::baseJoinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user)
     {
         if (socket_ptr.get() == nullptr) return false;
 
@@ -14,7 +14,7 @@ namespace qls
         return true;
     }
 
-    bool BaseRoom::leaveBaseRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    bool BaseRoom::baseLeaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
         if (socket_ptr.get() == nullptr) return false;
 
@@ -131,12 +131,12 @@ namespace qls
     {
         if (user.user_id != m_user_id_1 && user.user_id != m_user_id_2)
             return false;
-        return joinBaseRoom(socket_ptr, user);
+        return baseJoinRoom(socket_ptr, user);
     }
 
     bool BasePrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
-        return leaveBaseRoom(socket_ptr);
+        return baseLeaveRoom(socket_ptr);
     }
 
     asio::awaitable<bool> BasePrivateRoom::sendMessage(const std::string& message, long long sender_user_id)
@@ -166,7 +166,7 @@ namespace qls
     BaseGroupRoom::BaseGroupRoom(long long group_id) :
         m_group_id(group_id) {}
 
-    bool BaseGroupRoom::baseAddMember(long long user_id)
+    bool BaseGroupRoom::addMember(long long user_id)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_id_map_mutex);
         if (m_user_id_map.find(user_id) == m_user_id_map.end())
@@ -175,7 +175,7 @@ namespace qls
         return true;
     }
 
-    bool BaseGroupRoom::baseRemoveMember(long long user_id)
+    bool BaseGroupRoom::removeMember(long long user_id)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_id_map_mutex);
         if (m_user_id_map.find(user_id) != m_user_id_map.end())
@@ -186,12 +186,12 @@ namespace qls
 
     bool BaseGroupRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
-        return joinBaseRoom(socket_ptr, user);
+        return baseJoinRoom(socket_ptr, user);
     }
 
     bool BaseGroupRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
-        return leaveBaseRoom(socket_ptr);
+        return baseLeaveRoom(socket_ptr);
     }
 
     asio::awaitable<bool> BaseGroupRoom::sendMessage(const std::string& message, long long sender_user_id)

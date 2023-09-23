@@ -23,6 +23,7 @@
 
 #include "buildconf.hpp"
 #include "SQLString.hpp"
+#include "Properties.hpp"
 #include "Savepoint.hpp"
 #include "jdbccompat.hpp"
 
@@ -115,7 +116,7 @@ public:
   virtual sql::Array* createArrayOf(const SQLString& typeName, const sql::Object* elements)=0;
   virtual sql::Struct* createStruct(const SQLString& typeName, const sql::Object* attributes)=0;
   virtual void abort(sql::Executor* executor)=0;
-  virtual void setNetworkTimeout(Executor* executor,int32_t milliseconds)=0;
+  virtual void setNetworkTimeout(Executor* executor, uint32_t milliseconds)=0;
 #endif
 };
 }

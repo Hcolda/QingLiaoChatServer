@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include "SQLProcess.hpp"
+
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
 extern qls::SocketFunction serverSocketFunction;

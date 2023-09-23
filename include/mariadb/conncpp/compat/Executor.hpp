@@ -23,7 +23,9 @@
 
 #ifndef _EXECUTOR_H_
 #define _EXECUTOR_H_
-/* Stub class for the interface, that is used in one of methods for the non-implemented functionality. */
+
+#include <functional>
+
 namespace sql
 {
 class Executor{
@@ -32,6 +34,8 @@ class Executor{
 public:
   Executor() {}
   virtual ~Executor(){}
+  // Should be Runnable
+  virtual void execute(std::function<void()>)= 0;
 };
 }
 #endif

@@ -34,7 +34,7 @@ private:
 
 enum class AESMode
 {
-    ECB_128,
+    ECB_128 = 0,
     ECB_192,
     ECB_256,
 
