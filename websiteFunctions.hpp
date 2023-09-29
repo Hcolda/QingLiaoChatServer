@@ -25,7 +25,7 @@ namespace qls
             double APIVer;
             int MaxClientVer;
             int MinClientVer;
-        } webState;
+        };
         WebFunction() = default;
         ~WebFunction() = default;
 
@@ -77,6 +77,7 @@ namespace qls
         static struct WebState getServerState()
         {
             static httplib::Client client(serverUrl);
+            WebState webState;
             auto result = client.Post("/api.php?type=state", httplib::Headers());
             if (!result) throw std::runtime_error("connection of website is down");
             qjson::JObject json = qjson::JParser::fastParse(result->body);
