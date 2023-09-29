@@ -7,16 +7,7 @@
 
 namespace qls
 {
-    /*
-    * @brief 网站状态获取结构体
-    */
-    struct WebState
-    {
-        enum State{unknow,success,failed} state;
-        double APIVer;
-        int MaxClientVer;
-        int MinClientVer;
-    };
+    
 
     /*
     * @brief 用来访问网站的一系列集合
@@ -25,6 +16,16 @@ namespace qls
     {
     public:
         static constexpr char serverUrl[] = "https://account.hcolda.com";
+        /*
+        * @brief 网站状态获取结构体
+        */
+        struct WebState
+        {
+            enum State { unknow, success, failed } state;
+            double APIVer;
+            int MaxClientVer;
+            int MinClientVer;
+        } webState;
         WebFunction() = default;
         ~WebFunction() = default;
 
@@ -76,7 +77,6 @@ namespace qls
         static struct WebState getServerState()
         {
             static httplib::Client client(serverUrl);
-            struct WebState webState;
             auto result = client.Post("/api.php?type=state", httplib::Headers());
             if (!result) throw std::runtime_error("connection of website is down");
             qjson::JObject json = qjson::JParser::fastParse(result->body);
