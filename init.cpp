@@ -49,28 +49,30 @@ namespace qls
         std::system("chcp 65001");
         serverLogger.info("服务器Log系统启动成功！");
 
-        try
-        {
-            quqisql::SQLDBProcess s;
-            s.setSQLServerInfo("root", "123456", "mysql", "localhost", 3308);
-            s.connectSQLServer();
-            auto ptr = s.executeQuery("select user_id, user_name from qing_liao_server.users");
-            while (ptr->next())
-            {
-                // Retrieve Values and Print Contacts
-                std::cout << "- "
-                    << ptr->getString("user_id")
-                    << " "
-                    << ptr->getString("user_name")
-                    << std::endl;
-            }
-        }
-        catch (const std::exception& e)
-        {
-            serverLogger.critical(e.what());
-        }
+        // sql调试
+        
+        //try
+        //{
+        //    quqisql::SQLDBProcess s;
+        //    s.setSQLServerInfo("root", "123456", "mysql", "localhost", 3308);
+        //    s.connectSQLServer();
+        //    auto ptr = s.executeQuery("select user_id, user_name from qing_liao_server.users");
+        //    while (ptr->next())
+        //    {
+        //        // Retrieve Values and Print Contacts
+        //        std::cout << "- "
+        //            << ptr->getString("user_id")
+        //            << " "
+        //            << ptr->getString("user_name")
+        //            << std::endl;
+        //    }
+        //}
+        //catch (const std::exception& e)
+        //{
+        //    serverLogger.critical(e.what());
+        //}
 
-        return 0;
+        //return 0;
 
         try
         {
