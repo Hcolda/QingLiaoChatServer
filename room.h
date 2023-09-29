@@ -71,9 +71,9 @@ namespace qls
         asio::awaitable<bool> baseSendData(const std::string& data, long long user_id);
 
     private:
-        std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>, BaseUserSetting>    m_userMap;
-        std::queue<std::shared_ptr<asio::ip::tcp::socket>>                      m_userDeleteQueue;
-        std::shared_mutex                                                       m_userMap_mutex;
+        std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>, BaseUserSetting>     m_userMap;
+        std::queue<std::shared_ptr<asio::ip::tcp::socket>>                              m_userDeleteQueue;
+        std::shared_mutex                                                               m_userMap_mutex;
     };
 
     /*
@@ -190,5 +190,27 @@ namespace qls
 
         std::unordered_set<long long>   m_user_id_map;
         mutable std::shared_mutex       m_user_id_map_mutex;
+    };
+
+    class RoomManager
+    {
+    public:
+        RoomManager() = default;
+        ~RoomManager() = default;
+
+        bool add_groupRoom(long long group_id);
+        bool has_groupRoom(long long group_id);
+        std::shared_ptr<BasePrivateRoom> get_groupRoom(long long group_id);
+
+        bool add_privateRoom(long long privateRoom_id);
+        bool has_privateRoom(long long privateRoom_id);
+        std::shared_ptr<BasePrivateRoom> get_privateRoom(long long privateRoom_id);
+
+    private:
+        std::unordered_map<long long, std::shared_ptr<BasePrivateRoom>> m_privateRoom_map;
+        std::shared_mutex                                               m_privateRoom_map_mutex;
+
+        std::unordered_map<long long, std::shared_ptr<BaseGroupRoom>>   m_groupRoom_map;
+        std::shared_mutex                                               m_groupRoom_map_mutex;
     };
 }
