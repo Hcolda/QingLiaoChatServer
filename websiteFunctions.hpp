@@ -21,7 +21,6 @@ namespace qls
         */
         struct WebState
         {
-            enum State { unknow, success, failed } state;
             double APIVer;
             int MaxClientVer;
             int MinClientVer;
@@ -72,7 +71,7 @@ namespace qls
         /*
         * @brief 获取服务端状态
         * @param NONE
-        * @return state APIVer MaxClientVer MinClientVer
+        * @return APIVer MaxClientVer MinClientVer
         */
         static struct WebState getServerState()
         {
@@ -82,10 +81,9 @@ namespace qls
             if (!result) throw std::runtime_error("connection of website is down");
             qjson::JObject json = qjson::JParser::fastParse(result->body);
             if (json["state"].getString() != "success") throw std::runtime_error("state is not 'success'");
-            else webState.state = webState.success;
-            webState.APIVer         = json["APIVer"].getDouble();
-            webState.MinClientVer   = json["version"][1].getInt();
-            webState.MaxClientVer   = json["version"][0].getInt();
+            webState.APIVer         = double(json["APIVer"].getDouble());
+            webState.MinClientVer   = int(json["version"][1].getInt());
+            webState.MaxClientVer   = int(json["version"][0].getInt());
             return webState;
         }
     };
