@@ -150,6 +150,7 @@
     <ClCompile Include="include\Ini.cpp" />
     <ClCompile Include="include\Json.cpp" />
     <ClCompile Include="JsonMsgProcess.cpp" />
+    <ClCompile Include="manager.cpp" />
     <ClCompile Include="room.cpp" />
     <ClCompile Include="init.cpp" />
     <ClCompile Include="main.cpp" />
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="JsonMsgProcess.h" />
+    <ClInclude Include="manager.h" />
     <ClInclude Include="room.h" />
     <ClInclude Include="definition.hpp" />
     <ClInclude Include="init.h" />

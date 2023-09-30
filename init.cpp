@@ -49,35 +49,14 @@ namespace qls
         std::system("chcp 65001");
         serverLogger.info("服务器Log系统启动成功！");
 
-        // sql调试
-        
-        //try
-        //{
-        //    quqisql::SQLDBProcess s;
-        //    s.setSQLServerInfo("root", "123456", "mysql", "localhost", 3308);
-        //    s.connectSQLServer();
-        //    auto ptr = s.executeQuery("select user_id, user_name from qing_liao_server.users");
-        //    while (ptr->next())
-        //    {
-        //        // Retrieve Values and Print Contacts
-        //        std::cout << "- "
-        //            << ptr->getString("user_id")
-        //            << " "
-        //            << ptr->getString("user_name")
-        //            << std::endl;
-        //    }
-        //}
-        //catch (const std::exception& e)
-        //{
-        //    serverLogger.critical(e.what());
-        //}
-
-        //return 0;
-
         try
         {
             serverLogger.info("正在读取配置文件...");
             serverIni = Init::readConfig();
+
+            if (std::stoll(serverIni["mysql"]["port"]) > 65535)
+                throw std::logic_error("ini配置文件 section:mysql, key:port port过大");
+            
             serverLogger.info("配置文件读取成功！");
         }
         catch (const std::exception& e)
@@ -85,6 +64,27 @@ namespace qls
             serverLogger.error(e.what());
             Init::createConfig();
             serverLogger.error("请修改配置文件");
+            return -1;
+        }
+
+        std::shared_ptr<quqisql::SQLDBProcess> s = std::make_shared<quqisql::SQLDBProcess>();
+        try
+        {
+            serverLogger.info("正在加载sql...");
+            s->setSQLServerInfo(serverIni["mysql"]["username"],
+                serverIni["mysql"]["password"],
+                "mysql",
+                serverIni["mysql"]["host"],
+                unsigned short(std::stoi(serverIni["mysql"]["port"])));
+
+            s->connectSQLServer();
+
+            serverLogger.info("sql加载成功！");
+        }
+        catch (const std::exception& e)
+        {
+            serverLogger.critical(e.what());
+            serverLogger.critical("sql加载失败！");
             return -1;
         }
 

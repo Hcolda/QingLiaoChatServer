@@ -42,26 +42,18 @@ namespace quqisql
             m_port = port;
         }
 
-        bool connectSQLServer()
+        void connectSQLServer()
         {
-            try
-            {
-                sql::Driver* driver = sql::mariadb::get_driver_instance();
-                sql::Properties properties({
-                    {"user", m_username},
-                    {"password", m_password}
-                    });
+            sql::Driver* driver = sql::mariadb::get_driver_instance();
+            sql::Properties properties({
+                {"user", m_username},
+                {"password", m_password}
+                });
 
-                sql::SQLString url(std::format("jdbc:mariadb://{}:{}/{}", m_host, m_port, m_database_name).c_str());
-                m_sqlconnection = std::shared_ptr<sql::Connection>(
-                    driver->connect(url, properties),
-                    [](sql::Connection* conn){conn->close(); });
-            }
-            catch (...)
-            {
-                return false;
-            }
-            return true;
+            sql::SQLString url(std::format("jdbc:mariadb://{}:{}/{}", m_host, m_port, m_database_name).c_str());
+            m_sqlconnection = std::shared_ptr<sql::Connection>(
+                driver->connect(url, properties),
+                [](sql::Connection* conn) {conn->close(); });
         }
 
         std::shared_ptr<sql::ResultSet> executeQuery(const std::string& command)
