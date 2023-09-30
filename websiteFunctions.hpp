@@ -16,6 +16,8 @@ namespace qls
     {
     public:
         static constexpr char serverUrl[] = "https://account.hcolda.com";
+        static constexpr char serverUUID[] = "00000000-0000-0000-0000-000000000000";
+        static constexpr char serverToken[] = "UNKNOW";
         /*
         * @brief 网站状态获取结构体
         */
@@ -42,7 +44,7 @@ namespace qls
         {
             static httplib::Client client(serverUrl);
             httplib::Params param;
-            param.insert({{ "serverid", "" }, { "serverkey", "" }, { "uuid", uuid}});
+            param.insert({{ "ServerUUID", serverUUID }, { "ServerToken", serverToken }, { "$ConnUUID", uuid}});
             auto result = client.Post("/api.php?type=aeskey", httplib::Headers(), param);
             if (!result) throw std::runtime_error("connection of website is down");
             qjson::JObject json = qjson::JParser::fastParse(result->body);
