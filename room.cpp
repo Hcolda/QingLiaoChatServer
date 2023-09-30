@@ -27,7 +27,6 @@ namespace qls
 
     asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data)
     {
-        bool queueEmpty = true;
         // 广播数据
         {
             qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
@@ -44,27 +43,28 @@ namespace qls
                 }
                 catch (...)
                 {
+                    std::lock_guard<std::shared_mutex> lock(m_userDeleteQueue_mutex);
                     m_userDeleteQueue.push(i->first);
                 }
             }
-            queueEmpty = m_userDeleteQueue.empty();
         }
 
         // 去除已经关闭的连接
         {
-            if (queueEmpty)
+            std::lock_guard<std::shared_mutex> lock(m_userDeleteQueue_mutex);
+            if (!m_userDeleteQueue.empty())
             {
-                std::lock_guard<std::shared_mutex> lock(m_userMap_mutex);
-                while (!m_userDeleteQueue.empty())
+                do
                 {
                     std::shared_ptr<asio::ip::tcp::socket> localSocket_ptr = std::move(m_userDeleteQueue.front());
-                    if (m_userMap.find(localSocket_ptr) != m_userMap.end())
+                    auto itor = m_userMap.find(localSocket_ptr);
+                    if (itor != m_userMap.end())
                     {
-                        m_userMap.erase(m_userMap.find(localSocket_ptr));
+                        m_userMap.erase(itor);
                     }
 
                     m_userDeleteQueue.pop();
-                }
+                } while (!m_userDeleteQueue.empty());
             }
         }
 
@@ -73,7 +73,6 @@ namespace qls
 
     asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data, long long user_id)
     {
-        bool queueEmpty = true;
         // 广播数据
         {
             qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
@@ -92,28 +91,29 @@ namespace qls
                     }
                     catch (...)
                     {
+                        std::lock_guard<std::shared_mutex> lockguard(m_userDeleteQueue_mutex);
                         m_userDeleteQueue.push(i->first);
                     }
                 }
             }
-            queueEmpty = m_userDeleteQueue.empty();
         }
 
         // 去除已经关闭的连接
         {
-            if (queueEmpty)
+            std::lock_guard<std::shared_mutex> lock(m_userDeleteQueue_mutex);
+            if (!m_userDeleteQueue.empty())
             {
-                std::lock_guard<std::shared_mutex> lock(m_userMap_mutex);
-                while (!m_userDeleteQueue.empty())
+                do
                 {
                     std::shared_ptr<asio::ip::tcp::socket> localSocket_ptr = std::move(m_userDeleteQueue.front());
-                    if (m_userMap.find(localSocket_ptr) != m_userMap.end())
+                    auto itor = m_userMap.find(localSocket_ptr);
+                    if (itor != m_userMap.end())
                     {
-                        m_userMap.erase(m_userMap.find(localSocket_ptr));
+                        m_userMap.erase(itor);
                     }
 
                     m_userDeleteQueue.pop();
-                }
+                } while (!m_userDeleteQueue.empty());
             }
         }
 
@@ -129,7 +129,7 @@ namespace qls
 
     bool BasePrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
-        if (user.user_id != m_user_id_1 && user.user_id != m_user_id_2)
+        if (!hasUser(user.user_id))
             return false;
         return baseJoinRoom(socket_ptr, user);
     }
@@ -141,7 +141,7 @@ namespace qls
 
     asio::awaitable<bool> BasePrivateRoom::sendMessage(const std::string& message, long long sender_user_id)
     {
-        if (sender_user_id != m_user_id_1 && sender_user_id != m_user_id_2)
+        if (!hasUser(sender_user_id))
             co_return false;
 
         qjson::JObject json;
@@ -159,6 +159,21 @@ namespace qls
         json["data"]["message"] = message;
 
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
+    }
+
+    long long BasePrivateRoom::getUserID1() const
+    {
+        return m_user_id_1;
+    }
+
+    long long BasePrivateRoom::getUserID2() const
+    {
+        return m_user_id_1;
+    }
+
+    bool BasePrivateRoom::hasUser(long long user_id) const
+    {
+        return user_id == m_user_id_1 || user_id == m_user_id_2;
     }
 
     // BaseGroupRoom
@@ -197,11 +212,8 @@ namespace qls
     asio::awaitable<bool> BaseGroupRoom::sendMessage(const std::string& message, long long sender_user_id)
     {
         // 是否有此user_id
-        {
-            std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
-            if (m_user_id_map.find(sender_user_id) == m_user_id_map.end())
-                co_return false;
-        }
+        if (!hasUser(sender_user_id))
+            co_return false;
 
         qjson::JObject json;
         json["type"] = "group_message";
@@ -224,11 +236,9 @@ namespace qls
 
     asio::awaitable<bool> BaseGroupRoom::sendUserTipMessage(const std::string& message, long long receiver_user_id)
     {
-        {
-            std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
-            if (m_user_id_map.find(receiver_user_id) == m_user_id_map.end())
-                co_return false;
-        }
+        // 是否有此user_id
+        if (!hasUser(receiver_user_id))
+            co_return false;
 
         qjson::JObject json;
         json["type"] = "group_tip_message";
@@ -236,5 +246,16 @@ namespace qls
         json["data"]["message"] = message;
 
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json), receiver_user_id);
+    }
+
+    bool BaseGroupRoom::hasUser(long long user_id) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
+        return m_user_id_map.find(user_id) != m_user_id_map.end();
+    }
+
+    long long BaseGroupRoom::getGroupID() const
+    {
+        return m_group_id;
     }
 }

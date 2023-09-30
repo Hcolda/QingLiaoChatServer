@@ -72,8 +72,10 @@ namespace qls
 
     private:
         std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>, BaseUserSetting>     m_userMap;
-        std::queue<std::shared_ptr<asio::ip::tcp::socket>>                              m_userDeleteQueue;
         std::shared_mutex                                                               m_userMap_mutex;
+
+        std::queue<std::shared_ptr<asio::ip::tcp::socket>>                              m_userDeleteQueue;
+        std::shared_mutex                                                               m_userDeleteQueue_mutex;
     };
 
     /*
@@ -117,6 +119,25 @@ namespace qls
         * @return true 发送成功 | false 发送失败
         */
         asio::awaitable<bool> sendTipMessage(const std::string& message);
+
+        /*
+        * @brief 获取用户1ID
+        * @return 用户1ID
+        */
+        long long getUserID1() const;
+
+        /*
+        * @brief 获取用户2ID
+        * @return 用户2ID
+        */
+        long long getUserID2() const;
+
+        /*
+        * @brief 是否有此用户
+        * @param user_id 用户的id
+        * @return true 有 | false 无
+        */
+        bool hasUser(long long user_id) const;
 
     private:
         const long long m_user_id_1, m_user_id_2;
@@ -185,32 +206,23 @@ namespace qls
         */
         asio::awaitable<bool> sendUserTipMessage(const std::string& message, long long receiver_user_id);
 
+        /*
+        * @brief 是否有此用户
+        * @param user_id 用户的id
+        * @return true 有 | false 无
+        */
+        bool hasUser(long long user_id) const;
+
+        /*
+        * @brief 获取群聊id
+        * @return 群聊id
+        */
+        long long getGroupID() const;
+
     private:
         const long long m_group_id;
 
         std::unordered_set<long long>   m_user_id_map;
         mutable std::shared_mutex       m_user_id_map_mutex;
-    };
-
-    class RoomManager
-    {
-    public:
-        RoomManager() = default;
-        ~RoomManager() = default;
-
-        bool add_groupRoom(long long group_id);
-        bool has_groupRoom(long long group_id);
-        std::shared_ptr<BasePrivateRoom> get_groupRoom(long long group_id);
-
-        bool add_privateRoom(long long privateRoom_id);
-        bool has_privateRoom(long long privateRoom_id);
-        std::shared_ptr<BasePrivateRoom> get_privateRoom(long long privateRoom_id);
-
-    private:
-        std::unordered_map<long long, std::shared_ptr<BasePrivateRoom>> m_privateRoom_map;
-        std::shared_mutex                                               m_privateRoom_map_mutex;
-
-        std::unordered_map<long long, std::shared_ptr<BaseGroupRoom>>   m_groupRoom_map;
-        std::shared_mutex                                               m_groupRoom_map_mutex;
     };
 }
