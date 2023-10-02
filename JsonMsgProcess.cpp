@@ -20,6 +20,16 @@ namespace qls
         return json;
     }
 
+    qjson::JObject JsonMessageProcess::makeErrorMessage(const std::string& state, const std::string& msg)
+    {
+        qjson::JObject json;
+
+        json["state"] = state;
+        json["error_message"] = msg;
+
+        return json;
+    }
+
     qjson::JObject JsonMessageProcess::getUserPublicInfo(long long user_id)
     {
         return qjson::JObject();
@@ -27,7 +37,25 @@ namespace qls
 
     qjson::JObject JsonMessageProcess::processJsonMessage(const qjson::JObject& json)
     {
-        return qjson::JObject();
+        try
+        {
+            std::string function_name = json["function"].getString();
+            const qjson::JObject& param = json["param"];
+            if (function_name == "")
+            {
+                /*
+                * 此处代码不完善，需要完善
+                */
+            }
+        }
+        catch (const std::logic_error& e)
+        {
+            return makeErrorMessage("JsonError", e.what());
+        }
+        catch (const std::exception& e)
+        {
+            return makeErrorMessage(e.what());
+        }
     }
 
     qjson::JObject JsonMessageProcess::addFriend(long long friend_id)

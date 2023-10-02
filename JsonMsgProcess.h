@@ -19,6 +19,14 @@ namespace qls
         static qjson::JObject makeErrorMessage(const std::string& msg);
 
         /*
+        * @brief 返回错误消息
+        * @param state 错误状态
+        * @param msg 错误信息
+        * @return json格式错误信息
+        */
+        static qjson::JObject makeErrorMessage(const std::string& state, const std::string& msg);
+
+        /*
         * @brief 获取用户的公开的信息
         * @param user id
         * @return 返回的消息的json类

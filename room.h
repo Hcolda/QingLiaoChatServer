@@ -150,6 +150,80 @@ namespace qls
     {
     public:
         struct User : public qls::BaseRoom::BaseUserSetting {};
+        
+        enum class ReturnState
+        {
+            UNKNOWN_STATE = 0,
+            OK_STATE,
+            NO_MEMBER_STATE,
+            MEMBER_MUTED_STATE
+        };
+
+        class Permission
+        {
+        public:
+            enum class PermissionType
+            {
+                Default = 0,
+                Operator,
+                Admin
+            };
+
+            Permission() = default;
+            ~Permission() = default;
+            
+            /*
+            * @brief 修改权限
+            * @param permissionName 权限名
+            * @param type 权限类型
+            */
+            void modifyPermission(const std::string& permissionName, PermissionType type = PermissionType::Default);
+            
+            /*
+            * @brief 删除权限
+            * @param permissionName 权限名
+            */
+            void removePermission(const std::string& permissionName);
+            
+            /*
+            * @brief 获取权限的权限类型
+            * @param permissionName 权限名
+            */
+            PermissionType getPermissionType(const std::string& permissionName) const;
+
+            /*
+            * @brief 修改用户
+            * @param user_id 用户的id
+            * @param type 权限类型
+            */
+            void modifyUserPermission(long long user_id, PermissionType type = PermissionType::Default);
+            
+            /*
+            * @brief 删除用户
+            * @param user_id 用户的id
+            */
+            void removeUser(long long user_id);
+            
+            /*
+            * @brief 删除用户
+            * @param user_id 用户的id
+            * @param permissionName 权限名
+            */
+            bool userHasPermission(long long user_id, const std::string& permissionName) const;
+            
+            /*
+            * @brief 获取用户的权限类型
+            * @param user_id 用户的id
+            */
+            PermissionType getUserPermissionType(long long user_id) const;
+
+        private:
+            std::unordered_map<std::string, PermissionType> m_permission_map;
+            mutable std::shared_mutex                       m_permission_map_mutex;
+
+            std::unordered_map<long long, PermissionType>   m_user_permission_map;
+            mutable std::shared_mutex                       m_user_permission_map_mutex;
+        };
 
         BaseGroupRoom(long long group_id);
         ~BaseGroupRoom() = default;
@@ -224,5 +298,8 @@ namespace qls
 
         std::unordered_set<long long>   m_user_id_map;
         mutable std::shared_mutex       m_user_id_map_mutex;
+
+        std::unordered_set<long long>   m_muted_user_set;
+        mutable std::shared_mutex       m_muted_user_set_mutex;
     };
 }
