@@ -258,4 +258,50 @@ namespace qls
     {
         return m_group_id;
     }
+
+    void BaseGroupRoom::Permission::modifyPermission(const std::string& permissionName, PermissionType type)
+    {
+        std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
+        m_permission_map[permissionName] = type;
+    }
+
+    void BaseGroupRoom::Permission::removePermission(const std::string& permissionName)
+    {
+        std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
+        m_permission_map.erase(permissionName);
+    }
+
+    BaseGroupRoom::Permission::PermissionType BaseGroupRoom::Permission::getPermissionType(const std::string& permissionName) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
+        return m_permission_map.find(permissionName)->second;
+    }
+
+    void BaseGroupRoom::Permission::modifyUserPermission(long long user_id, PermissionType type)
+    {
+        std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
+        m_user_permission_map[user_id] = type;
+    }
+
+    void BaseGroupRoom::Permission::removeUser(long long user_id)
+    {
+        std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
+        m_user_permission_map.erase(user_id);
+    }
+
+    bool BaseGroupRoom::Permission::userHasPermission(long long user_id, const std::string& permissionName) const
+    {
+        std::shared_lock<std::shared_mutex> sl1(m_permission_map_mutex, std::defer_lock);
+        std::shared_lock<std::shared_mutex> sl2(m_user_permission_map_mutex, std::defer_lock);
+        std::lock(sl1, sl2);
+
+        return m_user_permission_map.find(user_id)->second >=
+            m_permission_map.find(permissionName)->second;
+    }
+
+    BaseGroupRoom::Permission::PermissionType BaseGroupRoom::Permission::getUserPermissionType(long long user_id) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        return m_user_permission_map.find(user_id)->second;
+    }
 }

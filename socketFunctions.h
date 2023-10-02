@@ -25,20 +25,6 @@ namespace qls
     class SocketService
     {
     public:
-        struct LocalAES
-        {
-            std::string                             AESKey;
-            std::string                             AESiv;
-            qcrypto::AES<qcrypto::AESMode::CBC_256> AES;
-            std::atomic<bool>                       hasAESKeys = false;
-        };
-        struct LocalUser
-        {
-            std::string uuid;
-            std::string token;
-            std::atomic<bool> has_login = false;
-        };
-
         SocketService(std::shared_ptr<asio::ip::tcp::socket> socket_ptr);
         ~SocketService();
 
@@ -48,6 +34,12 @@ namespace qls
         * @param iv aes的iv
         */
         void setAESKeys(const std::string key, const std::string& iv);
+
+        /*
+        * @brief 设置用户的uuid
+        * @param uuid 用户uuid
+        */
+        void setUUID(const std::string& uuid);
 
         /*
         * @brief 异步接收数据
@@ -96,6 +88,22 @@ namespace qls
         * @return asio协程 asio::awaitable<void>
         */
         static asio::awaitable<void> echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds);
+
+    protected:
+        struct LocalAES
+        {
+            std::string                             AESKey;
+            std::string                             AESiv;
+            qcrypto::AES<qcrypto::AESMode::CBC_256> AES;
+            std::atomic<bool>                       hasAESKeys = false;
+        };
+
+        struct LocalUser
+        {
+            std::string uuid;
+            // std::string token;
+            std::atomic<bool> has_login = false;
+        };
 
     private:
         // socket ptr

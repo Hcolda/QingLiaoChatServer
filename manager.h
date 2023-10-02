@@ -19,9 +19,21 @@ namespace qls
         ~Managaer() = default;
 
     public:
+        /*
+        * @brief 获取全局管理器
+        * @return 管理器
+        */
         static Managaer& getGlobalManager();
 
-        void setSQLProcess(const std::shared_ptr<quqisql::SQLDBProcess> process);
+        /*
+        * @brief 设置sql
+        * @param process sqlProcess
+        */
+        void setSQLProcess(const std::shared_ptr<quqisql::SQLDBProcess>& process);
+
+        /*
+        * @brief 初始化
+        */
         void init();
 
     private:

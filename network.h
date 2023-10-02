@@ -273,14 +273,6 @@ namespace qls
             std::atomic<int> has_encrypt = 0;
             std::string AESKey;
             std::string AESiv;
-
-            //要到2等级才能使用以下数据
-            //暂时用不到
-
-            // uuid
-            //std::string uuid;
-            // token
-            //std::string token;
         };
 
         using acceptFunction = std::function<asio::awaitable<void>(tcp::socket&)>;

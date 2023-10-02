@@ -66,6 +66,11 @@ namespace qls
         m_aes.hasAESKeys = true;
     }
 
+    void SocketService::setUUID(const std::string& uuid)
+    {
+        m_user.uuid = uuid;
+    }
+
     asio::awaitable<std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>>
         SocketService::async_receive()
     {
@@ -123,12 +128,13 @@ namespace qls
         const std::string& data,
         std::shared_ptr<Network::Package::DataPackage> pack)
     {
-        if (this->m_jsonProcess.get() == nullptr)
+        if (!this->m_jsonProcess)
         {
-            // 获取用户的id
-            long long user_id = 0;
+            // 如果json process没有加载
+            // 获取用户的id并创建json process
+
+            long long user_id = WebFunction::getUserID(this->m_user.uuid);
             this->m_jsonProcess = std::make_shared<JsonMessageProcess>(user_id);
-            co_return;
         }
 
         switch (pack->requestID)
@@ -169,6 +175,7 @@ namespace qls
         SocketService socketService(socket_ptr);
         socketService.setAESKeys(sds->AESKey, sds->AESiv);
         socketService.setPackageBuffer(sds->package);
+        socketService.setUUID(sds->uuid);
 
         // 地址
         std::string addr = socket2ip(*socket_ptr);
