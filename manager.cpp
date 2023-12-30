@@ -28,8 +28,6 @@ namespace qls
             }
         };
 
-        std::shared_ptr<quqisql::SQLDBProcess>      m_sqlProcess;
-
         std::unordered_map<long long,
             std::shared_ptr<qls::BaseGroupRoom>>    m_baseRoom_map;
         mutable std::shared_mutex                   m_baseRoom_map_mutex;
@@ -47,20 +45,6 @@ namespace qls
     Manager::Manager()
     {
         m_manager_impl = std::make_unique<ManagerImpl>();
-    }
-
-    Manager& Manager::getGlobalManager()
-    {
-        static Manager localManager;
-        return localManager;
-    }
-
-    void Manager::setSQLProcess(const std::shared_ptr<quqisql::SQLDBProcess>& process)
-    {
-        if (!process)
-            throw std::invalid_argument("process is nullptr");
-
-        m_manager_impl->m_sqlProcess = process;
     }
 
     long long Manager::addPrivateRoom(long long user1_id, long long user2_id)

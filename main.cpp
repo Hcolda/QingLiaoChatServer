@@ -8,6 +8,8 @@
 #include "socketFunctions.h"
 #include "init.h"
 #include "Ini.h"
+#include "manager.h"
+#include "SQLProcess.hpp"
 
 // 服务器log系统
 Log::Logger serverLogger;
@@ -19,6 +21,10 @@ qls::SocketFunction serverSocketFunction;
 qcrypto::pkey::PrivateKey serverPrivateKey(qcrypto::pkey::KeyGenerator::generateRSA(2048));
 // ini配置
 qini::INIObject serverIni;
+// manager
+qls::Manager serverManager;
+// sql process
+quqisql::SQLDBProcess serverSqlProcess;
 
 int main()
 {

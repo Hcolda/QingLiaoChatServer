@@ -156,6 +156,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="network.cpp" />
     <ClCompile Include="socketFunctions.cpp" />
+    <ClCompile Include="UserManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="JsonMsgProcess.h" />
@@ -166,6 +167,7 @@
     <ClInclude Include="network.h" />
     <ClInclude Include="socketFunctions.h" />
     <ClInclude Include="SQLProcess.hpp" />
+    <ClInclude Include="UserManager.h" />
     <ClInclude Include="websiteFunctions.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -6,12 +6,15 @@
 #include <fstream>
 
 #include "SQLProcess.hpp"
+#include "manager.h"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
 extern qls::SocketFunction serverSocketFunction;
 extern qcrypto::pkey::PrivateKey serverPrivateKey;
 extern qini::INIObject serverIni;
+extern qls::Manager serverManager;
+extern quqisql::SQLDBProcess serverSqlProcess;
 
 namespace qls
 {
@@ -67,17 +70,16 @@ namespace qls
             return -1;
         }
 
-        std::shared_ptr<quqisql::SQLDBProcess> s = std::make_shared<quqisql::SQLDBProcess>();
         try
         {
             serverLogger.info("正在加载sql...");
-            s->setSQLServerInfo(serverIni["mysql"]["username"],
+            serverSqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
                 serverIni["mysql"]["password"],
                 "mysql",
                 serverIni["mysql"]["host"],
                 unsigned short(std::stoi(serverIni["mysql"]["port"])));
 
-            s->connectSQLServer();
+            serverSqlProcess.connectSQLServer();
 
             serverLogger.info("sql加载成功！");
         }
