@@ -166,9 +166,17 @@ namespace qjson
 
 		std::string formatWrite(const JObject& jo, size_t n = 1);
 
-		static std::string fastWrite(const JObject& jo);
+		static std::string fastWrite(const JObject& jo)
+		{
+			static JWriter jw;
+			return std::move(jw.write(jo) + '\n');
+		}
 
-		static std::string fastFormatWrite(const JObject& jo);
+		static std::string fastFormatWrite(const JObject& jo)
+		{
+			static JWriter jw;
+			return std::move(jw.formatWrite(jo) + '\n');
+		}
 	};
 }
 

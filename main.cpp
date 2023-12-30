@@ -1,6 +1,8 @@
 ﻿#include <iostream>
 #include <Logger.hpp>
 #include <QuqiCrypto.hpp>
+#include <thread>
+#include <chrono>
 
 #include "network.h"
 #include "socketFunctions.h"
@@ -20,5 +22,9 @@ qini::INIObject serverIni;
 
 int main()
 {
-    return qls::init();
+    using namespace std::chrono;
+
+    int code = qls::init();
+    std::this_thread::sleep_for(1s);
+    return code;
 }

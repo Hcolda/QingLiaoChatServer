@@ -58,8 +58,9 @@ namespace qls
             private:
                 unsigned long long  verifyCode = 0;
                 char                data[2]{ 0 };
-            public:
 #pragma pack()
+
+            public:
 
                 /*
                 * @brief 制作数据包

@@ -11,7 +11,7 @@ namespace qls
             long long user_id_1;
             long long user_id_2;
 
-            friend bool operator == (const PrivateRoomIDStruct& a, const PrivateRoomIDStruct& b)
+            friend bool operator ==(const PrivateRoomIDStruct& a, const PrivateRoomIDStruct& b)
             {
                 return (a.user_id_1 == b.user_id_1 && a.user_id_2 == b.user_id_2) ||
                     (a.user_id_2 == b.user_id_1 && a.user_id_1 == b.user_id_2);
