@@ -89,11 +89,13 @@ namespace qls
     long long Manager::getPrivateRoomId(long long user1_id, long long user2_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_manager_impl->m_userID_to_privateRoomID_map_mutex);
-        if (m_manager_impl->m_userID_to_privateRoomID_map.find({ user1_id , user2_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
+        if (m_manager_impl->m_userID_to_privateRoomID_map.find(
+            { user1_id , user2_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
         {
             return m_manager_impl->m_userID_to_privateRoomID_map.find({ user1_id , user2_id })->second;
         }
-        else if (m_manager_impl->m_userID_to_privateRoomID_map.find({ user2_id , user1_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
+        else if (m_manager_impl->m_userID_to_privateRoomID_map.find(
+            { user2_id , user1_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
         {
             return m_manager_impl->m_userID_to_privateRoomID_map.find({ user2_id , user1_id })->second;
         }
@@ -103,7 +105,8 @@ namespace qls
     bool Manager::hasPrivateRoom(long long private_room_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_manager_impl->m_basePrivateRoom_map_mutex);
-        return m_manager_impl->m_basePrivateRoom_map.find(private_room_id) != m_manager_impl->m_basePrivateRoom_map.end();
+        return m_manager_impl->m_basePrivateRoom_map.find(
+            private_room_id) != m_manager_impl->m_basePrivateRoom_map.end();
     }
 
     std::shared_ptr<qls::BasePrivateRoom> Manager::getPrivateRoom(long long private_room_id) const
@@ -134,11 +137,13 @@ namespace qls
         long long user1_id = itor->second->getUserID1();
         long long user2_id = itor->second->getUserID2();
 
-        if (m_manager_impl->m_userID_to_privateRoomID_map.find({ user1_id , user2_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
+        if (m_manager_impl->m_userID_to_privateRoomID_map.find(
+            { user1_id , user2_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
         {
             m_manager_impl->m_userID_to_privateRoomID_map.erase({ user1_id , user2_id });
         }
-        else if (m_manager_impl->m_userID_to_privateRoomID_map.find({ user2_id , user1_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
+        else if (m_manager_impl->m_userID_to_privateRoomID_map.find(
+            { user2_id , user1_id }) != m_manager_impl->m_userID_to_privateRoomID_map.end())
         {
             m_manager_impl->m_userID_to_privateRoomID_map.erase({ user2_id , user1_id });
         }
@@ -146,22 +151,55 @@ namespace qls
         m_manager_impl->m_basePrivateRoom_map.erase(itor);
     }
 
-    void Manager::addGroupRoom(long long group_room_id)
+    long long Manager::addGroupRoom(long long opreator_user_id)
     {
+        std::unique_lock<std::shared_mutex> lock(m_manager_impl->m_baseRoom_map_mutex);
+
+        // 新群聊id
+        long long group_room_id = 0;
+        {
+            /*
+            * sql 创建群聊获取群聊id
+            */
+        }
+
+        m_manager_impl->m_baseRoom_map[group_room_id] = std::make_shared<qls::BaseGroupRoom>(group_room_id);
+
+        return group_room_id;
     }
 
-    bool Manager::hasGroupRoom(long long private_room_id) const
+    bool Manager::hasGroupRoom(long long group_room_id) const
     {
-        return false;
+        std::shared_lock<std::shared_mutex> lock(m_manager_impl->m_baseRoom_map_mutex);
+        return m_manager_impl->m_baseRoom_map.find(group_room_id) !=
+            m_manager_impl->m_baseRoom_map.end();
     }
 
     std::shared_ptr<qls::BaseGroupRoom> Manager::getGroupRoom(long long group_room_id) const
     {
-        return std::shared_ptr<qls::BaseGroupRoom>();
+        std::shared_lock<std::shared_mutex> lock(m_manager_impl->m_baseRoom_map_mutex);
+
+        auto itor = m_manager_impl->m_baseRoom_map.find(group_room_id);
+        if (itor == m_manager_impl->m_baseRoom_map.end())
+            throw std::invalid_argument("there is not a room matches the argument");
+        return itor->second;
     }
 
     void Manager::removeGroupRoom(long long group_room_id)
     {
+        std::unique_lock<std::shared_mutex> lock(m_manager_impl->m_baseRoom_map_mutex);
+
+        auto itor = m_manager_impl->m_baseRoom_map.find(group_room_id);
+        if (itor == m_manager_impl->m_baseRoom_map.end())
+            throw std::invalid_argument("there is not a room matches the argument");
+
+        {
+            /*
+            * sql删除群聊
+            */
+        }
+
+        m_manager_impl->m_baseRoom_map.erase(group_room_id);
     }
 
     void Manager::init()

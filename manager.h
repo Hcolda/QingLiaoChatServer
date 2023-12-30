@@ -71,7 +71,7 @@ namespace qls
         * @brief 添加群聊房间
         * @param group_room_id 群聊房间id
         */
-        void addGroupRoom(long long group_room_id);
+        long long addGroupRoom(long long opreator_user_id);
         
         /*
         * @brief 是否有群聊房间
