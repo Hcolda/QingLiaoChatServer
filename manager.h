@@ -15,7 +15,7 @@ namespace qls
     class Manager
     {
     protected:
-        Manager() = default;
+        Manager();
         ~Manager() = default;
 
     public:
@@ -99,15 +99,8 @@ namespace qls
         void init();
 
     private:
-        std::shared_ptr<quqisql::SQLDBProcess>                                  m_sqlProcess;
+        struct ManagerImpl;
 
-        std::unordered_map<long long, std::shared_ptr<qls::BaseGroupRoom>>      m_baseRoom_map;
-        mutable std::shared_mutex                                               m_baseRoom_map_mutex;
-
-        std::unordered_map<long long, std::shared_ptr<qls::BasePrivateRoom>>    m_basePrivateRoom_map;
-        mutable std::shared_mutex                                               m_basePrivateRoom_map_mutex;
-
-        std::unordered_map<std::pair<long long, long long>, long long>          m_userID_to_privateRoomID_map;
-        mutable std::shared_mutex                                               m_userID_to_privateRoomID_map_mutex;
+        std::unique_ptr<ManagerImpl> m_manager_impl;
     };
 }
