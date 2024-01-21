@@ -23,11 +23,12 @@ namespace qls
         this->m_sqlProcess.connectSQLServer();
 
         {
+            this->m_newUserId = 10000;
+            this->m_newPrivateRoomId = 10000;
+            this->m_newGroupRoomId = 10000;
+
             // sql更新初始化数据
-
-
-            this->m_newPrivateRoomId = 1;
-            this->m_newGroupRoomId = 1;
+            // ...
         }
     }
 
@@ -49,6 +50,9 @@ namespace qls
             user1_id, user2_id);
         this->m_userID_to_privateRoomID_map[{user1_id, user2_id}] = privateRoom_id;
         
+        // 初始化
+        this->m_basePrivateRoom_map[privateRoom_id]->init();
+
         return privateRoom_id;
     }
 
@@ -131,6 +135,9 @@ namespace qls
 
         this->m_baseRoom_map[group_room_id] = std::make_shared<qls::GroupRoom>(group_room_id);
 
+        // 初始化
+        this->m_baseRoom_map[group_room_id]->init();
+
         return group_room_id;
     }
 
@@ -167,6 +174,34 @@ namespace qls
 
         this->m_baseRoom_map.erase(group_room_id);
     }
+
+    long long Manager::addNewUser()
+    {
+        std::unique_lock<std::shared_mutex> ul(m_user_map_mutex);
+
+        long long newUserId = m_newUserId++;
+        {
+            // sql处理数据
+        }
+
+        m_user_map[newUserId] = std::make_shared<qls::User>(newUserId);
+        // 初始化
+        m_user_map[newUserId]->init();
+
+        return newUserId;
+    }
+
+    std::shared_ptr<qls::User> Manager::getUser(long long user_id) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+
+        auto itor = m_user_map.find(user_id);
+        if (itor == m_user_map.end())
+            throw std::invalid_argument("there is not a user matches the argument");
+        
+        return itor->second;
+    }
+
     quqisql::SQLDBProcess& Manager::getServerSqlProcessor()
     {
         return this->m_sqlProcess;

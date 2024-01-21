@@ -10,7 +10,7 @@
 #include "SQLProcess.hpp"
 #include "definition.hpp"
 #include "room.h"
-#include "User.h"
+#include "user.h"
 
 namespace qls
 {
@@ -88,6 +88,14 @@ namespace qls
         void removeGroupRoom(long long group_room_id);
 
         /*
+        * @brief 创建新用户
+        * @return 新用户的user_id
+        */
+        long long addNewUser();
+
+        std::shared_ptr<qls::User> getUser(long long user_id) const;
+
+        /*
         * @brief 获取服务器的sql处理器
         */
         quqisql::SQLDBProcess& getServerSqlProcessor();
@@ -120,20 +128,25 @@ namespace qls
 
         std::unordered_map<long long,
             std::shared_ptr<qls::GroupRoom>>    m_baseRoom_map;
-        mutable std::shared_mutex                   m_baseRoom_map_mutex;
+        mutable std::shared_mutex               m_baseRoom_map_mutex;
 
         std::unordered_map<long long,
             std::shared_ptr<qls::PrivateRoom>>  m_basePrivateRoom_map;
-        mutable std::shared_mutex                   m_basePrivateRoom_map_mutex;
+        mutable std::shared_mutex               m_basePrivateRoom_map_mutex;
 
         std::unordered_map<PrivateRoomIDStruct,
             long long,
-            PrivateRoomIDStructHasher>              m_userID_to_privateRoomID_map;
-        mutable std::shared_mutex                   m_userID_to_privateRoomID_map_mutex;
+            PrivateRoomIDStructHasher>          m_userID_to_privateRoomID_map;
+        mutable std::shared_mutex               m_userID_to_privateRoomID_map_mutex;
 
-        std::atomic<long long>                      m_newPrivateRoomId;
-        std::atomic<long long>                      m_newGroupRoomId;
+        std::unordered_map<long long,
+            std::shared_ptr<qls::User>>         m_user_map;
+        mutable std::shared_mutex               m_user_map_mutex;
+
+        std::atomic<long long>                  m_newUserId;
+        std::atomic<long long>                  m_newPrivateRoomId;
+        std::atomic<long long>                  m_newGroupRoomId;
     
-        quqisql::SQLDBProcess m_sqlProcess;
+        quqisql::SQLDBProcess                   m_sqlProcess;
     };
 }

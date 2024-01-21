@@ -127,6 +127,10 @@ namespace qls
         m_user_id_2(user_id_2)
     {}
 
+    void PrivateRoom::init()
+    {
+    }
+
     bool PrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
         if (!hasUser(user.user_id))
@@ -180,6 +184,10 @@ namespace qls
 
     GroupRoom::GroupRoom(long long group_id) :
         m_group_id(group_id) {}
+
+    void GroupRoom::init()
+    {
+    }
 
     bool GroupRoom::addMember(long long user_id)
     {

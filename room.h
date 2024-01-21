@@ -90,6 +90,11 @@ namespace qls
         ~PrivateRoom() = default;
 
         /*
+        * @brief 初始化
+        */
+        void init();
+
+        /*
         * @brief 用户连接加入私聊房间
         * @param socket_ptr socket指针
         * @param user 用户数据
@@ -227,6 +232,11 @@ namespace qls
 
         GroupRoom(long long group_id);
         ~GroupRoom() = default;
+
+        /*
+        * 初始化
+        */
+        void init();
 
         /*
         * @brief 添加用户进入群聊
