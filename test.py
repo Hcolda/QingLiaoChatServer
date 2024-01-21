@@ -10,6 +10,7 @@ def stringhash(data: bytes) -> int:
 
 s = socket.socket()
 s.connect(("127.0.0.1", 55555))
-s.send(struct.pack("<i Q i i Q 3s", 31, 0, 0, -1, stringhash(b'a'), 'a\0\0'.encode()))
-s.send(struct.pack("<i Q i i Q 3s", 31, 123123, 1, -1, stringhash(b'a'), 'a\0\0'.encode()))
-print(s.recv(1024))
+s.send(struct.pack(">i Q i i Q 3s", 31, 0, 0, -1, stringhash(b'a'), 'a\0\0'.encode()))
+s.send(struct.pack(">i Q i i Q 3s", 31, 123123, 1, -1, stringhash(b'a'), 'a\0\0'.encode()))
+getdata = s.recv(1024)
+print(struct.unpack(">i", getdata[:4]), len(getdata))

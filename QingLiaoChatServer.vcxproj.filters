@@ -42,7 +42,7 @@
     <ClCompile Include="manager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="UserManager.cpp">
+    <ClCompile Include="user.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,7 +74,7 @@
     <ClInclude Include="manager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="UserManager.h">
+    <ClInclude Include="user.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

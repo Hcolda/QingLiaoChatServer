@@ -1,4 +1,4 @@
-﻿#include "UserManager.h"
+﻿#include "user.h"
 
 #include <chrono>
 #include <shared_mutex>
@@ -121,6 +121,16 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(m_UserImpl->user_group_map_mutex);
         return m_UserImpl->user_group_map.find(group_user_id) !=
             m_UserImpl->user_group_map.cend();
+    }
+
+    std::vector<long long> User::getFriendList() const
+    {
+        return std::vector<long long>();
+    }
+
+    std::vector<long long> User::getGroupList() const
+    {
+        return std::vector<long long>();
     }
 }
 

@@ -11,7 +11,6 @@
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
 extern qls::SocketFunction serverSocketFunction;
-extern qcrypto::pkey::PrivateKey serverPrivateKey;
 
 asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
 {

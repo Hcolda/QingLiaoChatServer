@@ -8,9 +8,6 @@
 #include "websiteFunctions.hpp"
 
 extern Log::Logger serverLogger;
-extern qls::Network serverNetwork;
-extern qls::SocketFunction serverSocketFunction;
-extern qcrypto::pkey::PrivateKey serverPrivateKey;
 
 namespace qls
 {

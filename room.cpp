@@ -120,26 +120,26 @@ namespace qls
         co_return true;
     }
 
-    // BasePrivateRoom
+    // PrivateRoom
 
-    BasePrivateRoom::BasePrivateRoom(long long user_id_1, long long user_id_2) :
+    PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2) :
         m_user_id_1(user_id_1),
         m_user_id_2(user_id_2)
     {}
 
-    bool BasePrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
+    bool PrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
         if (!hasUser(user.user_id))
             return false;
         return baseJoinRoom(socket_ptr, user);
     }
 
-    bool BasePrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    bool PrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
         return baseLeaveRoom(socket_ptr);
     }
 
-    asio::awaitable<bool> BasePrivateRoom::sendMessage(const std::string& message, long long sender_user_id)
+    asio::awaitable<bool> PrivateRoom::sendMessage(const std::string& message, long long sender_user_id)
     {
         if (!hasUser(sender_user_id))
             co_return false;
@@ -152,7 +152,7 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> BasePrivateRoom::sendTipMessage(const std::string& message)
+    asio::awaitable<bool> PrivateRoom::sendTipMessage(const std::string& message)
     {
         qjson::JObject json;
         json["type"] = "private_tip_message";
@@ -161,27 +161,27 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    long long BasePrivateRoom::getUserID1() const
+    long long PrivateRoom::getUserID1() const
     {
         return m_user_id_1;
     }
 
-    long long BasePrivateRoom::getUserID2() const
+    long long PrivateRoom::getUserID2() const
     {
         return m_user_id_1;
     }
 
-    bool BasePrivateRoom::hasUser(long long user_id) const
+    bool PrivateRoom::hasUser(long long user_id) const
     {
         return user_id == m_user_id_1 || user_id == m_user_id_2;
     }
 
-    // BaseGroupRoom
+    // GroupRoom
 
-    BaseGroupRoom::BaseGroupRoom(long long group_id) :
+    GroupRoom::GroupRoom(long long group_id) :
         m_group_id(group_id) {}
 
-    bool BaseGroupRoom::addMember(long long user_id)
+    bool GroupRoom::addMember(long long user_id)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_id_map_mutex);
         if (m_user_id_map.find(user_id) == m_user_id_map.end())
@@ -190,7 +190,7 @@ namespace qls
         return true;
     }
 
-    bool BaseGroupRoom::removeMember(long long user_id)
+    bool GroupRoom::removeMember(long long user_id)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_id_map_mutex);
         if (m_user_id_map.find(user_id) != m_user_id_map.end())
@@ -199,17 +199,17 @@ namespace qls
         return true;
     }
 
-    bool BaseGroupRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
+    bool GroupRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
         return baseJoinRoom(socket_ptr, user);
     }
 
-    bool BaseGroupRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    bool GroupRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
         return baseLeaveRoom(socket_ptr);
     }
 
-    asio::awaitable<bool> BaseGroupRoom::sendMessage(const std::string& message, long long sender_user_id)
+    asio::awaitable<bool> GroupRoom::sendMessage(const std::string& message, long long sender_user_id)
     {
         // 是否有此user_id
         if (!hasUser(sender_user_id))
@@ -224,7 +224,7 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> BaseGroupRoom::sendTipMessage(const std::string& message)
+    asio::awaitable<bool> GroupRoom::sendTipMessage(const std::string& message)
     {
         qjson::JObject json;
         json["type"] = "group_tip_message";
@@ -234,7 +234,7 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> BaseGroupRoom::sendUserTipMessage(const std::string& message, long long receiver_user_id)
+    asio::awaitable<bool> GroupRoom::sendUserTipMessage(const std::string& message, long long receiver_user_id)
     {
         // 是否有此user_id
         if (!hasUser(receiver_user_id))
@@ -248,24 +248,24 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json), receiver_user_id);
     }
 
-    bool BaseGroupRoom::hasUser(long long user_id) const
+    bool GroupRoom::hasUser(long long user_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
         return m_user_id_map.find(user_id) != m_user_id_map.end();
     }
 
-    long long BaseGroupRoom::getGroupID() const
+    long long GroupRoom::getGroupID() const
     {
         return m_group_id;
     }
 
-    void BaseGroupRoom::Permission::modifyPermission(const std::string& permissionName, PermissionType type)
+    void GroupRoom::Permission::modifyPermission(const std::string& permissionName, PermissionType type)
     {
         std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
         m_permission_map[permissionName] = type;
     }
 
-    void BaseGroupRoom::Permission::removePermission(const std::string& permissionName)
+    void GroupRoom::Permission::removePermission(const std::string& permissionName)
     {
         std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
 
@@ -277,7 +277,7 @@ namespace qls
         m_permission_map.erase(itor);
     }
 
-    BaseGroupRoom::Permission::PermissionType BaseGroupRoom::Permission::getPermissionType(const std::string& permissionName) const
+    GroupRoom::Permission::PermissionType GroupRoom::Permission::getPermissionType(const std::string& permissionName) const
     {
         std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
 
@@ -289,13 +289,13 @@ namespace qls
         return itor->second;
     }
 
-    void BaseGroupRoom::Permission::modifyUserPermission(long long user_id, PermissionType type)
+    void GroupRoom::Permission::modifyUserPermission(long long user_id, PermissionType type)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
         m_user_permission_map[user_id] = type;
     }
 
-    void BaseGroupRoom::Permission::removeUser(long long user_id)
+    void GroupRoom::Permission::removeUser(long long user_id)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
 
@@ -307,7 +307,7 @@ namespace qls
         m_user_permission_map.erase(itor);
     }
 
-    bool BaseGroupRoom::Permission::userHasPermission(long long user_id, const std::string& permissionName) const
+    bool GroupRoom::Permission::userHasPermission(long long user_id, const std::string& permissionName) const
     {
         std::shared_lock<std::shared_mutex> sl1(m_permission_map_mutex, std::defer_lock);
         std::shared_lock<std::shared_mutex> sl2(m_user_permission_map_mutex, std::defer_lock);
@@ -328,7 +328,7 @@ namespace qls
         return itor->second >= itor2->second;
     }
 
-    BaseGroupRoom::Permission::PermissionType BaseGroupRoom::Permission::getUserPermissionType(long long user_id) const
+    GroupRoom::Permission::PermissionType GroupRoom::Permission::getUserPermissionType(long long user_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
 

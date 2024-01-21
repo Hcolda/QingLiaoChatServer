@@ -10,11 +10,8 @@
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
-extern qls::SocketFunction serverSocketFunction;
-extern qcrypto::pkey::PrivateKey serverPrivateKey;
 extern qini::INIObject serverIni;
 extern qls::Manager serverManager;
-extern quqisql::SQLDBProcess serverSqlProcess;
 
 namespace qls
 {
@@ -52,13 +49,21 @@ namespace qls
         std::system("chcp 65001");
         serverLogger.info("服务器Log系统启动成功！");
 
+        if (isBigEndianness())
+            serverLogger.info("服务器的本地端序为大端序");
+        else
+            serverLogger.info("服务器的本地端序为小端序");
+
         try
         {
             serverLogger.info("正在读取配置文件...");
             serverIni = Init::readConfig();
 
             if (std::stoll(serverIni["mysql"]["port"]) > 65535)
-                throw std::logic_error("ini配置文件 section:mysql, key:port port过大");
+                throw std::logic_error("ini配置文件 section:mysql, key:port port过大！");
+
+            if (std::stoll(serverIni["mysql"]["port"]) < 0)
+                throw std::logic_error("ini配置文件 section:mysql, key:port port过小！");
             
             serverLogger.info("配置文件读取成功！");
         }
@@ -72,30 +77,22 @@ namespace qls
 
         try
         {
-            serverLogger.info("正在加载sql...");
-            serverSqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
-                serverIni["mysql"]["password"],
-                "mysql",
-                serverIni["mysql"]["host"],
-                unsigned short(std::stoi(serverIni["mysql"]["port"])));
+            serverLogger.info("正在加载serverManager...");
 
-            serverSqlProcess.connectSQLServer();
+            serverManager.init();
 
-            serverLogger.info("sql加载成功！");
+            serverLogger.info("serverManager加载成功！");
         }
         catch (const std::exception& e)
         {
             serverLogger.critical(e.what());
-            serverLogger.critical("sql加载失败！");
+            serverLogger.critical("serverManager加载失败！");
             return -1;
         }
 
         try
         {
             serverLogger.info("服务器监听正在启动，地址：", serverIni["server"]["host"], ":", serverIni["server"]["port"]);
-            serverNetwork.setFunctions(std::bind(&SocketFunction::accecptFunction, &serverSocketFunction, std::placeholders::_1),
-                                       std::bind(&SocketFunction::receiveFunction, &serverSocketFunction, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-                                       std::bind(&SocketFunction::closeFunction, &serverSocketFunction, std::placeholders::_1));
             serverNetwork.run(serverIni["server"]["host"], std::stoi(serverIni["server"]["port"]));
         }
         catch (const std::exception& e)

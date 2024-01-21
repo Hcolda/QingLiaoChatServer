@@ -81,13 +81,13 @@ namespace qls
     /*
     * @brief 私聊房间基类
     */
-    class BasePrivateRoom : public qls::BaseRoom
+    class PrivateRoom : public qls::BaseRoom
     {
     public:
         struct User : public qls::BaseRoom::BaseUserSetting {};
 
-        BasePrivateRoom(long long user_id_1, long long user_id_2);
-        ~BasePrivateRoom() = default;
+        PrivateRoom(long long user_id_1, long long user_id_2);
+        ~PrivateRoom() = default;
 
         /*
         * @brief 用户连接加入私聊房间
@@ -146,7 +146,7 @@ namespace qls
     /*
     * @brief 群聊房间
     */
-    class BaseGroupRoom : public qls::BaseRoom
+    class GroupRoom : public qls::BaseRoom
     {
     public:
         struct User : public qls::BaseRoom::BaseUserSetting {};
@@ -166,7 +166,7 @@ namespace qls
             {
                 Default = 0,
                 Operator,
-                Admin
+                Administrator
             };
 
             Permission() = default;
@@ -225,8 +225,8 @@ namespace qls
             mutable std::shared_mutex                       m_user_permission_map_mutex;
         };
 
-        BaseGroupRoom(long long group_id);
-        ~BaseGroupRoom() = default;
+        GroupRoom(long long group_id);
+        ~GroupRoom() = default;
 
         /*
         * @brief 添加用户进入群聊

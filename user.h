@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace qls
 {
@@ -34,6 +35,8 @@ namespace qls
 
         bool userHasFriend(long long friend_user_id) const;
         bool userHasGroup(long long group_user_id) const;
+        std::vector<long long> getFriendList() const;
+        std::vector<long long> getGroupList() const;
 
     private:
         struct UserImpl;
