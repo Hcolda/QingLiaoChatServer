@@ -3,6 +3,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <unordered_map>
+#include <shared_mutex>
 
 namespace qls
 {
@@ -39,9 +41,23 @@ namespace qls
         std::vector<long long> getGroupList() const;
 
     private:
-        struct UserImpl;
+        long long   user_id;
+        std::string user_name;
+        long long   registered_time;
+        int         age;
+        std::string email;
+        std::string phone;
+        std::string profile;
 
-        std::unique_ptr<UserImpl> m_UserImpl;
+        mutable std::shared_mutex       m_data_mutex;
+
+        std::unordered_map<long long,
+            long long>                  m_user_friend_map;
+        mutable std::shared_mutex       m_user_friend_map_mutex;
+
+        std::unordered_map<long long,
+            long long>                  m_user_group_map;
+        mutable std::shared_mutex       m_user_group_map_mutex;
     };
 }
 

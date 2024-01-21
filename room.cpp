@@ -1,5 +1,7 @@
 ﻿#include "room.h"
 
+#include <stdexcept>
+
 #include <QuqiCrypto.hpp>
 #include <Json.h>
 
@@ -7,7 +9,8 @@ namespace qls
 {
     bool BaseRoom::baseJoinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user)
     {
-        if (socket_ptr.get() == nullptr) return false;
+        if (!socket_ptr) return false;
+        else if (!user.sendFunction) return false;
 
         std::lock_guard<std::shared_mutex> lock(m_userMap_mutex);
         m_userMap[socket_ptr] = user;
@@ -16,7 +19,7 @@ namespace qls
 
     bool BaseRoom::baseLeaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
-        if (socket_ptr.get() == nullptr) return false;
+        if (!socket_ptr) return false;
 
         std::lock_guard<std::shared_mutex> lock(m_userMap_mutex);
         if (m_userMap.find(socket_ptr) == m_userMap.end()) return false;
@@ -27,6 +30,8 @@ namespace qls
 
     asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data)
     {
+        bool result = false;
+
         // 广播数据
         {
             qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
@@ -36,10 +41,13 @@ namespace qls
             {
                 try
                 {
-                    std::string out;
+                    /*std::string out;
                     if (!aes.encrypt(data, out, { i->second.key, 32 }, { i->second.iv, 16 }, true))
                         throw std::logic_error("Key and ivec of AES are invalid");
-                    co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);
+                    co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);*/
+
+                    result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
+                        ? true : false;
                 }
                 catch (...)
                 {
@@ -68,12 +76,14 @@ namespace qls
             }
         }
 
-        co_return true;
+        co_return result;
     }
 
     asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data, long long user_id)
     {
-        // 广播数据
+        bool result = false;
+
+        // 广播数据给单个user
         {
             qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
             std::shared_lock<std::shared_mutex> sharedLock(m_userMap_mutex);
@@ -84,10 +94,13 @@ namespace qls
                 {
                     try
                     {
-                        std::string out;
+                        /*std::string out;
                         if (!aes.encrypt(data, out, { i->second.key, 32 }, { i->second.iv, 16 }, true))
                             throw std::logic_error("Key and ivec of AES are invalid");
-                        co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);
+                        co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);*/
+
+                        result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
+                            ? true : false;
                     }
                     catch (...)
                     {
@@ -117,7 +130,7 @@ namespace qls
             }
         }
 
-        co_return true;
+        co_return result;
     }
 
     // PrivateRoom

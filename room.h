@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <queue>
 #include <chrono>
+#include <functional>
 
 namespace qls
 {
@@ -31,14 +32,17 @@ namespace qls
 
         struct BaseUserSetting
         {
+            // 发送函数
+            using SendFunction = std::function<asio::awaitable<size_t>(
+                std::string_view data, long long, int, int)>;
+
             long long user_id;
             Equipment equipment = Equipment::Unknown;
-            char key[32 + 1]{ 0 };
-            char iv[16 + 1]{ 0 };
+            SendFunction sendFunction;
         };
 
         BaseRoom() = default;
-        ~BaseRoom() = default;
+        virtual ~BaseRoom() = default;
 
         /*
         * @brief 用户连接加入房间
