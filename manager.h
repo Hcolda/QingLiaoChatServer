@@ -12,6 +12,8 @@
 #include "privateRoom.h"
 #include "groupRoom.h"
 #include "user.h"
+#include "friendRoomVerification.h"
+#include "groupRoomVerification.h"
 
 namespace qls
 {
@@ -101,6 +103,64 @@ namespace qls
         std::shared_ptr<qls::User> getUser(long long user_id) const;
 
         /*
+        * @brief 添加私聊房间前的验证
+        * @param user_id_1 用户1 id
+        * @param user_id_2 用户2 id
+        */
+        void addFriendRoomVerification(long long user_id_1, long long user_id_2);
+
+        /*
+        * @brief 是否拥有私聊房间验证
+        * @param user_id_1 用户1 id
+        * @param user_id_2 用户2 id
+        * @return true 拥有 | false 不拥有
+        */
+        bool hasFriendRoomVerification(long long user_id_1, long long user_id_2) const;
+
+        /*
+        * @brief 设置用户是否验证
+        * @param user_id_1 用户1 id
+        * @param user_id_2 用户2 id
+        * @param user_id 设置的用户id
+        * @param is_verified 是否验证
+        * @return true 双方都验证(自动创建房间) | false 还有人没有验证
+        */
+        bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
+
+        /*
+        * @brief 添加群聊验证
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        */
+        void addGroupRoomVerification(long long group_id, long long user_id);
+
+        /*
+        * @brief 是否有验证
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        * @return true 拥有 | false 不拥有
+        */
+        bool hasGroupRoomVerification(long long group_id, long long user_id);
+
+        /*
+        * @brief 设置群聊验证的群聊是否验证
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        * @param is_verified 是否验证
+        * @return true 双方都验证(用户自动加入群聊房间) | false 还有一方没有验证
+        */
+        bool setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified);
+        
+        /*
+        * @brief 设置群聊验证的用户是否验证
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        * @param is_verified 是否验证
+        * @return true 双方都验证(用户自动加入群聊房间) | false 还有一方没有验证
+        */
+        bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
+
+        /*
         * @brief 获取服务器的sql处理器
         */
         quqisql::SQLDBProcess& getServerSqlProcessor();
@@ -111,7 +171,8 @@ namespace qls
             long long user_id_1;
             long long user_id_2;
 
-            friend bool operator ==(const PrivateRoomIDStruct& a, const PrivateRoomIDStruct& b)
+            friend bool operator ==(const PrivateRoomIDStruct& a,
+                const PrivateRoomIDStruct& b)
             {
                 return (a.user_id_1 == b.user_id_1 && a.user_id_2 == b.user_id_2) ||
                     (a.user_id_2 == b.user_id_1 && a.user_id_1 == b.user_id_2);
@@ -131,6 +192,31 @@ namespace qls
             }
         };
 
+        struct GroupVerificationStruct
+        {
+            long long group_id;
+            long long user_id;
+
+            friend bool operator ==(const GroupVerificationStruct& a,
+                const GroupVerificationStruct& b)
+            {
+                return a.group_id == b.group_id && a.user_id == b.user_id;
+            }
+        };
+
+        class GroupVerificationStructHasher
+        {
+        public:
+            GroupVerificationStructHasher() = default;
+            ~GroupVerificationStructHasher() = default;
+
+            size_t operator()(const GroupVerificationStruct& g) const
+            {
+                std::hash<long long> hasher;
+                return hasher(g.group_id) * hasher(g.user_id);
+            }
+        };
+
         std::unordered_map<long long,
             std::shared_ptr<qls::GroupRoom>>    m_baseRoom_map;
         mutable std::shared_mutex               m_baseRoom_map_mutex;
@@ -147,6 +233,16 @@ namespace qls
         std::unordered_map<long long,
             std::shared_ptr<qls::User>>         m_user_map;
         mutable std::shared_mutex               m_user_map_mutex;
+
+        std::unordered_map<PrivateRoomIDStruct,
+            qls::FriendRoomVerification,
+            PrivateRoomIDStructHasher>          m_FriendRoomVerification_map;
+        mutable std::shared_mutex               m_FriendRoomVerification_map_mutex;
+
+        std::unordered_map<GroupVerificationStruct,
+            qls::GroupRoomVerification,
+            GroupVerificationStructHasher>      m_GroupVerification_map;
+        mutable std::shared_mutex               m_GroupVerification_map_mutex;
 
         std::atomic<long long>                  m_newUserId;
         std::atomic<long long>                  m_newPrivateRoomId;
