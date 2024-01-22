@@ -16,16 +16,15 @@ namespace qls
         this->age = 0;
         this->registered_time = std::chrono::system_clock::now()
             .time_since_epoch().count();
+    }
 
+    void User::init()
+    {
         {
             /*
             * sql
             */
         }
-    }
-
-    void User::init()
-    {
     }
 
     std::string User::getUserName() const
@@ -159,4 +158,3 @@ namespace qls
         else return false;
     }
 }
-
