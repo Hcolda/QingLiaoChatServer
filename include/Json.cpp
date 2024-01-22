@@ -1,5 +1,7 @@
 ﻿#include "Json.h"
 
+#include <cmath>
+
 #define JSON_NAMESPACE_START namespace qjson {
 #define JSON_NAMESPACE_END }
 
@@ -587,7 +589,7 @@ JObject JParser::fastParse(std::ifstream& infile)
 
 JObject JParser::fastParse(const std::string_view data)
 {
-	JParser jp;
+	static JParser jp;
 	size_t itor = 0;
 	return std::move(jp._parse(data, itor));
 }
@@ -1112,18 +1114,6 @@ std::string JWriter::formatWrite(const JObject& jo, size_t n)
 	}
 
 	return std::move(str);
-}
-
-std::string qjson::JWriter::fastWrite(const JObject& jo)
-{
-	JWriter jw;
-	return std::move(jw.write(jo) + '\n');
-}
-
-std::string qjson::JWriter::fastFormatWrite(const JObject& jo)
-{
-	JWriter jw;
-	return std::move(jw.formatWrite(jo) + '\n');
 }
 
 JSON_NAMESPACE_END

@@ -22,46 +22,23 @@ namespace qini
 			class iterator
 			{
 			public:
-				iterator(const std::unordered_map<std::string, std::string>::iterator& itor) :
-					m_itor(itor)
-				{}
+				iterator(const std::unordered_map<std::string, std::string>::iterator& itor);
 
-				iterator(std::unordered_map<std::string, std::string>::iterator&& itor) :
-					m_itor(std::move(itor))
-				{}
+				iterator(std::unordered_map<std::string, std::string>::iterator&& itor);
 
-				iterator& operator ++()
-				{
-					m_itor++;
-				}
+				iterator& operator ++();
 
-				iterator& operator --()
-				{
-					m_itor--;
-				}
+				std::string operator *();
 
-				std::string operator *()
-				{
-					return std::move(m_itor->second);
-				}
+				friend bool operator ==(const iterator& a, const iterator& b);
 
-				friend bool operator ==(const iterator& a, const iterator& b)
-				{
-					return a.m_itor == b.m_itor;
-				}
-
-				friend bool operator !=(const iterator& a, const iterator& b)
-				{
-					return a.m_itor != b.m_itor;
-				}
+				friend bool operator !=(const iterator& a, const iterator& b);
 
 			private:
 				std::unordered_map<std::string, std::string>::iterator m_itor;
 			};
 
-			Section(std::unordered_map<std::string, std::string>& section) :
-				m_keys(section)
-			{}
+			Section(std::unordered_map<std::string, std::string>& section);
 
 			Section(const Section&) = delete;
 			Section(Section&&) = delete;
@@ -74,136 +51,134 @@ namespace qini
 			* @param keyName 节名
 			* @return std::string& 键对应的值
 			*/
-			std::string& operator [](const std::string& keyName)
-			{
-				return m_keys[keyName];
-			}
+			std::string& operator [](const std::string& keyName);
 
 			/*
 			* @brief 获取键值
 			* @param keyName 节名
 			* @return std::string& 键对应的值
 			*/
-			const std::string& operator [](const std::string& keyName) const
-			{
-				if (m_keys.find(keyName) == m_keys.end()) throw std::logic_error("Invalid Keyword");
-				return m_keys[keyName];
-			}
+			const std::string& operator [](const std::string& keyName) const;
 
-			iterator begin()
-			{
-				return { std::move(m_keys.begin()) };
-			}
+			iterator begin();
 
-			iterator end()
-			{
-				return { std::move(m_keys.end()) };
-			}
+			iterator end();
 
 		private:
 			std::unordered_map<std::string, std::string>& m_keys;
 		};
 
+		class Const_Section
+		{
+		public:
+			class const_iterator
+			{
+			public:
+				const_iterator(const std::unordered_map<std::string, std::string>::const_iterator& itor);
+
+				const_iterator(std::unordered_map<std::string, std::string>::const_iterator&& itor);
+
+				const_iterator& operator ++();
+
+				std::string operator *();
+
+				friend bool operator ==(const const_iterator& a, const const_iterator& b);
+
+				friend bool operator !=(const const_iterator& a, const const_iterator& b);
+
+			private:
+				std::unordered_map<std::string, std::string>::const_iterator m_itor;
+			};
+
+			Const_Section(const std::unordered_map<std::string, std::string>& section);
+
+			Const_Section(const Section&) = delete;
+			Const_Section(Section&&) = delete;
+
+			Const_Section& operator =(const Section&) = delete;
+			Const_Section& operator =(Section&&) = delete;
+
+			/*
+			* @brief 获取键值
+			* @param keyName 节名
+			* @return std::string& 键对应的值
+			*/
+			const std::string& operator [](const std::string& keyName) const;
+
+			const_iterator begin();
+
+			const_iterator end();
+
+		private:
+			const std::unordered_map<std::string, std::string>& m_keys;
+		};
+
 		class iterator
 		{
 		public:
-			iterator(const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::iterator& itor) :
-				m_itor(itor)
-			{}
+			iterator(const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::iterator& itor);
 
-			iterator(std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::iterator&& itor) :
-				m_itor(std::move(itor))
-			{}
+			iterator(std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::iterator&& itor);
 
-			iterator& operator ++()
-			{
-				m_itor++;
-			}
+			iterator& operator ++();
 
-			iterator& operator --()
-			{
-				m_itor--;
-			}
+			Section operator *();
 
-			Section operator *()
-			{
-				return { m_itor->second };
-			}
+			friend bool operator ==(const iterator& a, const iterator& b);
 
-			friend bool operator ==(const iterator& a, const iterator& b)
-			{
-				return a.m_itor == b.m_itor;
-			}
-
-			friend bool operator !=(const iterator& a, const iterator& b)
-			{
-				return a.m_itor != b.m_itor;
-			}
+			friend bool operator !=(const iterator& a, const iterator& b);
 
 		private:
 			std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::iterator m_itor;
 		};
 
+		class const_iterator
+		{
+		public:
+			const_iterator(const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::const_iterator& itor);
+
+			const_iterator(std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::const_iterator&& itor);
+
+			const_iterator& operator ++();
+
+			Const_Section operator *();
+
+			friend bool operator ==(const const_iterator& a, const const_iterator& b);
+
+			friend bool operator !=(const const_iterator& a, const const_iterator& b);
+
+		private:
+			std::unordered_map<std::string, std::unordered_map<std::string, std::string>>::const_iterator m_itor;
+		};
+
 		INIObject() = default;
 
-		INIObject(const INIObject& ob) :
-			m_sections(ob.m_sections)
-		{}
+		INIObject(const INIObject& ob);
 
-		INIObject(INIObject&& ob) noexcept :
-			m_sections(std::move(ob.m_sections))
-		{}
+		INIObject(INIObject&& ob) noexcept;
 
 		~INIObject() = default;
 
-		INIObject& operator =(const INIObject& ob)
-		{
-			if (this == &ob)
-				return *this;
+		INIObject& operator =(const INIObject& ob);
 
-			m_sections = ob.m_sections;
-			return *this;
-		}
-
-		INIObject& operator =(INIObject&& ob) noexcept
-		{
-			if (this == &ob)
-				return *this;
-
-			m_sections = std::move(ob.m_sections);
-			return *this;
-		}
+		INIObject& operator =(INIObject&& ob) noexcept;
 
 		/*
 		* @brief 获取节值
 		* @param sectionName 节名
 		* @return Section 节类
 		*/
-		Section operator [](const std::string sectionName)
-		{
-			//if (m_sections.find(sectionName) == m_sections.end()) throw std::logic_error("Invalid Section Name");
-			return Section(m_sections[sectionName]);
-		}
+		Section operator [](const std::string& sectionName);
 
-		iterator begin()
-		{
-			return { std::move(m_sections.begin()) };
-		}
+		Const_Section operator [](const std::string& sectionName) const;
 
-		iterator end()
-		{
-			return { std::move(m_sections.end()) };
-		}
+		iterator begin();
 
-		friend bool operator ==(const INIObject& ia, const INIObject& ib)
-		{
-			return ia.m_sections == ib.m_sections;
-		}
+		iterator end();
 
-		friend bool operator !=(const INIObject& ia, const INIObject& ib)
-		{
-			return ia.m_sections != ib.m_sections;
-		}
+		friend bool operator ==(const INIObject& ia, const INIObject& ib);
+
+		friend bool operator !=(const INIObject& ia, const INIObject& ib);
 
 	private:
 		std::unordered_map<std::string, std::unordered_map<std::string, std::string>> m_sections;
@@ -232,11 +207,6 @@ namespace qini
 		*/
 		static INIObject fastParse(std::string_view data);
 
-		/*
-		* @brief 解析数据
-		* @param file 文件
-		* @return INIObject ini数据
-		*/
 		static INIObject fastParse(std::ifstream& infile);
 
 	protected:

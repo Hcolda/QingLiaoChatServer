@@ -8,9 +8,6 @@
 #include "websiteFunctions.hpp"
 
 extern Log::Logger serverLogger;
-extern qls::Network serverNetwork;
-extern qls::SocketFunction serverSocketFunction;
-extern qcrypto::pkey::PrivateKey serverPrivateKey;
 
 namespace qls
 {
@@ -104,19 +101,22 @@ namespace qls
             }
         }
 
-        std::string out;
-        if (!m_aes.AES.encrypt(datapack->getData(datapack), out, m_aes.AESKey, m_aes.AESiv, false))
+        std::string out = datapack->getData(datapack);
+
+        // 先不加密
+        /*if (!m_aes.AES.encrypt(datapack->getData(datapack), out, m_aes.AESKey, m_aes.AESiv, false))
         {
             serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
             co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), datapack};
-        }
+        }*/
         co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{out, datapack};
     }
 
     asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
     {
-        std::string out;
-        m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
+        std::string out(data);
+        //先不加密
+        // m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
         auto pack = Network::Package::DataPackage::makePackage(out);
         pack->requestID = requestID;
         pack->sequence = sequence;
@@ -133,34 +133,34 @@ namespace qls
             // 如果json process没有加载
             // 获取用户的id并创建json process
 
-            long long user_id = WebFunction::getUserID(this->m_user.uuid);
-            this->m_jsonProcess = std::make_shared<JsonMessageProcess>(user_id);
+            // long long user_id = WebFunction::getUserID(this->m_user.uuid);
+            this->m_jsonProcess = std::make_shared<JsonMessageProcess>(-1);
         }
 
-        switch (pack->requestID)
+        switch (pack->type)
         {
         case 1:
         {
             // json文本类型
-            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess->processJsonMessage(data)));
+            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess->processJsonMessage(data)), pack->requestID, 1);
         }
             break;
         case 2:
         {
             // 文件类型
-            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")));// 暂时返回错误
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
         }
         break;
         case 3:
         {
             // 二进制流类型
-            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")));// 暂时返回错误
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
         }
         break;
         default:
         {
             // 没有这种类型，返回错误
-            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")));
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("error type")), pack->requestID, 1);
         }
             break;
         }

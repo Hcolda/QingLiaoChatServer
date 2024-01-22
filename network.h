@@ -28,10 +28,57 @@ namespace qls
     * @param socket
     * @return string socket的地址
     */
-    static inline std::string socket2ip(const asio::ip::tcp::socket& s)
+    inline std::string socket2ip(const asio::ip::tcp::socket& s)
     {
         auto ep = s.remote_endpoint();
         return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
+    }
+
+    /*
+    * @brief 判断本地序是否为大端序
+    * @return true 为大端序 | false 为小端序
+    */
+    constexpr inline bool isBigEndianness()
+    {
+        union u_data
+        {
+            unsigned char   a;
+            unsigned int    b;
+        } data;
+
+        data.b = 0x12345678;
+
+        return data.a == 0x12;
+    }
+
+    /*
+    * @brief 端序转换
+    * @param value 数据 (整数型)
+    * @return 转换端序后的数据
+    */
+    template<typename T>
+        requires std::integral<T>
+    constexpr inline T swapEndianness(T value) {
+        T result = 0;
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            result = (result << 8) | ((value >> (8 * i)) & 0xFF);
+        }
+        return result;
+    }
+
+    /*
+    * @brief 本地序与网络序互转
+    * @param value 数据 (整数型)
+    * @return 转换端序后的数据
+    */
+    template<typename T>
+        requires std::integral<T>
+    constexpr inline T swapNetworkEndianness(T value)
+    {
+        if (!isBigEndianness())
+            return swapEndianness(value);
+        else
+            return value;
     }
 
     class Network
@@ -58,8 +105,9 @@ namespace qls
             private:
                 unsigned long long  verifyCode = 0;
                 char                data[2]{ 0 };
-            public:
 #pragma pack()
+
+            public:
 
                 /*
                 * @brief 制作数据包
@@ -90,6 +138,7 @@ namespace qls
                     // 数据包length
                     int size = 0;
                     std::memcpy(&size, data.c_str(), sizeof(int));
+                    size = swapNetworkEndianness(size);
 
                     // 数据包length与实际大小不符、length小于数据包默认大小、length非常大、数据包结尾不为2 * '\0' 报错处理
                     if (size != data.size() || size < sizeof(DataPackage)) throw std::logic_error("data is invalid!");
@@ -98,6 +147,13 @@ namespace qls
 
                     std::shared_ptr<DataPackage> package((DataPackage*)new char[size] { 0 });
                     std::memcpy(package.get(), data.c_str(), size);
+
+                    // 端序转换
+                    package->length = swapNetworkEndianness(package->length);
+                    package->requestID = swapNetworkEndianness(package->requestID);
+                    package->type = swapNetworkEndianness(package->type);
+                    package->sequence = swapNetworkEndianness(package->sequence);
+                    package->verifyCode = swapNetworkEndianness(package->verifyCode);
 
                     if (hash(getData(package)) != package->verifyCode) throw std::logic_error("hash is different");
 
@@ -113,9 +169,18 @@ namespace qls
                 {
                     if (dp.get() == nullptr) throw std::logic_error("datapackage is nullptr");
 
+                    size_t localLength = dp->length;
+
+                    // 端序转换
+                    dp->length = swapNetworkEndianness(dp->length);
+                    dp->requestID = swapNetworkEndianness(dp->requestID);
+                    dp->type = swapNetworkEndianness(dp->type);
+                    dp->sequence = swapNetworkEndianness(dp->sequence);
+                    dp->verifyCode = swapNetworkEndianness(dp->verifyCode);
+
                     std::string data;
-                    data.resize(dp->length);
-                    std::memcpy(data.data(), dp.get(), dp->length);
+                    data.resize(localLength);
+                    std::memcpy(data.data(), dp.get(), localLength);
                     return data;
                 }
 
@@ -190,6 +255,7 @@ namespace qls
 
                 int length = 0;
                 std::memcpy(&length, m_buffer.c_str(), sizeof(int));
+                length = swapNetworkEndianness(length);
                 if (length > m_buffer.size())
                     return false;
 
@@ -202,8 +268,12 @@ namespace qls
             */
             size_t firstMsgLength() const
             {
+                if (m_buffer.size() < sizeof(int))
+                    return 0;
+
                 int length = 0;
                 std::memcpy(&length, m_buffer.c_str(), sizeof(int));
+                length = swapNetworkEndianness(length);
                 return size_t(length);
             }
 
@@ -285,6 +355,12 @@ namespace qls
                 ? int(std::thread::hardware_concurrency()) : 12))
         {
             threads_ = new std::thread[thread_num_ + 1]{};
+
+            acceptFunction_ = [](tcp::socket&) -> asio::awaitable<void> {co_return;};
+            receiveFunction_ = [](tcp::socket&,
+                std::string, std::shared_ptr<Package::DataPackage>
+                ) -> asio::awaitable<void> {co_return;};
+            closeFunction_ = [](tcp::socket&) -> asio::awaitable<void> {co_return;};
         }
 
         ~Network()

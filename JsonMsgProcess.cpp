@@ -47,10 +47,8 @@ namespace qls
                 * 此处代码不完善，需要完善
                 */
             }
-        }
-        catch (const std::logic_error& e)
-        {
-            return makeErrorMessage("JsonError", e.what());
+
+            return qjson::JObject();
         }
         catch (const std::exception& e)
         {

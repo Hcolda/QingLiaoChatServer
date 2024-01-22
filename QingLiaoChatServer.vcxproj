@@ -147,25 +147,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="friendRoomVerification.cpp" />
+    <ClCompile Include="groupRoom.cpp" />
+    <ClCompile Include="groupRoomVerification.cpp" />
     <ClCompile Include="include\Ini.cpp" />
     <ClCompile Include="include\Json.cpp" />
     <ClCompile Include="JsonMsgProcess.cpp" />
     <ClCompile Include="manager.cpp" />
+    <ClCompile Include="privateRoom.cpp" />
     <ClCompile Include="room.cpp" />
     <ClCompile Include="init.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="network.cpp" />
     <ClCompile Include="socketFunctions.cpp" />
+    <ClCompile Include="user.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="friendRoomVerification.h" />
+    <ClInclude Include="groupRoom.h" />
+    <ClInclude Include="groupRoomVerification.h" />
     <ClInclude Include="JsonMsgProcess.h" />
     <ClInclude Include="manager.h" />
+    <ClInclude Include="privateRoom.h" />
     <ClInclude Include="room.h" />
     <ClInclude Include="definition.hpp" />
     <ClInclude Include="init.h" />
     <ClInclude Include="network.h" />
     <ClInclude Include="socketFunctions.h" />
     <ClInclude Include="SQLProcess.hpp" />
+    <ClInclude Include="user.h" />
     <ClInclude Include="websiteFunctions.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
