@@ -229,37 +229,47 @@ namespace qls
             }
         };
 
+        // 群聊房间表
         std::unordered_map<long long,
             std::shared_ptr<qls::GroupRoom>>    m_baseRoom_map;
         mutable std::shared_mutex               m_baseRoom_map_mutex;
 
+        // 私聊房间表
         std::unordered_map<long long,
             std::shared_ptr<qls::PrivateRoom>>  m_basePrivateRoom_map;
         mutable std::shared_mutex               m_basePrivateRoom_map_mutex;
 
+        // 私聊用户对应私聊房间号表
         std::unordered_map<PrivateRoomIDStruct,
             long long,
             PrivateRoomIDStructHasher>          m_userID_to_privateRoomID_map;
         mutable std::shared_mutex               m_userID_to_privateRoomID_map_mutex;
 
+        // 用户表
         std::unordered_map<long long,
             std::shared_ptr<qls::User>>         m_user_map;
         mutable std::shared_mutex               m_user_map_mutex;
 
+        // 用户添加用户申请表
         std::unordered_map<PrivateRoomIDStruct,
             qls::FriendRoomVerification,
             PrivateRoomIDStructHasher>          m_FriendRoomVerification_map;
         mutable std::shared_mutex               m_FriendRoomVerification_map_mutex;
 
+        // 用户添加群聊申请表
         std::unordered_map<GroupVerificationStruct,
             qls::GroupRoomVerification,
             GroupVerificationStructHasher>      m_GroupVerification_map;
         mutable std::shared_mutex               m_GroupVerification_map_mutex;
 
+        // 新用户id
         std::atomic<long long>                  m_newUserId;
+        // 新私聊房间id
         std::atomic<long long>                  m_newPrivateRoomId;
+        // 新群聊房间id
         std::atomic<long long>                  m_newGroupRoomId;
-    
+        
+        // sql进程管理
         quqisql::SQLDBProcess                   m_sqlProcess;
     };
 }

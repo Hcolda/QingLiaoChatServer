@@ -2,6 +2,11 @@
 
 #include <chrono>
 
+#include "manager.h"
+
+// 服务器manager
+extern qls::Manager serverManager;
+
 namespace qls
 {
 
@@ -102,42 +107,56 @@ namespace qls
             this->m_user_group_map.cend();
     }
 
-    std::vector<long long> User::getFriendList() const
+    std::unordered_set<long long> User::getFriendList() const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_friend_map_mutex);
-
-        std::vector<long long> localList;
-
-        for (const auto& element : m_user_friend_map)
-        {
-            localList.push_back(element);
-        }
-
-        return localList;
+        return m_user_friend_map;
     }
 
-    std::vector<long long> User::getGroupList() const
+    std::unordered_set<long long> User::getGroupList() const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_group_map_mutex);
+        return m_user_group_map;
+    }
 
-        std::vector<long long> localList;
+    void User::updateFriendList(std::unordered_set<long long> set)
+    {
+        std::unique_lock<std::shared_mutex> ul(m_user_friend_map_mutex);
+        this->m_user_friend_map = std::move(set);
+    }
 
-        for (const auto& element : m_user_group_map)
-        {
-            localList.push_back(element);
-        }
-
-        return localList;
+    void User::updateGroupList(std::unordered_set<long long> set)
+    {
+        std::unique_lock<std::shared_mutex> ul(m_user_group_map_mutex);
+        m_user_group_map = std::move(set);
     }
     
     bool User::addFriend(long long friend_user_id)
     {
-        return false;
+        if (!serverManager.hasFriendRoomVerification(this->user_id,
+            friend_user_id))
+        {
+            serverManager.addFriendRoomVerification(this->user_id,
+                friend_user_id);
+            serverManager.setFriendVerified(this->user_id, friend_user_id,
+                this->user_id, true);
+            return true;
+        }
+        else return false;
     }
 
     bool User::addGroup(long long group_user_id)
     {
-        return false;
+        if (!serverManager.hasGroupRoomVerification(group_user_id,
+            this->user_id))
+        {
+            serverManager.addGroupRoomVerification(group_user_id,
+                this->user_id);
+            serverManager.setGroupRoomUserVerified(group_user_id,
+                this->user_id, true);
+            return true;
+        }
+        else return false;
     }
 }
 

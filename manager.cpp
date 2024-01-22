@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <Ini.h>
 
+#include "user.h"
+
 extern qini::INIObject serverIni;
 
 namespace qls
@@ -246,6 +248,36 @@ namespace qls
             {
                 std::unique_lock<std::shared_mutex> ul(m_basePrivateRoom_map_mutex);
                 this->addPrivateRoom(user_id_1, user_id_2);
+
+                // 更新user1的friendList
+                {
+                    std::shared_ptr<qls::User> ptr;
+                    {
+                        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                        auto itor = m_user_map.find(user_id_1);
+                        if (itor == m_user_map.end())
+                            throw std::invalid_argument("Wrong argument!");
+                        ptr = itor->second;
+                    }
+                    auto set = std::move(ptr->getFriendList());
+                    set.insert(user_id_2);
+                    ptr->updateFriendList(std::move(set));
+                }
+                
+                // 更新user2的friendList
+                {
+                    std::shared_ptr<qls::User> ptr;
+                    {
+                        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                        auto itor = m_user_map.find(user_id_2);
+                        if (itor == m_user_map.end())
+                            throw std::invalid_argument("Wrong argument!");
+                        ptr = itor->second;
+                    }
+                    auto set = std::move(ptr->getFriendList());
+                    set.insert(user_id_1);
+                    ptr->updateFriendList(std::move(set));
+                }
             }
 
             if (error) throw std::invalid_argument("Wrong argument!");
@@ -293,6 +325,19 @@ namespace qls
                 throw std::invalid_argument("Wrong argument!");
 
             itor->second->addMember(user_id);
+
+            // 更新user的groupList
+            std::shared_ptr<qls::User> ptr;
+            {
+                std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                auto itor = m_user_map.find(user_id);
+                if (itor == m_user_map.end())
+                    throw std::invalid_argument("Wrong argument!");
+                ptr = itor->second;
+            }
+            auto set = std::move(ptr->getGroupList());
+            set.insert(group_id);
+            ptr->updateGroupList(std::move(set));
         }
         return result;
     }
@@ -317,6 +362,19 @@ namespace qls
                 throw std::invalid_argument("Wrong argument!");
 
             itor->second->addMember(user_id);
+
+            // 更新user的friendlist
+            std::shared_ptr<qls::User> ptr;
+            {
+                std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                auto itor = m_user_map.find(user_id);
+                if (itor == m_user_map.end())
+                    throw std::invalid_argument("Wrong argument!");
+                ptr = itor->second;
+            }
+            auto set = std::move(ptr->getGroupList());
+            set.insert(group_id);
+            ptr->updateGroupList(std::move(set));
         }
         return result;
     }

@@ -35,14 +35,27 @@ namespace qls
         void updateUserProfile(const std::string&);
 
         // 获取用户关联信息
+        // 采用复制的方式，保证内存安全！！！
 
         bool userHasFriend(long long friend_user_id) const;
         bool userHasGroup(long long group_user_id) const;
-        std::vector<long long> getFriendList() const;
-        std::vector<long long> getGroupList() const;
+        std::unordered_set<long long> getFriendList() const;
+        std::unordered_set<long long> getGroupList() const;
+        void updateFriendList(std::unordered_set<long long>);
+        void updateGroupList(std::unordered_set<long long>);
 
-        // 未完善
+        /*
+        * @brief 添加好友申请
+        * @param friend_user_id 好友id
+        * @return true 提交申请成功 | false 失败
+        */
         bool addFriend(long long friend_user_id);
+
+        /*
+        * @brief 添加群申请
+        * @param group_user_id 群聊id
+        * @return true 提交申请成功 | false 失败
+        */
         bool addGroup(long long group_user_id);
 
     private:
