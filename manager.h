@@ -177,6 +177,12 @@ namespace qls
                 return (a.user_id_1 == b.user_id_1 && a.user_id_2 == b.user_id_2) ||
                     (a.user_id_2 == b.user_id_1 && a.user_id_1 == b.user_id_2);
             }
+
+            friend bool operator !=(const PrivateRoomIDStruct& a,
+                const PrivateRoomIDStruct& b)
+            {
+                return !(a == b);
+            }
         };
 
         class PrivateRoomIDStructHasher
@@ -201,6 +207,12 @@ namespace qls
                 const GroupVerificationStruct& b)
             {
                 return a.group_id == b.group_id && a.user_id == b.user_id;
+            }
+
+            friend bool operator !=(const GroupVerificationStruct& a,
+                const GroupVerificationStruct& b)
+            {
+                return !(a == b);
             }
         };
 

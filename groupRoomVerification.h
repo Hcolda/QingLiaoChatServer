@@ -9,6 +9,8 @@ namespace qls
     {
     public:
         GroupRoomVerification(long long group_id, long long user_id);
+        GroupRoomVerification(const GroupRoomVerification&);
+        GroupRoomVerification(GroupRoomVerification&&) noexcept;
         ~GroupRoomVerification() = default;
 
         /*

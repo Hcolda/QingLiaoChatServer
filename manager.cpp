@@ -210,7 +210,7 @@ namespace qls
             m_FriendRoomVerification_map.end())
             throw std::invalid_argument("Wrong argument!");
 
-        m_FriendRoomVerification_map.insert({ user_id_1, user_id_2 }, FriendRoomVerification{ user_id_1, user_id_2 });
+        m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 }, FriendRoomVerification{ user_id_1, user_id_2 });
     }
 
     bool Manager::hasFriendRoomVerification(long long user_id_1, long long user_id_2) const
@@ -262,7 +262,7 @@ namespace qls
             m_GroupVerification_map.end())
             throw std::invalid_argument("Wrong argument!");
 
-        m_GroupVerification_map.insert({ group_id, user_id }, GroupRoomVerification{ group_id, user_id });
+        m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id }, GroupRoomVerification{ group_id, user_id });
     }
 
     bool Manager::hasGroupRoomVerification(long long group_id, long long user_id)

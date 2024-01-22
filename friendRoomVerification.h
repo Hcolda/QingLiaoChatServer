@@ -9,6 +9,8 @@ namespace qls
     {
     public:
         FriendRoomVerification(long long user_id_1, long long user_id_2);
+        FriendRoomVerification(const FriendRoomVerification&);
+        FriendRoomVerification(FriendRoomVerification&&) noexcept;
         ~FriendRoomVerification() = default;
 
         /*
