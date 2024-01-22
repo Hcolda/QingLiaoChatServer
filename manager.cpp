@@ -175,7 +175,7 @@ namespace qls
         this->m_baseRoom_map.erase(group_room_id);
     }
 
-    long long Manager::addNewUser()
+    std::shared_ptr<qls::User> Manager::addNewUser()
     {
         std::unique_lock<std::shared_mutex> ul(m_user_map_mutex);
 
@@ -188,7 +188,7 @@ namespace qls
         // 初始化
         m_user_map[newUserId]->init();
 
-        return newUserId;
+        return m_user_map[newUserId];
     }
 
     std::shared_ptr<qls::User> Manager::getUser(long long user_id) const

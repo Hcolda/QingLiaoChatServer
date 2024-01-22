@@ -8,6 +8,9 @@ namespace qls
     User::User(long long user_id)
     {
         this->user_id = user_id;
+        this->age = 0;
+        this->registered_time = std::chrono::system_clock::now()
+            .time_since_epoch().count();
 
         {
             /*
@@ -101,12 +104,40 @@ namespace qls
 
     std::vector<long long> User::getFriendList() const
     {
-        return std::vector<long long>();
+        std::shared_lock<std::shared_mutex> sl(m_user_friend_map_mutex);
+
+        std::vector<long long> localList;
+
+        for (const auto& element : m_user_friend_map)
+        {
+            localList.push_back(element);
+        }
+
+        return localList;
     }
 
     std::vector<long long> User::getGroupList() const
     {
-        return std::vector<long long>();
+        std::shared_lock<std::shared_mutex> sl(m_user_group_map_mutex);
+
+        std::vector<long long> localList;
+
+        for (const auto& element : m_user_group_map)
+        {
+            localList.push_back(element);
+        }
+
+        return localList;
+    }
+    
+    bool User::addFriend(long long friend_user_id)
+    {
+        return false;
+    }
+
+    bool User::addGroup(long long group_user_id)
+    {
+        return false;
     }
 }
 

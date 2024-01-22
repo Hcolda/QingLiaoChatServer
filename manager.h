@@ -9,7 +9,8 @@
 
 #include "SQLProcess.hpp"
 #include "definition.hpp"
-#include "room.h"
+#include "privateRoom.h"
+#include "groupRoom.h"
 #include "user.h"
 
 namespace qls
@@ -89,10 +90,14 @@ namespace qls
 
         /*
         * @brief 创建新用户
-        * @return 新用户的user_id
+        * @return 新用户的user类
         */
-        long long addNewUser();
+        std::shared_ptr<qls::User> addNewUser();
 
+        /*
+        * @brief 获取用户类
+        * @return user类
+        */
         std::shared_ptr<qls::User> getUser(long long user_id) const;
 
         /*

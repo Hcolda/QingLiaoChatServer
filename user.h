@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <shared_mutex>
 
 namespace qls
@@ -40,6 +41,10 @@ namespace qls
         std::vector<long long> getFriendList() const;
         std::vector<long long> getGroupList() const;
 
+        // 未完善
+        bool addFriend(long long friend_user_id);
+        bool addGroup(long long group_user_id);
+
     private:
         long long   user_id;
         std::string user_name;
@@ -51,12 +56,10 @@ namespace qls
 
         mutable std::shared_mutex       m_data_mutex;
 
-        std::unordered_map<long long,
-            long long>                  m_user_friend_map;
+        std::unordered_set<long long>   m_user_friend_map;
         mutable std::shared_mutex       m_user_friend_map_mutex;
 
-        std::unordered_map<long long,
-            long long>                  m_user_group_map;
+        std::unordered_set<long long>   m_user_group_map;
         mutable std::shared_mutex       m_user_group_map_mutex;
     };
 }
