@@ -97,6 +97,13 @@ namespace qls
         std::shared_ptr<qls::User> addNewUser();
 
         /*
+        * @brief 拥有用户
+        * @param user_id 用户id
+        * @return true 有此用户 | false 没有
+        */
+        bool hasUser(long long user_id) const;
+
+        /*
         * @brief 获取用户类
         * @return user类
         */

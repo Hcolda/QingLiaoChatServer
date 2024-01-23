@@ -194,6 +194,13 @@ namespace qls
         return m_user_map[newUserId];
     }
 
+    bool Manager::hasUser(long long user_id) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+
+        return m_user_map.find(user_id) != m_user_map.end();
+    }
+
     std::shared_ptr<qls::User> Manager::getUser(long long user_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);

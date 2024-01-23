@@ -169,6 +169,7 @@
     <ClInclude Include="JsonMsgProcess.h" />
     <ClInclude Include="manager.h" />
     <ClInclude Include="privateRoom.h" />
+    <ClInclude Include="regexMatch.hpp" />
     <ClInclude Include="room.h" />
     <ClInclude Include="definition.hpp" />
     <ClInclude Include="init.h" />

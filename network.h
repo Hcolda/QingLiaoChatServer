@@ -155,7 +155,9 @@ namespace qls
                     package->sequence = swapNetworkEndianness(package->sequence);
                     package->verifyCode = swapNetworkEndianness(package->verifyCode);
 
-                    if (hash(getData(package)) != package->verifyCode) throw std::logic_error("hash is different");
+                    size_t gethash = hash(getData(package));
+                    if (gethash != package->verifyCode) throw std::logic_error(std::format("hash is different, local hash: {}, pack hash: {}",
+                        gethash, package->verifyCode));
 
                     return package;
                 }

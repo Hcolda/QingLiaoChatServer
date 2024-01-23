@@ -43,12 +43,14 @@ namespace qls
 
         // 以下是获取用户的信息
         
+        long long   getUserID() const;
         std::string getUserName() const;
         long long   getRegisteredTime() const;
         int         getAge() const;
         std::string getUserEmail() const;
         std::string getUserPhone() const;
         std::string getUserProfile() const;
+        bool        isUserPassword(const std::string&) const;
 
         // 以下是修改用户信息
 
@@ -57,6 +59,9 @@ namespace qls
         void updateUserEmail(const std::string&);
         void updateUserPhone(const std::string&);
         void updateUserProfile(const std::string&);
+        void firstUpdateUserPassword(const std::string& new_password);
+        void updateUserPassword(const std::string& old_password,
+            const std::string& new_password);
 
         // 获取用户关联信息
         // 采用复制的方式，保证内存安全！！！
@@ -136,6 +141,11 @@ namespace qls
         std::string                 email;
         std::string                 phone;
         std::string                 profile;
+
+        // 用户密码（hash）
+        std::string                 password;
+        std::string                 salt;
+
         mutable std::shared_mutex   m_data_mutex;
 
         // 用户friendlist

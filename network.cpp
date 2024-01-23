@@ -65,10 +65,12 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                         datapack = std::shared_ptr<Network::Package::DataPackage>(
                             Network::Package::DataPackage::stringToPackage(
                                 sds->package.read()));
+                        if (datapack->getData(datapack) != "test")
+                            throw std::logic_error("Test error!");
                     }
                     catch (const std::exception& e)
                     {
-                        serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
+                        serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
                         closeFunction_(socket);
                         socket.close();
                         co_return;

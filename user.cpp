@@ -1,6 +1,7 @@
 ﻿#include "user.h"
 
 #include <chrono>
+#include <random>
 
 #include "manager.h"
 
@@ -25,6 +26,12 @@ namespace qls
             * sql
             */
         }
+    }
+
+    long long User::getUserID() const
+    {
+        std::shared_lock<std::shared_mutex> sl(this->m_data_mutex);
+        return this->user_id;
     }
 
     std::string User::getUserName() const
@@ -62,6 +69,20 @@ namespace qls
         return this->profile;
     }
 
+    bool User::isUserPassword(const std::string& p) const
+    {
+        std::hash<std::string> string_hash;
+        std::shared_lock<std::shared_mutex> sl(m_data_mutex);
+        std::string localPassword = p + salt;
+
+        for (size_t i = 0; i < 256ull; i++)
+        {
+            localPassword = std::to_string(string_hash(localPassword));
+        }
+
+        return localPassword == password;
+    }
+
     void User::updateUserName(const std::string& user_name)
     {
         std::unique_lock<std::shared_mutex> lg(this->m_data_mutex);
@@ -90,6 +111,70 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lg(this->m_data_mutex);
         this->profile = profile;
+    }
+
+    void User::firstUpdateUserPassword(const std::string& new_password)
+    {
+        if (!password.empty())
+            throw std::invalid_argument("This user has set password!");
+
+        std::hash<std::string>  string_hash;
+        std::mt19937_64         mt(std::random_device{}());
+
+        size_t mt_temp = 0;
+        for (size_t i = 0; i < 256ull; i++)
+        {
+            mt_temp = mt();
+        }
+
+        std::string localSalt = std::to_string(mt_temp);
+        std::string localPassword = new_password + localSalt;
+
+        for (size_t i = 0; i < 256ull; i++)
+        {
+            localPassword = std::to_string(string_hash(localPassword));
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> ul(m_data_mutex);
+            password = localPassword;
+            salt = localSalt;
+        }
+        {
+            // sql
+        }
+    }
+
+    void User::updateUserPassword(const std::string& old_password, const std::string& new_password)
+    {
+        if (!this->isUserPassword(old_password))
+            throw std::invalid_argument("Wrong old password!");
+
+        std::hash<std::string>  string_hash;
+        std::mt19937_64         mt(std::random_device{}());
+
+        size_t mt_temp = 0;
+        for (size_t i = 0; i < 256ull; i++)
+        {
+            mt_temp = mt();
+        }
+
+        std::string localSalt = std::to_string(mt_temp);
+        std::string localPassword = new_password + localSalt;
+
+        for (size_t i = 0; i < 256ull; i++)
+        {
+            localPassword = std::to_string(string_hash(localPassword));
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> ul(m_data_mutex);
+            password = localPassword;
+            salt = localSalt;
+        }
+        {
+            //sql
+        }
     }
 
     bool User::userHasFriend(long long friend_user_id) const
@@ -144,14 +229,14 @@ namespace qls
         else return false;
     }
 
-    bool User::addGroup(long long group_user_id)
+    bool User::addGroup(long long group_id)
     {
-        if (!serverManager.hasGroupRoomVerification(group_user_id,
+        if (!serverManager.hasGroupRoomVerification(group_id,
             this->user_id))
         {
-            serverManager.addGroupRoomVerification(group_user_id,
+            serverManager.addGroupRoomVerification(group_id,
                 this->user_id);
-            serverManager.setGroupRoomUserVerified(group_user_id,
+            serverManager.setGroupRoomUserVerified(group_id,
                 this->user_id, true);
             return true;
         }
