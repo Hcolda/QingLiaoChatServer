@@ -157,7 +157,7 @@ namespace qls
         case 1:
         {
             // json文本类型
-            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess.processJsonMessage(data)), pack->requestID, 1);
+            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data))), pack->requestID, 1);
         }
             break;
         case 2:

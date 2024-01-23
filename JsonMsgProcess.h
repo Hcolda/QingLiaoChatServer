@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <string>
+#include <map>
+
 #include <Json.h>
 
 namespace qls
@@ -115,5 +117,7 @@ namespace qls
         
     private:
         std::atomic<long long> m_user_id;
+
+        static const std::multimap<std::string, long long> m_function_map;
     };
 }

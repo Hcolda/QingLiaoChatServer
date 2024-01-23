@@ -18,7 +18,7 @@ namespace qls
         qjson::JObject json;
 
         json["state"] = "error";
-        json["error_message"] = msg;
+        json["message"] = msg;
 
         return json;
     }
@@ -28,7 +28,7 @@ namespace qls
         qjson::JObject json;
 
         json["state"] = state;
-        json["error_message"] = msg;
+        json["message"] = msg;
 
         return json;
     }
@@ -48,7 +48,7 @@ namespace qls
         try
         {
             std::string function_name = json["function"].getString();
-            const qjson::JObject& param = json["param"];
+            const qjson::JObject& param = json["parameters"];
 
             // 判断 userid == -1
             if (m_user_id == -1 &&
@@ -56,11 +56,18 @@ namespace qls
                 function_name != "register")
                 return makeErrorMessage("You have't been logined!");
             
-            if (function_name == "")
+            auto itor = m_function_map.find(function_name);
+            if (itor == m_function_map.cend())
+                return makeErrorMessage("There isn't a function match the name!");
+
+            switch (m_function_map.find(function_name)->second)
             {
-                /*
-                * 此处代码不完善，需要完善
-                */
+            case 0:
+                // login
+                return login(param["user_id"].getInt(), param["password"].getString());
+                break;
+            case 1:
+                return register_user(param["email"].getString(), param["password"].getString());
             }
 
             return qjson::JObject();
@@ -177,4 +184,11 @@ namespace qls
         return makeMessage("success", "Successfully sending this message!");
     }
 
+
+    const std::multimap<std::string, long long> JsonMessageProcess::m_function_map(
+        {
+            {"login", 0},
+            {"register", 1}
+        }
+    );
 }

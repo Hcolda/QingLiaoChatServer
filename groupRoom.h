@@ -175,7 +175,9 @@ namespace qls
 
     private:
         const long long                 m_group_id;
-        std::atomic<long long>          m_administrator_user_id;
+        long long                       m_administrator_user_id;
+        mutable std::shared_mutex       m_administrator_user_id_mutex;
+
         Permission                      m_permission;
 
         std::unordered_set<long long>   m_user_id_map;
@@ -187,7 +189,7 @@ namespace qls
         std::priority_queue<std::pair<long long, std::string>,
             std::vector<std::pair<long long, std::string>>,
             std::greater<std::pair<long long, std::string>>>        m_message_queue;
-        std::shared_mutex                                           m_message_queue_mutex;
+        mutable std::shared_mutex                                   m_message_queue_mutex;
     };
 }
 
