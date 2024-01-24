@@ -155,7 +155,7 @@ namespace qls
         // 用户friendVerification
         std::unordered_map<long long,
             UserVerificationStruct>     m_user_friend_verification_map;
-        std::shared_mutex               m_user_friend_verification_map_mutex;
+        mutable std::shared_mutex       m_user_friend_verification_map_mutex;
 
         // 用户grouplist
         std::unordered_set<long long>   m_user_group_map;
@@ -164,6 +164,6 @@ namespace qls
         // 用户的groupVerification
         std::multimap<long long,
             UserVerificationStruct>     m_user_group_verification_map;
-        std::shared_mutex               m_user_group_verification_map_mutex;
+        mutable std::shared_mutex       m_user_group_verification_map_mutex;
     };
 }

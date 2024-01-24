@@ -197,6 +197,8 @@ namespace qls
 
         try
         {
+            serverLogger.info(std::format("[{}]连接至服务器", addr));
+
             for (;;)
             {
                 auto [data, pack] = co_await socketService.async_receive();

@@ -3,10 +3,12 @@
 #include <format>
 #include <unordered_set>
 
+#include <Logger.hpp>
 #include "manager.h"
 #include "regexMatch.hpp"
 
 extern qls::Manager serverManager;
+extern Log::Logger serverLogger;
 
 namespace qls
 {
@@ -87,6 +89,9 @@ namespace qls
         {
             auto rejson = makeMessage("success", "Logining successfully!");
             this->m_user_id = user_id;
+
+            serverLogger.info("用户", user_id, "登录至服务器");
+
             return rejson;
         }
         else return makeErrorMessage("Password is wrong!");
@@ -111,7 +116,10 @@ namespace qls
         ptr->updateUserEmail(email);
 
         auto rejson = makeMessage("success", "Successfully create a new user!");
-        rejson["user_id"] = ptr->getUserID();
+        auto id = ptr->getUserID();
+        rejson["user_id"] = id;
+
+        serverLogger.info("注册了新用户: ", id);
 
         return rejson;
     }
@@ -120,6 +128,7 @@ namespace qls
     {
         if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
         {
+            serverLogger.info("用户", (long long)this->m_user_id, "向用户", friend_id, "发送好友申请");
             return makeMessage("success", "Sucessfully sending application!");
         }
         else return makeErrorMessage("Can't send application");
@@ -135,6 +144,8 @@ namespace qls
             rejson["friend_list"].push_back(i);
         }
 
+        serverLogger.info("用户", (long long)this->m_user_id, "获取朋友列表");
+
         return rejson;
     }
 
@@ -142,6 +153,7 @@ namespace qls
     {
         if (serverManager.getUser(this->m_user_id)->addGroup(group_id))
         {
+            serverLogger.info("用户", (long long)this->m_user_id, "向群聊", group_id, "发送申请");
             return makeMessage("success", "Sucessfully sending application!");
         }
         else return makeErrorMessage("Can't send application");
@@ -157,6 +169,8 @@ namespace qls
             rejson["friend_list"].push_back(i);
         }
 
+        serverLogger.info("用户", (long long)this->m_user_id, "获取群聊列表");
+
         return rejson;
     }
 
@@ -171,6 +185,8 @@ namespace qls
                 this->m_user_id, friend_id))->sendMessage(
                     msg, this->m_user_id);
 
+        serverLogger.info("用户", (long long)this->m_user_id, "向朋友", friend_id, "发送消息");
+
         return makeMessage("success", "Successfully sending this message!");
     }
 
@@ -180,6 +196,7 @@ namespace qls
             return makeErrorMessage("You don't has the group!");
 
         serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg);
+        serverLogger.info("用户", (long long)this->m_user_id, "向群聊", group_id, "发送消息");
 
         return makeMessage("success", "Successfully sending this message!");
     }

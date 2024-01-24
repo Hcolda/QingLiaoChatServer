@@ -92,7 +92,7 @@ namespace Log
 		void print(LogMode mode, Args&&... args)
 		{
 			std::unique_lock<std::mutex> lock(m_mutex);
-			m_msgQueue.push(std::bind([mode = std::move(mode), this](auto&&... args) {
+			m_msgQueue.push(std::bind([mode = std::move(mode), this](auto... args) {
 				std::string modeString;
 
 				switch (mode)

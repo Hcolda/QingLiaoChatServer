@@ -184,10 +184,10 @@ namespace qls
             this->m_user_friend_map.cend();
     }
 
-    bool User::userHasGroup(long long group_user_id) const
+    bool User::userHasGroup(long long group_id) const
     {
         std::shared_lock<std::shared_mutex> sl(this->m_user_group_map_mutex);
-        return this->m_user_group_map.find(group_user_id) !=
+        return this->m_user_group_map.find(group_id) !=
             this->m_user_group_map.cend();
     }
 
