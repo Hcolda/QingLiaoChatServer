@@ -135,6 +135,13 @@ namespace qls
         bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
 
         /*
+        * @brief 删除好友申请
+        * @param user_id_1 用户1 id
+        * @param user_id_2 用户2 id
+        */
+        void removeFriendRoomVerification(long long user_id_1, long long user_id_2);
+
+        /*
         * @brief 添加群聊验证
         * @param group_id 群聊id
         * @param user_id 用户id
@@ -147,7 +154,7 @@ namespace qls
         * @param user_id 用户id
         * @return true 拥有 | false 不拥有
         */
-        bool hasGroupRoomVerification(long long group_id, long long user_id);
+        bool hasGroupRoomVerification(long long group_id, long long user_id) const;
 
         /*
         * @brief 设置群聊验证的群聊是否验证
@@ -166,6 +173,13 @@ namespace qls
         * @return true 双方都验证(用户自动加入群聊房间) | false 还有一方没有验证
         */
         bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
+
+        /*
+        * @brief 删除群聊申请
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        */
+        void removeGroupRoomVerification(long long group_id, long long user_id);
 
         /*
         * @brief 获取服务器的sql处理器

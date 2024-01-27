@@ -29,11 +29,32 @@ namespace qls
         static qjson::JObject makeMessage(const std::string& state, const std::string& msg);
 
         /*
+        * @brief 发送成功消息
+        * @param 成功消息
+        * @return json格式的成功消息
+        */
+        static qjson::JObject makeSuccessMessage(const std::string& msg);
+
+        /*
         * @brief 获取用户的公开的信息
         * @param user id
         * @return 返回的消息的json类
         */
         static qjson::JObject getUserPublicInfo(long long user_id);
+
+        /*
+        * @brief 获取是否有此用户
+        * @param user_id
+        * @return 返回消息的json类
+        */
+        static qjson::JObject hasUser(long long user_id);
+
+        /*
+        * @brief 模糊搜索用户名字返回user_id
+        * @param user_name
+        * @return 返回消息的json类
+        */
+        static qjson::JObject searchUser(const std::string& user_name);
 
         /*
         * @brief 获取存储的userid
@@ -81,10 +102,23 @@ namespace qls
         qjson::JObject addFriend(long long friend_id);
 
         /*
+        * @brief 同意好友请求
+        * @param user_id 用户id
+        * @param is_accept 是否同意
+        */
+        qjson::JObject acceptFriendVerification(long long user_id, bool is_accept);
+
+        /*
         * @brief 获取用户的好友列表
         * @return 返回的消息的json类
         */
         qjson::JObject getFriendList();
+
+        /*
+        * @brief 获取用户申请表
+        * @return 返回的消息的json类
+        */
+        qjson::JObject getFriendVerificationList();
 
         /*
         * @brief 添加群聊
@@ -98,6 +132,12 @@ namespace qls
         * @return 返回的消息的json类
         */
         qjson::JObject getGroupList();
+
+        /*
+        * @brief 获取群聊申请列表
+        * @return 返回的消息的json类
+        */
+        qjson::JObject getGroupVerificationList();
 
         /*
         * @brief 对好友发送消息

@@ -229,6 +229,12 @@ namespace qls
         else return false;
     }
 
+    std::unordered_map<long long, User::UserVerificationStruct> User::getFriendVerificationList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_friend_verification_map_mutex);
+        return m_user_friend_verification_map;
+    }
+
     bool User::addGroup(long long group_id)
     {
         if (!serverManager.hasGroupRoomVerification(group_id,
@@ -241,5 +247,11 @@ namespace qls
             return true;
         }
         else return false;
+    }
+
+    std::multimap<long long, User::UserVerificationStruct> User::getGroupVerificationList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_group_verification_map_mutex);
+        return m_user_group_verification_map;
     }
 }

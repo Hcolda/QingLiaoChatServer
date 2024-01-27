@@ -17,12 +17,7 @@ namespace qls
 
     qjson::JObject JsonMessageProcess::makeErrorMessage(const std::string& msg)
     {
-        qjson::JObject json;
-
-        json["state"] = "error";
-        json["message"] = msg;
-
-        return json;
+        return makeMessage("error", msg);
     }
 
     qjson::JObject JsonMessageProcess::makeMessage(const std::string& state, const std::string& msg)
@@ -35,9 +30,26 @@ namespace qls
         return json;
     }
 
+    qjson::JObject JsonMessageProcess::makeSuccessMessage(const std::string& msg)
+    {
+        return makeMessage("success", msg);
+    }
+
     qjson::JObject JsonMessageProcess::getUserPublicInfo(long long user_id)
     {
         return qjson::JObject();
+    }
+
+    qjson::JObject JsonMessageProcess::hasUser(long long user_id)
+    {
+        auto rejson = makeSuccessMessage("Successfully getting result!");
+        rejson["result"] = serverManager.hasUser(user_id);
+        return rejson;
+    }
+
+    qjson::JObject JsonMessageProcess::searchUser(const std::string& user_name)
+    {
+        return makeErrorMessage("This function is imcompleted.");
     }
 
     long long JsonMessageProcess::getLocalUserID() const
@@ -67,12 +79,34 @@ namespace qls
             case 0:
                 // login
                 return login(param["user_id"].getInt(), param["password"].getString());
-                break;
             case 1:
+                // register
                 return register_user(param["email"].getString(), param["password"].getString());
+            case 3:
+                // search friend
+                return searchUser(param["user_name"].getString());
+            case 4:
+                // add friend
+                return addFriend(param["user_id"].getInt());
+            case 5:
+                // add group
+                return addGroup(param["group_id"].getInt());
+            case 6:
+                // get friend list
+                return getFriendList();
+            case 7:
+                // get group list
+                return getGroupList();
+            case 8:
+                // send friend message
+                return sendFriendMessage(param["user_id"].getInt(), param["message"].getString());
+            case 9:
+                // send group message
+                return sendGroupMessage(param["group_id"].getInt(), param["message"].getString());
+                
+            default:
+                return makeErrorMessage("There isn't a function match your request.");
             }
-
-            return qjson::JObject();
         }
         catch (const std::exception& e)
         {
@@ -87,7 +121,7 @@ namespace qls
 
         if (serverManager.getUser(user_id)->isUserPassword(password))
         {
-            auto rejson = makeMessage("success", "Logining successfully!");
+            auto rejson = makeSuccessMessage("Logining successfully!");
             this->m_user_id = user_id;
 
             serverLogger.info("用户", user_id, "登录至服务器");
@@ -115,7 +149,7 @@ namespace qls
         ptr->firstUpdateUserPassword(password);
         ptr->updateUserEmail(email);
 
-        auto rejson = makeMessage("success", "Successfully create a new user!");
+        auto rejson = makeSuccessMessage("Successfully create a new user!");
         auto id = ptr->getUserID();
         rejson["user_id"] = id;
 
@@ -129,15 +163,29 @@ namespace qls
         if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
         {
             serverLogger.info("用户", (long long)this->m_user_id, "向用户", friend_id, "发送好友申请");
-            return makeMessage("success", "Sucessfully sending application!");
+            return makeSuccessMessage("Sucessfully sending application!");
         }
         else return makeErrorMessage("Can't send application");
+    }
+
+    qjson::JObject JsonMessageProcess::acceptFriendVerification(long long user_id, bool is_accept)
+    {
+        if (is_accept)
+        {
+            serverManager.setFriendVerified(this->m_user_id, user_id, this->m_user_id, true);
+            return makeSuccessMessage("Successfully adding a friend!");
+        }
+        else
+        {
+            serverManager.removeFriendRoomVerification(this->m_user_id, user_id);
+            return makeSuccessMessage("Successfully rejecting a user!");
+        }
     }
 
     qjson::JObject JsonMessageProcess::getFriendList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getFriendList());
-        qjson::JObject rejson = makeMessage("success", "Sucessfully getting friend list!");
+        qjson::JObject rejson = makeSuccessMessage("Sucessfully getting friend list!");
 
         for (auto i : set)
         {
@@ -149,20 +197,43 @@ namespace qls
         return rejson;
     }
 
+    qjson::JObject JsonMessageProcess::getFriendVerificationList()
+    {
+        auto map = serverManager.getUser(this->m_user_id)->getFriendVerificationList();
+        qjson::JObject localVector;
+        for (const auto& [user_id, user_struct] : map)
+        {
+            qjson::JObject localJson;
+            localJson["user_id"] = user_id;
+            localJson["verification_type"] = (int)user_struct.verification_type;
+            localJson["message"] = user_struct.message;
+
+            localVector.push_back(localJson);
+        }
+
+        auto rejson = makeSuccessMessage("Successfully getting the list!");
+        rejson["result"] = localVector;
+
+        return rejson;
+    }
+
     qjson::JObject JsonMessageProcess::addGroup(long long group_id)
     {
+        if (!serverManager.hasGroupRoom(group_id))
+            return makeErrorMessage("There isn't a group room match this id!");
+
         if (serverManager.getUser(this->m_user_id)->addGroup(group_id))
         {
             serverLogger.info("用户", (long long)this->m_user_id, "向群聊", group_id, "发送申请");
-            return makeMessage("success", "Sucessfully sending application!");
+            return makeSuccessMessage("Sucessfully sending an application!");
         }
-        else return makeErrorMessage("Can't send application");
+        else return makeErrorMessage("Can't send an application!");
     }
 
     qjson::JObject JsonMessageProcess::getGroupList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getGroupList());
-        qjson::JObject rejson = makeMessage("success", "Sucessfully getting group list!");
+        qjson::JObject rejson = makeSuccessMessage("Sucessfully getting group list!");
 
         for (auto i : set)
         {
@@ -170,6 +241,21 @@ namespace qls
         }
 
         serverLogger.info("用户", (long long)this->m_user_id, "获取群聊列表");
+
+        return rejson;
+    }
+
+    qjson::JObject JsonMessageProcess::getGroupVerificationList()
+    {
+        auto map = std::move(serverManager.getUser(this->m_user_id)->getGroupVerificationList());
+        auto rejson = makeSuccessMessage("Successfully getting a list!");
+        for (const auto& [group_id, user_struct] : map)
+        {
+            auto group = std::to_string(group_id);
+            rejson["result"][group.c_str()]["user_id"] = user_struct.user_id;
+            rejson["result"][group.c_str()]["verification_type"] = (int)user_struct.verification_type;
+            rejson["result"][group.c_str()]["message"] = user_struct.message;
+        }
 
         return rejson;
     }
@@ -187,7 +273,7 @@ namespace qls
 
         serverLogger.info("用户", (long long)this->m_user_id, "向朋友", friend_id, "发送消息");
 
-        return makeMessage("success", "Successfully sending this message!");
+        return makeSuccessMessage("Successfully sending this message!");
     }
 
     qjson::JObject JsonMessageProcess::sendGroupMessage(long long group_id, const std::string& msg)
@@ -198,14 +284,22 @@ namespace qls
         serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg);
         serverLogger.info("用户", (long long)this->m_user_id, "向群聊", group_id, "发送消息");
 
-        return makeMessage("success", "Successfully sending this message!");
+        return makeSuccessMessage("Successfully sending this message!");
     }
 
 
     const std::multimap<std::string, long long> JsonMessageProcess::m_function_map(
         {
             {"login", 0},
-            {"register", 1}
+            {"register", 1},
+            {"has_user", 2},
+            {"search_user", 3},
+            {"add_friend", 4},
+            {"add_group", 5},
+            {"get_friend_list", 6},
+            {"get_group_list", 7},
+            {"send_friend_message", 8},
+            {"send_group_message", 9}
         }
     );
 }

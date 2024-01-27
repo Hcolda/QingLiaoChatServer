@@ -100,6 +100,13 @@ namespace qls
         }
 
         /*
+        * @brief 获取用户申请表
+        * @return unordered_map
+        */
+        std::unordered_map<long long,
+            UserVerificationStruct> getFriendVerificationList() const;
+
+        /*
         * @brief 添加群申请
         * @param group_user_id 群聊id
         * @return true 提交申请成功 | false 失败
@@ -121,8 +128,9 @@ namespace qls
             std::unique_lock<std::shared_mutex> ul(m_user_group_verification_map_mutex);
             size_t size = m_user_group_verification_map.count(group_id);
             if (!size) throw std::invalid_argument("Wrong argument!");
+
             auto itor = m_user_group_verification_map.find(group_id);
-            for (; itor->first == group_id; itor++)
+            for (; itor->first == group_id && itor != m_user_group_verification_map.end(); itor++)
             {
                 if (itor->second.user_id == user_id)
                 {
@@ -131,6 +139,12 @@ namespace qls
                 }
             }
         }
+
+        /*
+        * @brief 获取群聊申请验证
+        */
+        std::multimap<long long,
+            UserVerificationStruct> getGroupVerificationList() const;
 
     private:
         // 用户数据

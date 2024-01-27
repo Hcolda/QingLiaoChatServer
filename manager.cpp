@@ -16,13 +16,13 @@ namespace qls
     void Manager::init()
     {
         // sql 初始化
-        this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
+        /*this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
             serverIni["mysql"]["password"],
             "mysql",
             serverIni["mysql"]["host"],
             unsigned short(std::stoi(serverIni["mysql"]["port"])));
 
-        this->m_sqlProcess.connectSQLServer();
+        this->m_sqlProcess.connectSQLServer();*/
 
         {
             this->m_newUserId = 10000;
@@ -327,6 +327,22 @@ namespace qls
         return result;
     }
 
+    void Manager::removeFriendRoomVerification(long long user_id_1, long long user_id_2)
+    {
+        {
+            std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
+
+            auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
+            if (itor == m_FriendRoomVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
+
+            m_FriendRoomVerification_map.erase(itor);
+        }
+
+        getUser(user_id_1)->removeFriendVerification(user_id_2);
+        getUser(user_id_2)->removeFriendVerification(user_id_1);
+    }
+
     void Manager::addGroupRoomVerification(long long group_id, long long user_id)
     {
         {
@@ -364,7 +380,7 @@ namespace qls
         }
     }
 
-    bool Manager::hasGroupRoomVerification(long long group_id, long long user_id)
+    bool Manager::hasGroupRoomVerification(long long group_id, long long user_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_GroupVerification_map_mutex);
 
@@ -459,6 +475,22 @@ namespace qls
             }
         }
         return result;
+    }
+
+    void Manager::removeGroupRoomVerification(long long group_id, long long user_id)
+    {
+        {
+            std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+
+            auto itor = m_GroupVerification_map.find({ group_id, user_id });
+            if (itor == m_GroupVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
+
+            m_GroupVerification_map.erase(itor);
+        }
+
+        getUser(getGroupRoom(group_id)->getAdministrator())->removeGroupVerification(group_id, user_id);
+        getUser(user_id)->removeGroupVerification(group_id, user_id);
     }
 
     quqisql::SQLDBProcess& Manager::getServerSqlProcessor()
