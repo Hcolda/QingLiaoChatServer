@@ -128,6 +128,14 @@ namespace qls
         qjson::JObject addGroup(long long group_id);
 
         /*
+        * @brief 同意群聊请求
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        * @param is_accept 是否同意
+        */
+        qjson::JObject acceptGroupVerification(long long group_id, long long user_id, bool is_accept);
+
+        /*
         * @brief 获取用户的群聊列表
         * @return 返回的消息的json类
         */

@@ -85,6 +85,7 @@ namespace qls
             do
             {
                 size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
+                serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({ buffer, size }))));
                 m_package.write({ buffer, size });
             } while (!m_package.canRead());
         }
@@ -107,12 +108,12 @@ namespace qls
             }
         }
 
-        std::string out = datapack->getData(datapack);
+        std::string out = datapack->getData();
 
         // 先不加密
         if (m_aes.hasAESKeys)
         {
-            if (!m_aes.AES.encrypt(datapack->getData(datapack), out, m_aes.AESKey, m_aes.AESiv, false))
+            if (!m_aes.AES.encrypt(datapack->getData(), out, m_aes.AESKey, m_aes.AESiv, false))
             {
                 serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
                 co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), datapack};
@@ -133,7 +134,7 @@ namespace qls
         pack->requestID = requestID;
         pack->sequence = sequence;
         pack->type = type;
-        co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
+        co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString()), asio::use_awaitable);
     }
 
     asio::awaitable<void> SocketService::process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
@@ -197,8 +198,6 @@ namespace qls
 
         try
         {
-            serverLogger.info(std::format("[{}]连接至服务器", addr));
-
             for (;;)
             {
                 auto [data, pack] = co_await socketService.async_receive();

@@ -32,6 +32,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
     std::string error_msg;
     try
     {
+        serverLogger.info(std::format("[{}]连接至服务器", addr));
         co_await acceptFunction_(socket);
 
         // 发送pem密钥给客户端
@@ -49,6 +50,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
             do
             {
                 std::size_t n = co_await socket.async_read_some(asio::buffer(data), use_awaitable);
+                serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({data, n}))));
                 sds->package.write({ data,n });
             } while (!sds->package.canRead());
 
@@ -65,7 +67,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                         datapack = std::shared_ptr<Network::Package::DataPackage>(
                             Network::Package::DataPackage::stringToPackage(
                                 sds->package.read()));
-                        if (datapack->getData(datapack) != "test")
+                        if (datapack->getData() != "test")
                             throw std::logic_error("Test error!");
                     }
                     catch (const std::exception& e)

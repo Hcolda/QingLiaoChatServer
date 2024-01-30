@@ -127,7 +127,7 @@ protected:
             {
                 return false;
             }
-            out.resize(size_t(mlen + flen));
+            out.resize(size_t(mlen) + size_t(flen));
             return true;
         }
         else
@@ -155,7 +155,7 @@ protected:
             {
                 return false;
             }
-            out.resize(size_t(mlen + flen));
+            out.resize(size_t(mlen) + size_t(flen));
             return true;
         }
     }

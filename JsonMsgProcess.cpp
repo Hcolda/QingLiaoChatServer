@@ -82,6 +82,9 @@ namespace qls
             case 1:
                 // register
                 return register_user(param["email"].getString(), param["password"].getString());
+            case 2:
+                // has user
+                return hasUser(param["user_id"].getInt());
             case 3:
                 // search friend
                 return searchUser(param["user_name"].getString());
@@ -103,7 +106,20 @@ namespace qls
             case 9:
                 // send group message
                 return sendGroupMessage(param["group_id"].getInt(), param["message"].getString());
-                
+            case 10:
+                // accept friend verification
+                return acceptFriendVerification(param["user_id"].getInt(),
+                    param["is_accept"].getBool());
+            case 11:
+                // get friend verification list
+                return getFriendVerificationList();
+            case 12:
+                // accept group verification
+                return acceptGroupVerification(param["group_id"].getInt(),
+                    param["user_id"].getInt(), param["is_accept"].getBool());
+            case 13:
+                // get group verification list
+                return getGroupVerificationList();
             default:
                 return makeErrorMessage("There isn't a function match your request.");
             }
@@ -230,6 +246,20 @@ namespace qls
         else return makeErrorMessage("Can't send an application!");
     }
 
+    qjson::JObject JsonMessageProcess::acceptGroupVerification(long long group_id, long long user_id, bool is_accept)
+    {
+        if (is_accept)
+        {
+            serverManager.setGroupRoomGroupVerified(group_id, user_id, true);
+            return makeSuccessMessage("Successfully adding a member into the group!");
+        }
+        else
+        {
+            serverManager.removeGroupRoomVerification(group_id, user_id);
+            return makeSuccessMessage("Successfully rejecting a user!");
+        }
+    }
+
     qjson::JObject JsonMessageProcess::getGroupList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getGroupList());
@@ -287,7 +317,6 @@ namespace qls
         return makeSuccessMessage("Successfully sending this message!");
     }
 
-
     const std::multimap<std::string, long long> JsonMessageProcess::m_function_map(
         {
             {"login", 0},
@@ -299,7 +328,11 @@ namespace qls
             {"get_friend_list", 6},
             {"get_group_list", 7},
             {"send_friend_message", 8},
-            {"send_group_message", 9}
+            {"send_group_message", 9},
+            {"accept_friend_verification", 10},
+            {"get_friend_verification_list", 11},
+            {"accept_group_verification", 12},
+            {"get_group_verification_list", 13}
         }
     );
 }
