@@ -6,8 +6,10 @@
 
 #include "definition.hpp"
 #include "websiteFunctions.hpp"
+#include "manager.h"
 
 extern Log::Logger serverLogger;
+extern qls::Manager serverManager;
 
 namespace qls
 {
@@ -45,7 +47,8 @@ namespace qls
 namespace qls
 {
     SocketService::SocketService(std::shared_ptr<asio::ip::tcp::socket> socket_ptr) :
-        m_socket_ptr(socket_ptr)
+        m_socket_ptr(socket_ptr),
+        m_jsonProcess(-1)
     {
         if (m_socket_ptr.get() == nullptr)
             throw std::logic_error("socket_ptr is nullptr");
@@ -60,7 +63,10 @@ namespace qls
     {
         m_aes.AESKey = key;
         m_aes.AESiv = iv;
-        m_aes.hasAESKeys = true;
+        if (key.size() == 32 && iv.size() == 16)
+            m_aes.hasAESKeys = true;
+        else
+            m_aes.hasAESKeys = false;
     }
 
     void SocketService::setUUID(const std::string& uuid)
@@ -79,6 +85,7 @@ namespace qls
             do
             {
                 size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
+                serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({ buffer, size }))));
                 m_package.write({ buffer, size });
             } while (!m_package.canRead());
         }
@@ -101,14 +108,17 @@ namespace qls
             }
         }
 
-        std::string out = datapack->getData(datapack);
+        std::string out = datapack->getData();
 
         // 先不加密
-        /*if (!m_aes.AES.encrypt(datapack->getData(datapack), out, m_aes.AESKey, m_aes.AESiv, false))
+        if (m_aes.hasAESKeys)
         {
-            serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
-            co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), datapack};
-        }*/
+            if (!m_aes.AES.encrypt(datapack->getData(), out, m_aes.AESKey, m_aes.AESiv, false))
+            {
+                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
+                co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), datapack};
+            }
+        }
         co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{out, datapack};
     }
 
@@ -116,33 +126,39 @@ namespace qls
     {
         std::string out(data);
         //先不加密
-        // m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
+        if (m_aes.hasAESKeys)
+        {
+            m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
+        }
         auto pack = Network::Package::DataPackage::makePackage(out);
         pack->requestID = requestID;
         pack->sequence = sequence;
         pack->type = type;
-        co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString(pack)), asio::use_awaitable);
+        co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString()), asio::use_awaitable);
     }
 
     asio::awaitable<void> SocketService::process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
         const std::string& data,
         std::shared_ptr<Network::Package::DataPackage> pack)
     {
-        if (!this->m_jsonProcess)
-        {
-            // 如果json process没有加载
-            // 获取用户的id并创建json process
+        //if (!this->m_jsonProcess)
+        //{
+        //    // 如果json process没有加载
+        //    // 获取用户的id并创建json process
 
-            // long long user_id = WebFunction::getUserID(this->m_user.uuid);
-            this->m_jsonProcess = std::make_shared<JsonMessageProcess>(-1);
-        }
+        //    // long long user_id = WebFunction::getUserID(this->m_user.uuid);
+        //    this->m_jsonProcess = std::make_shared<JsonMessageProcess>(-1);
+        //}
+
+        if (this->m_jsonProcess.getLocalUserID() == -1 && pack->type != 1)
+            co_await this->async_send(qjson::JWriter::fastWrite(JsonMessageProcess::makeErrorMessage("You have't been logined!")), pack->requestID, 1);
 
         switch (pack->type)
         {
         case 1:
         {
             // json文本类型
-            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess->processJsonMessage(data)), pack->requestID, 1);
+            co_await this->async_send(qjson::JWriter::fastWrite(this->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data))), pack->requestID, 1);
         }
             break;
         case 2:

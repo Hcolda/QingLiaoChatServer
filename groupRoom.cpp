@@ -10,7 +10,8 @@ namespace qls
     // GroupRoom
 
     GroupRoom::GroupRoom(long long group_id) :
-        m_group_id(group_id) {}
+        m_group_id(group_id),
+        m_administrator_user_id(0) {}
 
     void GroupRoom::init()
     {
@@ -98,6 +99,43 @@ namespace qls
     {
         std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
         return m_user_id_map.find(user_id) != m_user_id_map.end();
+    }
+
+    long long GroupRoom::getAdministrator() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_administrator_user_id_mutex);
+        return m_administrator_user_id;
+    }
+
+    void GroupRoom::setAdministrator(long long user_id)
+    {
+        std::unique_lock<std::shared_mutex> ul1(m_user_id_map_mutex, std::defer_lock);
+        std::unique_lock<std::shared_mutex> ul2(m_administrator_user_id_mutex, std::defer_lock);
+        std::lock(ul1, ul2);
+
+        if (m_administrator_user_id == 0)
+        {
+            auto itor = m_user_id_map.find(user_id);
+            if (itor == m_user_id_map.end())
+            {
+                m_user_id_map.insert(user_id);
+                m_permission.modifyUserPermission(user_id,
+                    Permission::PermissionType::Administrator);
+            }
+            else
+            {
+                m_permission.modifyUserPermission(user_id,
+                    Permission::PermissionType::Administrator);
+            }
+        }
+        else
+        {
+            m_permission.modifyUserPermission(m_administrator_user_id,
+                Permission::PermissionType::Default);
+            m_permission.modifyUserPermission(user_id,
+                Permission::PermissionType::Administrator);
+            m_administrator_user_id = user_id;
+        }
     }
 
     long long GroupRoom::getGroupID() const

@@ -109,7 +109,7 @@ namespace qls
         // socket ptr
         std::shared_ptr<asio::ip::tcp::socket>  m_socket_ptr;
         // JsonMsgProcess
-        std::shared_ptr<JsonMessageProcess>     m_jsonProcess;
+        JsonMessageProcess                      m_jsonProcess;
         // aes
         LocalAES                                m_aes;
         // user

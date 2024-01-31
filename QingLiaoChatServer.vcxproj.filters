@@ -128,5 +128,6 @@
     <ClInclude Include="groupRoomVerification.h">
       <Filter>room\groupRoom</Filter>
     </ClInclude>
+    <ClInclude Include="regexMatch.hpp" />
   </ItemGroup>
 </Project>

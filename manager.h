@@ -97,6 +97,13 @@ namespace qls
         std::shared_ptr<qls::User> addNewUser();
 
         /*
+        * @brief 拥有用户
+        * @param user_id 用户id
+        * @return true 有此用户 | false 没有
+        */
+        bool hasUser(long long user_id) const;
+
+        /*
         * @brief 获取用户类
         * @return user类
         */
@@ -128,6 +135,13 @@ namespace qls
         bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
 
         /*
+        * @brief 删除好友申请
+        * @param user_id_1 用户1 id
+        * @param user_id_2 用户2 id
+        */
+        void removeFriendRoomVerification(long long user_id_1, long long user_id_2);
+
+        /*
         * @brief 添加群聊验证
         * @param group_id 群聊id
         * @param user_id 用户id
@@ -140,7 +154,7 @@ namespace qls
         * @param user_id 用户id
         * @return true 拥有 | false 不拥有
         */
-        bool hasGroupRoomVerification(long long group_id, long long user_id);
+        bool hasGroupRoomVerification(long long group_id, long long user_id) const;
 
         /*
         * @brief 设置群聊验证的群聊是否验证
@@ -159,6 +173,13 @@ namespace qls
         * @return true 双方都验证(用户自动加入群聊房间) | false 还有一方没有验证
         */
         bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
+
+        /*
+        * @brief 删除群聊申请
+        * @param group_id 群聊id
+        * @param user_id 用户id
+        */
+        void removeGroupRoomVerification(long long group_id, long long user_id);
 
         /*
         * @brief 获取服务器的sql处理器
@@ -229,37 +250,47 @@ namespace qls
             }
         };
 
+        // 群聊房间表
         std::unordered_map<long long,
             std::shared_ptr<qls::GroupRoom>>    m_baseRoom_map;
         mutable std::shared_mutex               m_baseRoom_map_mutex;
 
+        // 私聊房间表
         std::unordered_map<long long,
             std::shared_ptr<qls::PrivateRoom>>  m_basePrivateRoom_map;
         mutable std::shared_mutex               m_basePrivateRoom_map_mutex;
 
+        // 私聊用户对应私聊房间号表
         std::unordered_map<PrivateRoomIDStruct,
             long long,
             PrivateRoomIDStructHasher>          m_userID_to_privateRoomID_map;
         mutable std::shared_mutex               m_userID_to_privateRoomID_map_mutex;
 
+        // 用户表
         std::unordered_map<long long,
             std::shared_ptr<qls::User>>         m_user_map;
         mutable std::shared_mutex               m_user_map_mutex;
 
+        // 用户添加用户申请表
         std::unordered_map<PrivateRoomIDStruct,
             qls::FriendRoomVerification,
             PrivateRoomIDStructHasher>          m_FriendRoomVerification_map;
         mutable std::shared_mutex               m_FriendRoomVerification_map_mutex;
 
+        // 用户添加群聊申请表
         std::unordered_map<GroupVerificationStruct,
             qls::GroupRoomVerification,
             GroupVerificationStructHasher>      m_GroupVerification_map;
         mutable std::shared_mutex               m_GroupVerification_map_mutex;
 
+        // 新用户id
         std::atomic<long long>                  m_newUserId;
+        // 新私聊房间id
         std::atomic<long long>                  m_newPrivateRoomId;
+        // 新群聊房间id
         std::atomic<long long>                  m_newGroupRoomId;
-    
+        
+        // sql进程管理
         quqisql::SQLDBProcess                   m_sqlProcess;
     };
 }

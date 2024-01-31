@@ -37,7 +37,7 @@ public:
             // 结束加密操作
             int flen = 0;
             EVP_EncodeFinal(shared_ctx.get(), (unsigned char*)out.data() + mlen, &flen);
-            out.resize(size_t(mlen + flen));
+            out.resize(size_t(mlen) + size_t(flen));
             return true;
         }
         else
@@ -62,7 +62,7 @@ public:
             {
                 return false;
             }
-            out.resize(size_t(mlen + flen));
+            out.resize(size_t(mlen) + size_t(flen));
             return true;
         }
     }

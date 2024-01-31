@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <Ini.h>
 
+#include "user.h"
+
 extern qini::INIObject serverIni;
 
 namespace qls
@@ -14,13 +16,13 @@ namespace qls
     void Manager::init()
     {
         // sql 初始化
-        this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
+        /*this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
             serverIni["mysql"]["password"],
             "mysql",
             serverIni["mysql"]["host"],
             unsigned short(std::stoi(serverIni["mysql"]["port"])));
 
-        this->m_sqlProcess.connectSQLServer();
+        this->m_sqlProcess.connectSQLServer();*/
 
         {
             this->m_newUserId = 10000;
@@ -134,6 +136,7 @@ namespace qls
         }
 
         this->m_baseRoom_map[group_room_id] = std::make_shared<qls::GroupRoom>(group_room_id);
+        this->m_baseRoom_map[group_room_id]->setAdministrator(opreator_user_id);
 
         // 初始化
         this->m_baseRoom_map[group_room_id]->init();
@@ -191,6 +194,13 @@ namespace qls
         return m_user_map[newUserId];
     }
 
+    bool Manager::hasUser(long long user_id) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+
+        return m_user_map.find(user_id) != m_user_map.end();
+    }
+
     std::shared_ptr<qls::User> Manager::getUser(long long user_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
@@ -204,13 +214,39 @@ namespace qls
 
     void Manager::addFriendRoomVerification(long long user_id_1, long long user_id_2)
     {
-        std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
+        {
+            std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
 
-        if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) ==
-            m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) ==
+                m_FriendRoomVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
 
-        m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 }, FriendRoomVerification{ user_id_1, user_id_2 });
+            m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 }, FriendRoomVerification{ user_id_1, user_id_2 });
+        }
+        
+        // user1
+        {
+            qls::User::UserVerificationStruct uv;
+
+            uv.user_id = user_id_2;
+            uv.verification_type =
+                qls::User::UserVerificationStruct::VerificationType::Sent;
+
+            auto ptr = this->getUser(user_id_1);
+            ptr->addFriendVerification(user_id_2, std::move(uv));
+        }
+
+        // user2
+        {
+            qls::User::UserVerificationStruct uv;
+
+            uv.user_id = user_id_1;
+            uv.verification_type =
+                qls::User::UserVerificationStruct::VerificationType::Received;
+
+            auto ptr = this->getUser(user_id_2);
+            ptr->addFriendVerification(user_id_1, std::move(uv));
+        }
     }
 
     bool Manager::hasFriendRoomVerification(long long user_id_1, long long user_id_2) const
@@ -223,16 +259,19 @@ namespace qls
 
     bool Manager::setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified)
     {
-        std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
+        bool result = false;
+        {
+            std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
 
-        auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
-        if (itor == m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
+            if (itor == m_FriendRoomVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
 
-        auto& ver = itor->second;
-        ver.setUserVerified(user_id, is_verified);
+            auto& ver = itor->second;
+            ver.setUserVerified(user_id, is_verified);
 
-        bool result = ver.getUserVerified(user_id_1) && ver.getUserVerified(user_id_2);
+            result = ver.getUserVerified(user_id_1) && ver.getUserVerified(user_id_2);
+        }
 
         if (result)
         {
@@ -246,6 +285,40 @@ namespace qls
             {
                 std::unique_lock<std::shared_mutex> ul(m_basePrivateRoom_map_mutex);
                 this->addPrivateRoom(user_id_1, user_id_2);
+
+                // 更新user1的friendList
+                {
+                    std::shared_ptr<qls::User> ptr;
+                    {
+                        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                        auto itor = m_user_map.find(user_id_1);
+                        if (itor == m_user_map.end())
+                            throw std::invalid_argument("Wrong argument!");
+                        ptr = itor->second;
+                    }
+                    auto set = std::move(ptr->getFriendList());
+                    set.insert(user_id_2);
+                    ptr->updateFriendList(std::move(set));
+
+                    ptr->removeFriendVerification(user_id_2);
+                }
+                
+                // 更新user2的friendList
+                {
+                    std::shared_ptr<qls::User> ptr;
+                    {
+                        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                        auto itor = m_user_map.find(user_id_2);
+                        if (itor == m_user_map.end())
+                            throw std::invalid_argument("Wrong argument!");
+                        ptr = itor->second;
+                    }
+                    auto set = std::move(ptr->getFriendList());
+                    set.insert(user_id_1);
+                    ptr->updateFriendList(std::move(set));
+
+                    ptr->removeFriendVerification(user_id_1);
+                }
             }
 
             if (error) throw std::invalid_argument("Wrong argument!");
@@ -254,18 +327,60 @@ namespace qls
         return result;
     }
 
-    void Manager::addGroupRoomVerification(long long group_id, long long user_id)
+    void Manager::removeFriendRoomVerification(long long user_id_1, long long user_id_2)
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        {
+            std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
 
-        if (m_GroupVerification_map.find({ group_id, user_id }) ==
-            m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
+            if (itor == m_FriendRoomVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
 
-        m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id }, GroupRoomVerification{ group_id, user_id });
+            m_FriendRoomVerification_map.erase(itor);
+        }
+
+        getUser(user_id_1)->removeFriendVerification(user_id_2);
+        getUser(user_id_2)->removeFriendVerification(user_id_1);
     }
 
-    bool Manager::hasGroupRoomVerification(long long group_id, long long user_id)
+    void Manager::addGroupRoomVerification(long long group_id, long long user_id)
+    {
+        {
+            std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+
+            if (m_GroupVerification_map.find({ group_id, user_id }) ==
+                m_GroupVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
+
+            m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id }, GroupRoomVerification{ group_id, user_id });
+        }
+
+        // 用户发送请求
+        {
+            qls::User::UserVerificationStruct uv;
+
+            uv.user_id = group_id;
+            uv.verification_type =
+                qls::User::UserVerificationStruct::VerificationType::Sent;
+
+            auto ptr = this->getUser(user_id);
+            ptr->addGroupVerification(group_id, std::move(uv));
+        }
+
+        // 群聊拥有者接收请求
+        {
+            qls::User::UserVerificationStruct uv;
+
+            uv.user_id = user_id;
+            uv.verification_type =
+                qls::User::UserVerificationStruct::VerificationType::Received;
+
+            auto ptr = this->getUser(this->getGroupRoom(group_id)->getAdministrator());
+            ptr->addGroupVerification(group_id, std::move(uv));
+        }
+    }
+
+    bool Manager::hasGroupRoomVerification(long long group_id, long long user_id) const
     {
         std::shared_lock<std::shared_mutex> sl(m_GroupVerification_map_mutex);
 
@@ -275,15 +390,19 @@ namespace qls
 
     bool Manager::setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified)
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        bool result = false;
+        {
+            std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
 
-        auto itor = m_GroupVerification_map.find({ group_id, user_id });
-        if (itor == m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            auto itor = m_GroupVerification_map.find({ group_id, user_id });
+            if (itor == m_GroupVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
 
-        auto& ver = itor->second;
-        ver.setGroupVerified(is_verified);
-        bool result = ver.getGroupVerified() && ver.getUserVerified();
+            auto& ver = itor->second;
+            ver.setGroupVerified(is_verified);
+            result = ver.getGroupVerified() && ver.getUserVerified();
+        }
+
         if (result)
         {
             std::shared_lock<std::shared_mutex> sl(m_baseRoom_map_mutex);
@@ -293,21 +412,38 @@ namespace qls
                 throw std::invalid_argument("Wrong argument!");
 
             itor->second->addMember(user_id);
+
+            // 更新user的groupList
+            std::shared_ptr<qls::User> ptr;
+            {
+                std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                auto itor = m_user_map.find(user_id);
+                if (itor == m_user_map.end())
+                    throw std::invalid_argument("Wrong argument!");
+                ptr = itor->second;
+            }
+            auto set = std::move(ptr->getGroupList());
+            set.insert(group_id);
+            ptr->updateGroupList(std::move(set));
         }
         return result;
     }
 
     bool Manager::setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified)
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        bool result = false;
+        {
+            std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
 
-        auto itor = m_GroupVerification_map.find({ group_id, user_id });
-        if (itor == m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            auto itor = m_GroupVerification_map.find({ group_id, user_id });
+            if (itor == m_GroupVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
 
-        auto& ver = itor->second;
-        ver.setUserVerified(is_verified);
-        bool result = ver.getGroupVerified() && ver.getUserVerified();
+            auto& ver = itor->second;
+            ver.setUserVerified(is_verified);
+            result = ver.getGroupVerified() && ver.getUserVerified();
+        }
+
         if (result)
         {
             std::shared_lock<std::shared_mutex> sl(m_baseRoom_map_mutex);
@@ -317,8 +453,44 @@ namespace qls
                 throw std::invalid_argument("Wrong argument!");
 
             itor->second->addMember(user_id);
+
+            // 更新user的friendlist
+            std::shared_ptr<qls::User> ptr;
+            {
+                std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+                auto itor = m_user_map.find(user_id);
+                if (itor == m_user_map.end())
+                    throw std::invalid_argument("Wrong argument!");
+                ptr = itor->second;
+            }
+            auto set = std::move(ptr->getGroupList());
+            set.insert(group_id);
+            ptr->updateGroupList(std::move(set));
+
+            ptr->removeGroupVerification(group_id, user_id);
+
+            {
+                auto ptr = this->getUser(this->getGroupRoom(group_id)->getAdministrator());
+                ptr->removeGroupVerification(group_id, user_id);
+            }
         }
         return result;
+    }
+
+    void Manager::removeGroupRoomVerification(long long group_id, long long user_id)
+    {
+        {
+            std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+
+            auto itor = m_GroupVerification_map.find({ group_id, user_id });
+            if (itor == m_GroupVerification_map.end())
+                throw std::invalid_argument("Wrong argument!");
+
+            m_GroupVerification_map.erase(itor);
+        }
+
+        getUser(getGroupRoom(group_id)->getAdministrator())->removeGroupVerification(group_id, user_id);
+        getUser(user_id)->removeGroupVerification(group_id, user_id);
     }
 
     quqisql::SQLDBProcess& Manager::getServerSqlProcessor()

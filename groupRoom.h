@@ -156,13 +156,29 @@ namespace qls
         bool hasUser(long long user_id) const;
 
         /*
+        * @brief 获取群聊拥有者
+        * @return user_id
+        */
+        long long getAdministrator() const;
+
+        /*
+        * @brief 设置群聊拥有者
+        * @param user_id 用户id
+        */
+        void setAdministrator(long long user_id);
+
+        /*
         * @brief 获取群聊id
         * @return 群聊id
         */
         long long getGroupID() const;
 
     private:
-        const long long m_group_id;
+        const long long                 m_group_id;
+        long long                       m_administrator_user_id;
+        mutable std::shared_mutex       m_administrator_user_id_mutex;
+
+        Permission                      m_permission;
 
         std::unordered_set<long long>   m_user_id_map;
         mutable std::shared_mutex       m_user_id_map_mutex;
@@ -173,7 +189,7 @@ namespace qls
         std::priority_queue<std::pair<long long, std::string>,
             std::vector<std::pair<long long, std::string>>,
             std::greater<std::pair<long long, std::string>>>        m_message_queue;
-        std::shared_mutex                                           m_message_queue_mutex;
+        mutable std::shared_mutex                                   m_message_queue_mutex;
     };
 }
 

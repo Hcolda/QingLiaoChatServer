@@ -34,6 +34,75 @@ namespace qls
         return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
     }
 
+    inline std::string showBinaryData(const std::string& data)
+    {
+        auto isShowableCharactor = [](unsigned char ch) -> bool {
+            return 32 <= ch && ch <= 126;
+            };
+        
+        std::string result;
+
+        for (const auto& i : data)
+        {
+            if (isShowableCharactor((unsigned char)i))
+            {
+                result += i;
+            }
+            else
+            {
+                std::string hex;
+                int locch = (unsigned char)i;
+                while (locch)
+                {
+                    if (locch % 16 < 10)
+                    {
+                        hex += ('0' + (locch % 16));
+                        locch /= 16;
+                        continue;
+                    }
+                    switch (locch % 16)
+                    {
+                    case 10:
+                        hex += 'a';
+                        break;
+                    case 11:
+                        hex += 'b';
+                        break;
+                    case 12:
+                        hex += 'c';
+                        break;
+                    case 13:
+                        hex += 'd';
+                        break;
+                    case 14:
+                        hex += 'e';
+                        break;
+                    case 15:
+                        hex += 'f';
+                        break;
+                    }
+                    locch /= 16;
+                }
+
+                //result += "\\x" + (hex.size() == 1 ? "0" + hex : hex);
+                if (hex.empty())
+                {
+                    result += "\\x00";
+                }
+                else if (hex.size() == 1)
+                {
+                    result += "\\x0" + hex;
+                }
+                else
+                {
+                    result += "\\x" + hex;
+                }
+            }
+        }
+
+        return result;
+    }
+
     /*
     * @brief 判断本地序是否为大端序
     * @return true 为大端序 | false 为小端序
@@ -155,7 +224,9 @@ namespace qls
                     package->sequence = swapNetworkEndianness(package->sequence);
                     package->verifyCode = swapNetworkEndianness(package->verifyCode);
 
-                    if (hash(getData(package)) != package->verifyCode) throw std::logic_error("hash is different");
+                    size_t gethash = hash(package->getData());
+                    if (gethash != package->verifyCode) throw std::logic_error(std::format("hash is different, local hash: {}, pack hash: {}",
+                        gethash, package->verifyCode));
 
                     return package;
                 }
@@ -165,22 +236,20 @@ namespace qls
                 * @param dp DataPackage
                 * @return 二进制格式数据包
                 */
-                static std::string packageToString(const std::shared_ptr<DataPackage>& dp)
+                std::string packageToString() noexcept
                 {
-                    if (dp.get() == nullptr) throw std::logic_error("datapackage is nullptr");
-
-                    size_t localLength = dp->length;
+                    size_t localLength = this->length;
 
                     // 端序转换
-                    dp->length = swapNetworkEndianness(dp->length);
-                    dp->requestID = swapNetworkEndianness(dp->requestID);
-                    dp->type = swapNetworkEndianness(dp->type);
-                    dp->sequence = swapNetworkEndianness(dp->sequence);
-                    dp->verifyCode = swapNetworkEndianness(dp->verifyCode);
+                    this->length = swapNetworkEndianness(this->length);
+                    this->requestID = swapNetworkEndianness(this->requestID);
+                    this->type = swapNetworkEndianness(this->type);
+                    this->sequence = swapNetworkEndianness(this->sequence);
+                    this->verifyCode = swapNetworkEndianness(this->verifyCode);
 
                     std::string data;
                     data.resize(localLength);
-                    std::memcpy(data.data(), dp.get(), localLength);
+                    std::memcpy(data.data(), this, localLength);
                     return data;
                 }
 
@@ -188,12 +257,10 @@ namespace qls
                 * @brief 获取数据包大小
                 * @return size 数据包大小
                 */
-                static size_t getPackageSize(const std::shared_ptr<DataPackage>& dp)
+                size_t getPackageSize() noexcept
                 {
-                    if (dp.get() == nullptr) throw std::logic_error("datapackage is nullptr");
-
                     int size = 0;
-                    std::memcpy(&size, &(dp->length), sizeof(int));
+                    std::memcpy(&size, &(this->length), sizeof(int));
                     return size_t(size);
                 }
 
@@ -201,12 +268,10 @@ namespace qls
                 * @brief 获取包中二进制数据大小
                 * @return size 二进制数据大小
                 */
-                static size_t getDataSize(const std::shared_ptr<DataPackage>& dp)
+                size_t getDataSize() noexcept
                 {
-                    if (dp.get() == nullptr) throw std::logic_error("datapackage is nullptr");
-
                     int size = 0;
-                    std::memcpy(&size, &(dp->length), sizeof(int));
+                    std::memcpy(&size, &(this->length), sizeof(int));
                     return size_t(size) - sizeof(DataPackage);
                 }
 
@@ -214,14 +279,12 @@ namespace qls
                 * @brief 获取包中二进制数据
                 * @return string 二进制数据
                 */
-                static std::string getData(const std::shared_ptr<DataPackage>& dp)
+                std::string getData()
                 {
-                    if (dp.get() == nullptr) throw std::logic_error("datapackage is nullptr");
-
                     std::string data;
-                    size_t size = getDataSize(dp);
+                    size_t size = this->getDataSize();
                     data.resize(size);
-                    std::memcpy(data.data(), dp->data, size);
+                    std::memcpy(data.data(), this->data, size);
                     return data;
                 }
             };
@@ -354,7 +417,7 @@ namespace qls
             thread_num_((12 > int(std::thread::hardware_concurrency())
                 ? int(std::thread::hardware_concurrency()) : 12))
         {
-            threads_ = new std::thread[thread_num_ + 1]{};
+            threads_ = new std::thread[size_t(thread_num_) + 1]{};
 
             acceptFunction_ = [](tcp::socket&) -> asio::awaitable<void> {co_return;};
             receiveFunction_ = [](tcp::socket&,
