@@ -1,11 +1,16 @@
-cmake_minimum_required(VERSION 3.24)
+﻿cmake_minimum_required(VERSION 3.24)
 
 include(vcpkg/scripts/buildsystems/vcpkg.cmake)
 
-project(QingLiaoChatServer)
-
+if (POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif (POLICY CMP0091)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
+project(QingLiaoChatServer)
 
 find_package(OpenSSL REQUIRED)
 find_package(asio CONFIG REQUIRED)
@@ -41,6 +46,10 @@ add_executable(QingLiaoChatServer
     src/room/privateRoom/friendRoomVerification.cpp
     src/socketFunctions/socketFunctions.cpp
     src/user/user.cpp)
+
+set_property(TARGET QingLiaoChatServer PROPERTY
+  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 target_include_directories(QingLiaoChatServer PUBLIC include/)
 target_include_directories(QingLiaoChatServer PUBLIC src/initialization/)
 target_include_directories(QingLiaoChatServer PUBLIC src/jsonMessageProcess/)

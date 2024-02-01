@@ -3,8 +3,12 @@
 
 ## 前置
 ### Windows
-1. 安装git cmake c++编译器
+1. 安装git cmake c++编译器 vcpkg
 2. 构建 运行build.bat
+
+### Unix
+1. 安装git cmake c++编译器 vcpkg
+2. 构建 运行build.sh
 
 ## 开发规则
 1. 必须使用驼峰法命名
