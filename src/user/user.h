@@ -68,8 +68,10 @@ namespace qls
 
         bool userHasFriend(long long friend_user_id) const;
         bool userHasGroup(long long group_user_id) const;
+
         std::unordered_set<long long> getFriendList() const;
         std::unordered_set<long long> getGroupList() const;
+
         void updateFriendList(std::unordered_set<long long>);
         void updateGroupList(std::unordered_set<long long>);
 

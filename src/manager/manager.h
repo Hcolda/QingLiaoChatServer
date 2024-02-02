@@ -23,167 +23,34 @@ namespace qls
         Manager() = default;
         ~Manager();
 
-        /*
-        * @brief 初始化
-        */
         void init();
 
-        /*
-        * @brief 添加私聊房间
-        * @param user1_id 用户1ID
-        * @param user2_id 用户2ID
-        * @return 创建后的私聊房间ID
-        */
         long long addPrivateRoom(long long user1_id, long long user2_id);
-
-        /*
-        * @brief 获取私聊房间ID
-        * @param user1_id 用户1ID
-        * @param user2_id 用户2ID
-        * @return 私聊房间ID
-        */
         long long getPrivateRoomId(long long user1_id, long long user2_id) const;
-        
-        /*
-        * @brief 是否有此私聊房间
-        * @param private_room_id 私聊房间ID
-        * @return true 有 | false 无
-        */
         bool hasPrivateRoom(long long private_room_id) const;
-        
-        /*
-        * @brief 获取私聊房间
-        * @param private_room_id 私聊房间ID
-        * @return class PrivateRoom
-        */
         std::shared_ptr<qls::PrivateRoom> getPrivateRoom(long long private_room_id) const;
-        
-        /*
-        * @brief 删除私聊房间
-        * @param private_room_id 私聊房间ID
-        */
         void removePrivateRoom(long long private_room_id);
 
-        /*
-        * @brief 添加群聊房间
-        * @param group_room_id 群聊房间id
-        */
         long long addGroupRoom(long long opreator_user_id);
-        
-        /*
-        * @brief 是否有群聊房间
-        * @param group_room_id 群聊房间id
-        * @return true 有 | false 无
-        */
         bool hasGroupRoom(long long group_room_id) const;
-        
-        /*
-        * @brief 获取群聊房间
-        * @param group_room_id 群聊房间id
-        * @return class GroupRoom
-        */
         std::shared_ptr<qls::GroupRoom> getGroupRoom(long long group_room_id) const;
-        
-        /*
-        * @brief 删除群聊房间
-        * @param group_room_id 群聊房间id
-        */
         void removeGroupRoom(long long group_room_id);
 
-        /*
-        * @brief 创建新用户
-        * @return 新用户的user类
-        */
         std::shared_ptr<qls::User> addNewUser();
-
-        /*
-        * @brief 拥有用户
-        * @param user_id 用户id
-        * @return true 有此用户 | false 没有
-        */
         bool hasUser(long long user_id) const;
-
-        /*
-        * @brief 获取用户类
-        * @return user类
-        */
         std::shared_ptr<qls::User> getUser(long long user_id) const;
 
-        /*
-        * @brief 添加私聊房间前的验证
-        * @param user_id_1 用户1 id
-        * @param user_id_2 用户2 id
-        */
         void addFriendRoomVerification(long long user_id_1, long long user_id_2);
-
-        /*
-        * @brief 是否拥有私聊房间验证
-        * @param user_id_1 用户1 id
-        * @param user_id_2 用户2 id
-        * @return true 拥有 | false 不拥有
-        */
         bool hasFriendRoomVerification(long long user_id_1, long long user_id_2) const;
-
-        /*
-        * @brief 设置用户是否验证
-        * @param user_id_1 用户1 id
-        * @param user_id_2 用户2 id
-        * @param user_id 设置的用户id
-        * @param is_verified 是否验证
-        * @return true 双方都验证(自动创建房间) | false 还有人没有验证
-        */
         bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
-
-        /*
-        * @brief 删除好友申请
-        * @param user_id_1 用户1 id
-        * @param user_id_2 用户2 id
-        */
         void removeFriendRoomVerification(long long user_id_1, long long user_id_2);
 
-        /*
-        * @brief 添加群聊验证
-        * @param group_id 群聊id
-        * @param user_id 用户id
-        */
         void addGroupRoomVerification(long long group_id, long long user_id);
-
-        /*
-        * @brief 是否有验证
-        * @param group_id 群聊id
-        * @param user_id 用户id
-        * @return true 拥有 | false 不拥有
-        */
         bool hasGroupRoomVerification(long long group_id, long long user_id) const;
-
-        /*
-        * @brief 设置群聊验证的群聊是否验证
-        * @param group_id 群聊id
-        * @param user_id 用户id
-        * @param is_verified 是否验证
-        * @return true 双方都验证(用户自动加入群聊房间) | false 还有一方没有验证
-        */
         bool setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified);
-        
-        /*
-        * @brief 设置群聊验证的用户是否验证
-        * @param group_id 群聊id
-        * @param user_id 用户id
-        * @param is_verified 是否验证
-        * @return true 双方都验证(用户自动加入群聊房间) | false 还有一方没有验证
-        */
         bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
-
-        /*
-        * @brief 删除群聊申请
-        * @param group_id 群聊id
-        * @param user_id 用户id
-        */
         void removeGroupRoomVerification(long long group_id, long long user_id);
 
-        /*
-        * @brief 获取服务器的sql处理器
-        */
         quqisql::SQLDBProcess& getServerSqlProcessor();
 
     private:
