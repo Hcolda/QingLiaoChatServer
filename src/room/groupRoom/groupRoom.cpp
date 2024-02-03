@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <format>
+
 #include <QuqiCrypto.hpp>
 #include <Json.h>
 
@@ -58,6 +60,27 @@ namespace qls
         if (!hasUser(sender_user_id))
             co_return false;
 
+        // 发送者是否被禁言
+        {
+            std::shared_lock<std::shared_mutex> sl(m_muted_user_map_mutex);
+            auto itor = m_muted_user_map.find(sender_user_id);
+            if (itor != m_muted_user_map.end())
+            {
+                if (itor->second.first + itor->second.second >=
+                    std::chrono::time_point_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now()))
+                {
+                    co_return false;
+                }
+                else
+                {
+                    sl.unlock();
+                    std::unique_lock<std::shared_mutex> ul(m_muted_user_map_mutex);
+                    m_muted_user_map.erase(sender_user_id);
+                }
+            }
+        }
+
         // 存储数据
         {
             std::unique_lock<std::shared_mutex> ul(m_message_queue_mutex);
@@ -80,6 +103,31 @@ namespace qls
 
     asio::awaitable<bool> GroupRoom::sendTipMessage(long long sender_user_id, const std::string& message)
     {
+        // 是否有此user_id
+        if (!hasUser(sender_user_id))
+            co_return false;
+
+        // 发送者是否被禁言
+        {
+            std::shared_lock<std::shared_mutex> sl(m_muted_user_map_mutex);
+            auto itor = m_muted_user_map.find(sender_user_id);
+            if (itor != m_muted_user_map.end())
+            {
+                if (itor->second.first + itor->second.second >=
+                    std::chrono::time_point_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now()))
+                {
+                    co_return false;
+                }
+                else
+                {
+                    sl.unlock();
+                    std::unique_lock<std::shared_mutex> ul(m_muted_user_map_mutex);
+                    m_muted_user_map.erase(sender_user_id);
+                }
+            }
+        }
+
         // 存储数据
         {
             std::unique_lock<std::shared_mutex> ul(m_message_queue_mutex);
@@ -103,6 +151,27 @@ namespace qls
         // 是否有此user_id
         if (!hasUser(receiver_user_id))
             co_return false;
+
+        // 发送者是否被禁言
+        {
+            std::shared_lock<std::shared_mutex> sl(m_muted_user_map_mutex);
+            auto itor = m_muted_user_map.find(sender_user_id);
+            if (itor != m_muted_user_map.end())
+            {
+                if (itor->second.first + itor->second.second >=
+                    std::chrono::time_point_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now()))
+                {
+                    co_return false;
+                }
+                else
+                {
+                    sl.unlock();
+                    std::unique_lock<std::shared_mutex> ul(m_muted_user_map_mutex);
+                    m_muted_user_map.erase(sender_user_id);
+                }
+            }
+        }
 
         qjson::JObject json;
         json["type"] = "group_tip_message";
@@ -145,10 +214,7 @@ namespace qls
                 }
             }
 
-            if (edge)
-                return left;
-            else
-                return right;
+            return edge ? left : right;
             };
 
         std::unique_lock<std::shared_mutex> sl(m_message_queue_mutex);
@@ -163,8 +229,8 @@ namespace qls
             const std::pair<std::chrono::system_clock::time_point, MessageStruct>& b)
             {return a.first.time_since_epoch().count() < b.first.time_since_epoch().count();});
 
-        size_t from_itor = searchPoint(from, false);
-        size_t to_itor = searchPoint(to, true);
+        size_t from_itor = searchPoint(from, true);
+        size_t to_itor = searchPoint(to, false);
 
         qjson::JObject returnJson(qjson::JValueType::JList);
         for (auto i = from_itor; i <= to_itor; i++)
@@ -264,8 +330,10 @@ namespace qls
             return false;
 
         std::unique_lock<std::shared_mutex> ul(m_muted_user_map_mutex);
-        m_muted_user_map[user_id] = std::pair<std::chrono::system_clock::time_point,
-            std::chrono::minutes>{ std::chrono::system_clock::now(), mins };
+        m_muted_user_map[user_id] = std::pair<std::chrono::time_point<std::chrono::system_clock,
+            std::chrono::milliseconds>,
+            std::chrono::minutes>{ std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()),
+            mins };
         ul.unlock();
 
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);

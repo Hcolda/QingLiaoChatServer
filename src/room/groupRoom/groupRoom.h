@@ -112,7 +112,8 @@ namespace qls
         mutable std::shared_mutex       m_user_id_map_mutex;
 
         std::unordered_map<long long,
-            std::pair<std::chrono::system_clock::time_point,
+            std::pair<std::chrono::time_point<std::chrono::system_clock,
+            std::chrono::milliseconds>,
                 std::chrono::minutes>>  m_muted_user_map;
         mutable std::shared_mutex       m_muted_user_map_mutex;
 
