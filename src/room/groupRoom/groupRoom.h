@@ -1,6 +1,12 @@
 ﻿#ifndef GROUP_ROOM_H
 #define GROUP_ROOM_H
 
+#include <chrono>
+#include <vector>
+#include <shared_mutex>
+#include <unordered_map>
+#include <memory>
+
 #include "room.h"
 
 namespace qls
@@ -79,7 +85,10 @@ namespace qls
         asio::awaitable<bool> sendMessage(long long sender_user_id, const std::string& message);
         asio::awaitable<bool> sendTipMessage(long long sender_user_id, const std::string& message);
         asio::awaitable<bool> sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
-       
+        asio::awaitable<bool> getMessage(
+            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
+            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
+
         bool hasUser(long long user_id) const;
         long long getAdministrator() const;
         void setAdministrator(long long user_id);
@@ -107,7 +116,8 @@ namespace qls
                 std::chrono::minutes>>  m_muted_user_map;
         mutable std::shared_mutex       m_muted_user_map_mutex;
 
-        std::vector<std::pair<std::chrono::system_clock::time_point,
+        std::vector<std::pair<std::chrono::time_point<std::chrono::system_clock,
+            std::chrono::milliseconds>,
             MessageStruct>>             m_message_queue;
         mutable std::shared_mutex       m_message_queue_mutex;
     };

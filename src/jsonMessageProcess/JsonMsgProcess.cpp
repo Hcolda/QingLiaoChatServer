@@ -42,9 +42,9 @@ namespace qls
 
     qjson::JObject JsonMessageProcess::hasUser(long long user_id)
     {
-        auto rejson = makeSuccessMessage("Successfully getting result!");
-        rejson["result"] = serverManager.hasUser(user_id);
-        return rejson;
+        auto returnJson = makeSuccessMessage("Successfully getting result!");
+        returnJson["result"] = serverManager.hasUser(user_id);
+        return returnJson;
     }
 
     qjson::JObject JsonMessageProcess::searchUser(const std::string& user_name)
@@ -137,12 +137,12 @@ namespace qls
 
         if (serverManager.getUser(user_id)->isUserPassword(password))
         {
-            auto rejson = makeSuccessMessage("Logining successfully!");
+            auto returnJson = makeSuccessMessage("Logining successfully!");
             this->m_user_id = user_id;
 
             serverLogger.info("用户", user_id, "登录至服务器");
 
-            return rejson;
+            return returnJson;
         }
         else return makeErrorMessage("Password is wrong!");
     }
@@ -165,13 +165,13 @@ namespace qls
         ptr->firstUpdateUserPassword(password);
         ptr->updateUserEmail(email);
 
-        auto rejson = makeSuccessMessage("Successfully create a new user!");
+        auto returnJson = makeSuccessMessage("Successfully create a new user!");
         auto id = ptr->getUserID();
-        rejson["user_id"] = id;
+        returnJson["user_id"] = id;
 
         serverLogger.info("注册了新用户: ", id);
 
-        return rejson;
+        return returnJson;
     }
 
     qjson::JObject JsonMessageProcess::addFriend(long long friend_id)
@@ -201,16 +201,16 @@ namespace qls
     qjson::JObject JsonMessageProcess::getFriendList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getFriendList());
-        qjson::JObject rejson = makeSuccessMessage("Sucessfully getting friend list!");
+        qjson::JObject returnJson = makeSuccessMessage("Sucessfully getting friend list!");
 
         for (auto i : set)
         {
-            rejson["friend_list"].push_back(i);
+            returnJson["friend_list"].push_back(i);
         }
 
         serverLogger.info("用户", (long long)this->m_user_id, "获取朋友列表");
 
-        return rejson;
+        return returnJson;
     }
 
     qjson::JObject JsonMessageProcess::getFriendVerificationList()
@@ -227,10 +227,10 @@ namespace qls
             localVector.push_back(localJson);
         }
 
-        auto rejson = makeSuccessMessage("Successfully getting the list!");
-        rejson["result"] = localVector;
+        auto returnJson = makeSuccessMessage("Successfully getting the list!");
+        returnJson["result"] = localVector;
 
-        return rejson;
+        return returnJson;
     }
 
     qjson::JObject JsonMessageProcess::addGroup(long long group_id)
@@ -263,31 +263,31 @@ namespace qls
     qjson::JObject JsonMessageProcess::getGroupList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getGroupList());
-        qjson::JObject rejson = makeSuccessMessage("Sucessfully getting group list!");
+        qjson::JObject returnJson = makeSuccessMessage("Sucessfully getting group list!");
 
         for (auto i : set)
         {
-            rejson["friend_list"].push_back(i);
+            returnJson["friend_list"].push_back(i);
         }
 
         serverLogger.info("用户", (long long)this->m_user_id, "获取群聊列表");
 
-        return rejson;
+        return returnJson;
     }
 
     qjson::JObject JsonMessageProcess::getGroupVerificationList()
     {
         auto map = std::move(serverManager.getUser(this->m_user_id)->getGroupVerificationList());
-        auto rejson = makeSuccessMessage("Successfully getting a list!");
+        auto returnJson = makeSuccessMessage("Successfully getting a list!");
         for (const auto& [group_id, user_struct] : map)
         {
             auto group = std::to_string(group_id);
-            rejson["result"][group.c_str()]["user_id"] = user_struct.user_id;
-            rejson["result"][group.c_str()]["verification_type"] = (int)user_struct.verification_type;
-            rejson["result"][group.c_str()]["message"] = user_struct.message;
+            returnJson["result"][group.c_str()]["user_id"] = user_struct.user_id;
+            returnJson["result"][group.c_str()]["verification_type"] = (int)user_struct.verification_type;
+            returnJson["result"][group.c_str()]["message"] = user_struct.message;
         }
 
-        return rejson;
+        return returnJson;
     }
 
     qjson::JObject JsonMessageProcess::sendFriendMessage(long long friend_id, const std::string& msg)

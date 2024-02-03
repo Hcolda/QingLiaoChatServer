@@ -1,7 +1,7 @@
 ﻿#include "groupRoom.h"
 
 #include <stdexcept>
-
+#include <algorithm>
 #include <QuqiCrypto.hpp>
 #include <Json.h>
 
@@ -62,7 +62,7 @@ namespace qls
         {
             std::unique_lock<std::shared_mutex> ul(m_message_queue_mutex);
             this->m_message_queue.push_back(
-                { std::chrono::system_clock::now(),
+                { std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()),
                     {sender_user_id, message,
                     MessageStruct::MessageType::NOMAL_MESSAGE} });
         }
@@ -73,9 +73,9 @@ namespace qls
         json["data"]["group_id"] = this->m_group_id;
         json["data"]["message"] = message;
 
-        auto rejson = qjson::JWriter::fastWrite(json);
+        auto returnJson = qjson::JWriter::fastWrite(json);
 
-        co_return co_await baseSendData(rejson);
+        co_return co_await baseSendData(returnJson);
     }
 
     asio::awaitable<bool> GroupRoom::sendTipMessage(long long sender_user_id, const std::string& message)
@@ -84,7 +84,7 @@ namespace qls
         {
             std::unique_lock<std::shared_mutex> ul(m_message_queue_mutex);
             this->m_message_queue.push_back(
-                { std::chrono::system_clock::now(),
+                { std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()),
                     {sender_user_id, message,
                     MessageStruct::MessageType::TIP_MESSAGE} });
         }
@@ -111,6 +111,96 @@ namespace qls
         json["data"]["message"] = message;
 
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json), receiver_user_id);
+    }
+
+    asio::awaitable<bool> GroupRoom::getMessage(
+        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
+        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
+    {
+        auto searchPoint = [this](
+            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& p,
+            bool edge = false) -> size_t {
+            
+            size_t left = 0ull;
+            size_t right = m_message_queue.size() - 1;
+            size_t middle = (left + right) / 2;
+
+            while (left < right - 1)
+            {
+                if (m_message_queue[middle].first.time_since_epoch().count() ==
+                    p.time_since_epoch().count())
+                {
+                    return middle;
+                }
+                else if (m_message_queue[middle].first.time_since_epoch().count() <
+                    p.time_since_epoch().count())
+                {
+                    left = middle;
+                    middle = (left + right) / 2;
+                }
+                else
+                {
+                    right = middle;
+                    middle = (left + right) / 2;
+                }
+            }
+
+            if (edge)
+                return left;
+            else
+                return right;
+            };
+
+        std::unique_lock<std::shared_mutex> sl(m_message_queue_mutex);
+        if (m_message_queue.empty())
+        {
+            qjson::JObject returnJson(qjson::JValueType::JList);
+            co_return co_await baseSendData(qjson::JWriter::fastWrite(returnJson));
+        }
+
+        std::sort(m_message_queue.begin(), m_message_queue.end(), [](
+            const std::pair<std::chrono::system_clock::time_point, MessageStruct>& a,
+            const std::pair<std::chrono::system_clock::time_point, MessageStruct>& b)
+            {return a.first.time_since_epoch().count() < b.first.time_since_epoch().count();});
+
+        size_t from_itor = searchPoint(from, false);
+        size_t to_itor = searchPoint(to, true);
+
+        qjson::JObject returnJson(qjson::JValueType::JList);
+        for (auto i = from_itor; i <= to_itor; i++)
+        {
+            switch (m_message_queue[i].second.type)
+            {
+            case MessageStruct::MessageType::NOMAL_MESSAGE:
+            {
+                const auto& messageStruct = m_message_queue[i].second;
+                qjson::JObject localjson;
+                localjson["type"] = "group_message";
+                localjson["data"]["user_id"] = messageStruct.user_id;
+                localjson["data"]["group_id"] = this->m_group_id;
+                localjson["data"]["message"] = messageStruct.message;
+                localjson["time_point"] = long long(m_message_queue[i].first.time_since_epoch().count());
+                returnJson.push_back(localjson);
+            }
+                break;
+            case MessageStruct::MessageType::TIP_MESSAGE:
+            {
+                const auto& messageStruct = m_message_queue[i].second;
+                qjson::JObject localjson;
+                localjson["type"] = "group_tip_message";
+                localjson["data"]["user_id"] = messageStruct.user_id;
+                localjson["data"]["group_id"] = this->m_group_id;
+                localjson["data"]["message"] = messageStruct.message;
+                localjson["time_point"] = long long(m_message_queue[i].first.time_since_epoch().count());
+                returnJson.push_back(localjson);
+            }
+                break;
+            default:
+                break;
+            }
+        }
+
+        co_return co_await baseSendData(qjson::JWriter::fastWrite(returnJson));
     }
 
     bool GroupRoom::hasUser(long long user_id) const
