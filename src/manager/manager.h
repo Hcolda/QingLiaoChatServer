@@ -21,6 +21,8 @@ namespace qls
     {
     public:
         Manager() = default;
+        Manager(const Manager&) = delete;
+        Manager(Manager&) = delete;
         ~Manager();
 
         void init();
@@ -51,7 +53,7 @@ namespace qls
         bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
         void removeGroupRoomVerification(long long group_id, long long user_id);
 
-        quqisql::SQLDBProcess& getServerSqlProcessor();
+        quqisql::SQLDBProcess& getServerSqlProcess();
 
     private:
         struct PrivateRoomIDStruct

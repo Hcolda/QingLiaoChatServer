@@ -36,10 +36,10 @@ namespace qls
             std::string message;
         };
 
-        User(long long user_id);
+        User(long long user_id, bool is_create);
+        User(const User&) = delete;
+        User(User&&) = delete;
         ~User() = default;
-
-        void init();
 
         // 以下是获取用户的信息
         

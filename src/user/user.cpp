@@ -10,21 +10,19 @@ extern qls::Manager serverManager;
 
 namespace qls
 {
-
-    User::User(long long user_id)
+    User::User(long long user_id, bool is_create) :
+        user_id(user_id),
+        age(0),
+        registered_time(std::chrono::time_point_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now()).time_since_epoch().count())
     {
-        this->user_id = user_id;
-        this->age = 0;
-        this->registered_time = std::chrono::system_clock::now()
-            .time_since_epoch().count();
-    }
-
-    void User::init()
-    {
+        if (is_create)
         {
-            /*
-            * sql
-            */
+            // sql 创建用户
+        }
+        else
+        {
+            // sql 读取用户信息
         }
     }
 

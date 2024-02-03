@@ -8,14 +8,18 @@
 namespace qls
 {
     // PrivateRoom
-
-    PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2) :
+    PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2, bool is_create) :
         m_user_id_1(user_id_1),
         m_user_id_2(user_id_2)
-    {}
-
-    void PrivateRoom::init()
     {
+        if (is_create)
+        {
+            // sql 创建private room
+        }
+        else
+        {
+            // sql 读取private room
+        }
     }
 
     bool PrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)

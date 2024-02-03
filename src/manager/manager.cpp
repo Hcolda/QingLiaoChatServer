@@ -49,11 +49,8 @@ namespace qls
         }
 
         this->m_basePrivateRoom_map[privateRoom_id] = std::make_shared<qls::PrivateRoom>(
-            user1_id, user2_id);
+            user1_id, user2_id, true);
         this->m_userID_to_privateRoomID_map[{user1_id, user2_id}] = privateRoom_id;
-        
-        // 初始化
-        this->m_basePrivateRoom_map[privateRoom_id]->init();
 
         return privateRoom_id;
     }
@@ -135,11 +132,9 @@ namespace qls
             */
         }
 
-        this->m_baseRoom_map[group_room_id] = std::make_shared<qls::GroupRoom>(group_room_id);
+        this->m_baseRoom_map[group_room_id] = std::make_shared<qls::GroupRoom>(
+            group_room_id, opreator_user_id, true);
         this->m_baseRoom_map[group_room_id]->setAdministrator(opreator_user_id);
-
-        // 初始化
-        this->m_baseRoom_map[group_room_id]->init();
 
         return group_room_id;
     }
@@ -187,9 +182,7 @@ namespace qls
             // sql处理数据
         }
 
-        m_user_map[newUserId] = std::make_shared<qls::User>(newUserId);
-        // 初始化
-        m_user_map[newUserId]->init();
+        m_user_map[newUserId] = std::make_shared<qls::User>(newUserId, true);
 
         return m_user_map[newUserId];
     }
@@ -493,7 +486,7 @@ namespace qls
         getUser(user_id)->removeGroupVerification(group_id, user_id);
     }
 
-    quqisql::SQLDBProcess& Manager::getServerSqlProcessor()
+    quqisql::SQLDBProcess& Manager::getServerSqlProcess()
     {
         return this->m_sqlProcess;
     }

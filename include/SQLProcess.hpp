@@ -12,7 +12,9 @@ namespace quqisql
     class SQLDBProcess
     {
     public:
-        SQLDBProcess() = default;
+        SQLDBProcess() :
+            m_port(0) {}
+
         SQLDBProcess(const std::string& username,
                      const std::string& password,
                      const std::string& database_name,
@@ -26,6 +28,9 @@ namespace quqisql
             m_host = host;
             m_port = port;
         }
+
+        SQLDBProcess(const SQLDBProcess&) = delete;
+        SQLDBProcess(SQLDBProcess&) = delete;
         ~SQLDBProcess() = default;
 
         void setSQLServerInfo(const std::string& username,

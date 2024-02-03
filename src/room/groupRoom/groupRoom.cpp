@@ -14,16 +14,18 @@ extern qls::Manager serverManager;
 namespace qls
 {
     // GroupRoom
-
-    GroupRoom::GroupRoom(long long group_id) :
+    GroupRoom::GroupRoom(long long group_id, long long administrator, bool is_create) :
         m_group_id(group_id),
-        m_administrator_user_id(0)
+        m_administrator_user_id(administrator)
     {
-        // group room 各项权限
-    }
-
-    void GroupRoom::init()
-    {
+        if (is_create)
+        {
+            // 创建群聊 sql
+        }
+        else
+        {
+            // 加载群聊 sql
+        }
     }
 
     bool GroupRoom::addMember(long long user_id)
@@ -85,7 +87,8 @@ namespace qls
         {
             std::unique_lock<std::shared_mutex> ul(m_message_queue_mutex);
             this->m_message_queue.push_back(
-                { std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()),
+                { std::chrono::time_point_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now()),
                     {sender_user_id, message,
                     MessageStruct::MessageType::NOMAL_MESSAGE} });
         }
@@ -101,7 +104,8 @@ namespace qls
         co_return co_await baseSendData(returnJson);
     }
 
-    asio::awaitable<bool> GroupRoom::sendTipMessage(long long sender_user_id, const std::string& message)
+    asio::awaitable<bool> GroupRoom::sendTipMessage(long long sender_user_id,
+        const std::string& message)
     {
         // 是否有此user_id
         if (!hasUser(sender_user_id))
@@ -132,7 +136,8 @@ namespace qls
         {
             std::unique_lock<std::shared_mutex> ul(m_message_queue_mutex);
             this->m_message_queue.push_back(
-                { std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()),
+                { std::chrono::time_point_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now()),
                     {sender_user_id, message,
                     MessageStruct::MessageType::TIP_MESSAGE} });
         }
@@ -146,7 +151,8 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> GroupRoom::sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id)
+    asio::awaitable<bool> GroupRoom::sendUserTipMessage(long long sender_user_id,
+        const std::string& message, long long receiver_user_id)
     {
         // 是否有此user_id
         if (!hasUser(receiver_user_id))
@@ -186,6 +192,8 @@ namespace qls
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
     {
+        if (from > to) co_return false;
+
         auto searchPoint = [this](
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& p,
             bool edge = false) -> size_t {
@@ -220,8 +228,8 @@ namespace qls
         std::unique_lock<std::shared_mutex> sl(m_message_queue_mutex);
         if (m_message_queue.empty())
         {
-            qjson::JObject returnJson(qjson::JValueType::JList);
-            co_return co_await baseSendData(qjson::JWriter::fastWrite(returnJson));
+            co_return co_await baseSendData(
+                qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
         }
 
         std::sort(m_message_queue.begin(), m_message_queue.end(), [](
@@ -245,7 +253,7 @@ namespace qls
                 localjson["data"]["user_id"] = messageStruct.user_id;
                 localjson["data"]["group_id"] = this->m_group_id;
                 localjson["data"]["message"] = messageStruct.message;
-                localjson["time_point"] = long long(m_message_queue[i].first.time_since_epoch().count());
+                localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
                 returnJson.push_back(localjson);
             }
                 break;
@@ -257,7 +265,7 @@ namespace qls
                 localjson["data"]["user_id"] = messageStruct.user_id;
                 localjson["data"]["group_id"] = this->m_group_id;
                 localjson["data"]["message"] = messageStruct.message;
-                localjson["time_point"] = long long(m_message_queue[i].first.time_since_epoch().count());
+                localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
                 returnJson.push_back(localjson);
             }
                 break;
@@ -273,6 +281,18 @@ namespace qls
     {
         std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
         return m_user_id_map.find(user_id) != m_user_id_map.end();
+    }
+
+    std::unordered_map<long long, GroupRoom::UserDataStruct> GroupRoom::getUserList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
+        return m_user_id_map;
+    }
+
+    std::unordered_map<long long,
+        GroupRoom::GroupPermission::PermissionType> GroupRoom::getUserPermissionList() const
+    {
+        return std::move(this->m_permission.getUserPermissionList());
     }
 
     long long GroupRoom::getAdministrator() const
@@ -292,7 +312,8 @@ namespace qls
             auto itor = m_user_id_map.find(user_id);
             if (itor == m_user_id_map.end())
             {
-                m_user_id_map[user_id] = UserDataStruct{ serverManager.getUser(user_id)->getUserName(), 1 };
+                m_user_id_map[user_id] = UserDataStruct{
+                    serverManager.getUser(user_id)->getUserName(), 1 };
                 m_permission.modifyUserPermission(user_id,
                     GroupPermission::PermissionType::Administrator);
             }
@@ -332,7 +353,8 @@ namespace qls
         std::unique_lock<std::shared_mutex> ul(m_muted_user_map_mutex);
         m_muted_user_map[user_id] = std::pair<std::chrono::time_point<std::chrono::system_clock,
             std::chrono::milliseconds>,
-            std::chrono::minutes>{ std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()),
+            std::chrono::minutes>{ std::chrono::time_point_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now()),
             mins };
         ul.unlock();
 
@@ -463,6 +485,12 @@ namespace qls
         return itor->second;
     }
 
+    std::unordered_map<std::string, GroupRoom::GroupPermission::PermissionType> GroupRoom::GroupPermission::getPermissionList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
+        return m_permission_map;
+    }
+
     void GroupRoom::GroupPermission::modifyUserPermission(long long user_id, PermissionType type)
     {
         std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
@@ -512,5 +540,10 @@ namespace qls
             throw std::invalid_argument("No user: " + std::to_string(user_id));
 
         return itor->second;
+    }
+    std::unordered_map<long long, GroupRoom::GroupPermission::PermissionType> GroupRoom::GroupPermission::getUserPermissionList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        return m_user_permission_map;
     }
 }

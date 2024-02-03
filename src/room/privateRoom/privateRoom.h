@@ -13,10 +13,11 @@ namespace qls
     public:
         struct User : public qls::BaseRoom::BaseUserSetting {};
 
-        PrivateRoom(long long user_id_1, long long user_id_2);
-        ~PrivateRoom() = default;
+        PrivateRoom(long long user_id_1, long long user_id_2, bool is_create);
+        PrivateRoom(const PrivateRoom&) = delete;
+        PrivateRoom(PrivateRoom&&) = delete;
 
-        void init();
+        ~PrivateRoom() = default;
 
         bool joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user);
         bool leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);

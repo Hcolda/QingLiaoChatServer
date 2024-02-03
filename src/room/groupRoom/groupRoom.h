@@ -59,11 +59,13 @@ namespace qls
             void modifyPermission(const std::string& permissionName, PermissionType type = PermissionType::Default);
             void removePermission(const std::string& permissionName);
             PermissionType getPermissionType(const std::string& permissionName) const;
-            
+            std::unordered_map<std::string, PermissionType> getPermissionList() const;
+
             void modifyUserPermission(long long user_id, PermissionType type = PermissionType::Default);
             void removeUser(long long user_id);
             bool userHasPermission(long long user_id, const std::string& permissionName) const;
             PermissionType getUserPermissionType(long long user_id) const;
+            std::unordered_map<long long, PermissionType> getUserPermissionList() const;
 
         private:
             std::unordered_map<std::string, PermissionType> m_permission_map;
@@ -73,10 +75,11 @@ namespace qls
             mutable std::shared_mutex                       m_user_permission_map_mutex;
         };
 
-        GroupRoom(long long group_id);
+        GroupRoom(long long group_id, long long administrator, bool is_create);
+        GroupRoom(const GroupRoom&) = delete;
+        GroupRoom(GroupRoom&&) = delete;
         ~GroupRoom() = default;
 
-        void init();
         bool addMember(long long user_id);
         bool removeMember(long long user_id);
         bool joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user);
@@ -90,6 +93,10 @@ namespace qls
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 
         bool hasUser(long long user_id) const;
+        std::unordered_map<long long,
+            UserDataStruct> getUserList() const;
+        std::unordered_map<long long,
+            GroupRoom::GroupPermission::PermissionType> getUserPermissionList() const;
         long long getAdministrator() const;
         void setAdministrator(long long user_id);
         long long getGroupID() const;
