@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef INIT_H
+#define INIT_H
 
 #include <iostream>
 #include <atomic>
@@ -28,3 +29,5 @@ namespace qls
 
     int init();
 }
+
+#endif // !INIT_H

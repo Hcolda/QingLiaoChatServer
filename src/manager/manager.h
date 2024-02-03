@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef MANAGER_H
+#define MANAGER_H
 
 #include <memory>
 #include <unordered_map>
@@ -163,3 +164,5 @@ namespace qls
         quqisql::SQLDBProcess                   m_sqlProcess;
     };
 }
+
+#endif // !MANAGER_H

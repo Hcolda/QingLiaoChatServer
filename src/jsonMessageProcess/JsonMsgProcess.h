@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef JSON_MESSAGE_PROCESS_H
+#define JSON_MESSAGE_PROCESS_H
 
 #include <string>
 #include <map>
@@ -50,3 +51,5 @@ namespace qls
         static const std::multimap<std::string, long long> m_function_map;
     };
 }
+
+#endif // !JSON_MESSAGE_PROCESS_H

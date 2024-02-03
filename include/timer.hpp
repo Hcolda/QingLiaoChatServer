@@ -1,4 +1,4 @@
-﻿#pragma once
+﻿#ifndef TIMER_HPP
 
 #include <ctime>
 #include <thread>
@@ -139,3 +139,5 @@ namespace qqbot
 		std::atomic<bool>										m_isRunning;
 	};
 }
+
+#endif // !TIMER_HPP

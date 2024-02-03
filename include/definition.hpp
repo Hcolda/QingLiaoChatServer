@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef DEFINITION_HPP
+#define DEFINITION_HPP
 
 #include <format>
 #include <filesystem>
@@ -13,3 +14,5 @@
 #else
 #define ERROR_WITH_STACKTRACE(errmsg) std::format("error: {}\nin file \"{}\" line {}\n", errmsg, std::filesystem::path(__FILE__).filename().string(), __LINE__)
 #endif
+
+#endif // !DEFINITION_HPP

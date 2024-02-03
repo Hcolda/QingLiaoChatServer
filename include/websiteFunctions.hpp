@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef WEBSITE_FUNCTIONS_HPP
+#define WEBSITE_FUNCTIONS_HPP
 
 #include <string>
 #include <string_view>
@@ -107,3 +108,5 @@ namespace qls
         }
     };
 }
+
+#endif // !WEBSITE_FUNCTIONS_HPP

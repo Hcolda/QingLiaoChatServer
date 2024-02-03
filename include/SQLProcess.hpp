@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef SQL_PROCESS_HPP
+#define SQL_PROCESS_HPP
 
 #include <iostream>
 #include <cstring>
@@ -92,3 +93,5 @@ namespace quqisql
         std::shared_ptr<sql::Connection>    m_sqlconnection;
     };
 }
+
+#endif // !SQL_PROCESS_HPP

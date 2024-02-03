@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef SOCKET_FUNCTIONS_H
+#define SOCKET_FUNCTIONS_H
 
 #include <asio.hpp>
 #include <unordered_map>
@@ -118,3 +119,5 @@ namespace qls
         Network::Package                        m_package;
     };
 }
+
+#endif // !SOCKET_FUNCTIONS_H

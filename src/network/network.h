@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef NETWORK_HPP
+#define NETWORK_HPP
 
 #include <asio.hpp>
 #include <thread>
@@ -519,3 +520,4 @@ namespace qls
     };
 }
 
+#endif // !NETWORK_HPP

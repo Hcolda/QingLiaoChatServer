@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef USER_H
+#define USER_H
 
 #include <string>
 #include <memory>
@@ -183,3 +184,5 @@ namespace qls
         mutable std::shared_mutex       m_user_group_verification_map_mutex;
     };
 }
+
+#endif // !USER_H
