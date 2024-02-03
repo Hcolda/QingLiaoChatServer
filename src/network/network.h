@@ -186,7 +186,8 @@ namespace qls
                 static std::shared_ptr<DataPackage> makePackage(std::string_view data)
                 {
                     static std::hash<std::string_view> hash;
-                    std::shared_ptr<DataPackage> package((DataPackage*)new char[sizeof(DataPackage) + data.size()] { 0 });
+                    std::shared_ptr<DataPackage> package((DataPackage*)new char[sizeof(DataPackage) + data.size()] { 0 },
+                        deleteDataPackage);
                     package->length = int(sizeof(DataPackage) + data.size());
                     std::memcpy(package->data, data.data(), data.size());
                     package->verifyCode = hash(data);
@@ -214,7 +215,8 @@ namespace qls
                     else if (size > INT32_MAX / 2) throw std::logic_error("data is too large!");
                     else if (data[size_t(size - 1)] || data[size_t(size - 2)]) throw std::logic_error("data is invalid");
 
-                    std::shared_ptr<DataPackage> package((DataPackage*)new char[size] { 0 });
+                    std::shared_ptr<DataPackage> package((DataPackage*)new char[size] { 0 },
+                        deleteDataPackage);
                     std::memcpy(package.get(), data.c_str(), size);
 
                     // 端序转换
@@ -286,6 +288,11 @@ namespace qls
                     data.resize(size);
                     std::memcpy(data.data(), this->data, size);
                     return data;
+                }
+
+                static void deleteDataPackage(DataPackage* dp)
+                {
+                    delete[] reinterpret_cast<char*>(dp);
                 }
             };
 
