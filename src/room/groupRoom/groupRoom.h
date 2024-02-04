@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "room.h"
+#include "groupPermission.h"
 
 namespace qls
 {
@@ -43,38 +44,6 @@ namespace qls
             MEMBER_MUTED_STATE
         };*/
 
-        class GroupPermission
-        {
-        public:
-            enum class PermissionType
-            {
-                Default = 0,
-                Operator,
-                Administrator
-            };
-
-            GroupPermission() = default;
-            ~GroupPermission() = default;
-
-            void modifyPermission(const std::string& permissionName, PermissionType type = PermissionType::Default);
-            void removePermission(const std::string& permissionName);
-            PermissionType getPermissionType(const std::string& permissionName) const;
-            std::unordered_map<std::string, PermissionType> getPermissionList() const;
-
-            void modifyUserPermission(long long user_id, PermissionType type = PermissionType::Default);
-            void removeUser(long long user_id);
-            bool userHasPermission(long long user_id, const std::string& permissionName) const;
-            PermissionType getUserPermissionType(long long user_id) const;
-            std::unordered_map<long long, PermissionType> getUserPermissionList() const;
-
-        private:
-            std::unordered_map<std::string, PermissionType> m_permission_map;
-            mutable std::shared_mutex                       m_permission_map_mutex;
-
-            std::unordered_map<long long, PermissionType>   m_user_permission_map;
-            mutable std::shared_mutex                       m_user_permission_map_mutex;
-        };
-
         GroupRoom(long long group_id, long long administrator, bool is_create);
         GroupRoom(const GroupRoom&) = delete;
         GroupRoom(GroupRoom&&) = delete;
@@ -96,7 +65,7 @@ namespace qls
         std::unordered_map<long long,
             UserDataStruct> getUserList() const;
         std::unordered_map<long long,
-            GroupRoom::GroupPermission::PermissionType> getUserPermissionList() const;
+            GroupPermission::PermissionType> getUserPermissionList() const;
         long long getAdministrator() const;
         void setAdministrator(long long user_id);
         long long getGroupID() const;

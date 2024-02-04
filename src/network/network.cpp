@@ -16,12 +16,14 @@ qls::Network::Network() :
     port_(55555),
     thread_num_((12 > int(std::thread::hardware_concurrency())
         ? int(std::thread::hardware_concurrency()) : 12)),
-    threads_(std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{})),
     acceptFunction_([](tcp::socket&) -> asio::awaitable<void> {co_return; }),
     receiveFunction_([](tcp::socket&,
         std::string, std::shared_ptr<qls::DataPackage>
         ) -> asio::awaitable<void> {co_return; }),
-    closeFunction_([](tcp::socket&) -> asio::awaitable<void> {co_return; }) {}
+    closeFunction_([](tcp::socket&) -> asio::awaitable<void> {co_return; })
+    {
+        threads_ = std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{});
+    }
 
 qls::Network::~Network()
 {

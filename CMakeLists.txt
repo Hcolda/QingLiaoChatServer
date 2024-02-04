@@ -45,7 +45,8 @@ add_executable(QingLiaoChatServer
     src/room/privateRoom/privateRoom.cpp
     src/room/privateRoom/friendRoomVerification.cpp
     src/socketFunctions/socketFunctions.cpp
-    src/user/user.cpp)
+    src/user/user.cpp
+    src/room/groupRoom/groupPermission.cpp)
 
 set_property(TARGET QingLiaoChatServer PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

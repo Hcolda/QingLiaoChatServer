@@ -290,7 +290,7 @@ namespace qls
     }
 
     std::unordered_map<long long,
-        GroupRoom::GroupPermission::PermissionType> GroupRoom::getUserPermissionList() const
+        GroupPermission::PermissionType> GroupRoom::getUserPermissionList() const
     {
         return std::move(this->m_permission.getUserPermissionList());
     }
@@ -453,97 +453,5 @@ namespace qls
         sl.unlock();
 
         return true;
-    }
-
-    void GroupRoom::GroupPermission::modifyPermission(const std::string& permissionName, PermissionType type)
-    {
-        std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
-        m_permission_map[permissionName] = type;
-    }
-
-    void GroupRoom::GroupPermission::removePermission(const std::string& permissionName)
-    {
-        std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
-
-        // 是否有此权限
-        auto itor = m_permission_map.find(permissionName);
-        if (itor == m_permission_map.end())
-            throw std::invalid_argument("No permission: " + permissionName);
-
-        m_permission_map.erase(itor);
-    }
-
-    GroupRoom::GroupPermission::PermissionType GroupRoom::GroupPermission::getPermissionType(const std::string& permissionName) const
-    {
-        std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
-
-        // 是否有此权限
-        auto itor = m_permission_map.find(permissionName);
-        if (itor == m_permission_map.end())
-            throw std::invalid_argument("No permission: " + permissionName);
-
-        return itor->second;
-    }
-
-    std::unordered_map<std::string, GroupRoom::GroupPermission::PermissionType> GroupRoom::GroupPermission::getPermissionList() const
-    {
-        std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
-        return m_permission_map;
-    }
-
-    void GroupRoom::GroupPermission::modifyUserPermission(long long user_id, PermissionType type)
-    {
-        std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
-        m_user_permission_map[user_id] = type;
-    }
-
-    void GroupRoom::GroupPermission::removeUser(long long user_id)
-    {
-        std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
-
-        // 是否有此user
-        auto itor = m_user_permission_map.find(user_id);
-        if (itor == m_user_permission_map.end())
-            throw std::invalid_argument("No user: " + std::to_string(user_id));
-
-        m_user_permission_map.erase(itor);
-    }
-
-    bool GroupRoom::GroupPermission::userHasPermission(long long user_id, const std::string& permissionName) const
-    {
-        std::shared_lock<std::shared_mutex> sl1(m_permission_map_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> sl2(m_user_permission_map_mutex, std::defer_lock);
-        // 同时加锁
-        std::lock(sl1, sl2);
-
-        // 是否有此user
-        auto itor = m_user_permission_map.find(user_id);
-        if (itor == m_user_permission_map.end())
-            throw std::invalid_argument("No user: " + std::to_string(user_id));
-
-        // 是否有此权限
-        auto itor2 = m_permission_map.find(permissionName);
-        if (itor2 == m_permission_map.end())
-            throw std::invalid_argument("No permission: " + permissionName);
-
-        // 返回权限
-        return itor->second >= itor2->second;
-    }
-
-    GroupRoom::GroupPermission::PermissionType GroupRoom::GroupPermission::getUserPermissionType(long long user_id) const
-    {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
-
-        // 是否有此user
-        auto itor = m_user_permission_map.find(user_id);
-        if (itor == m_user_permission_map.end())
-            throw std::invalid_argument("No user: " + std::to_string(user_id));
-
-        return itor->second;
-    }
-    std::unordered_map<long long, GroupRoom::GroupPermission::PermissionType> GroupRoom::GroupPermission::getUserPermissionList() const
-    {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
-        return m_user_permission_map;
     }
 }
