@@ -36,6 +36,8 @@ add_executable(QingLiaoChatServer
     src/jsonMessageProcess/JsonMsgProcess.cpp
     src/manager/manager.cpp
     src/network/network.cpp
+    src/network/dataPackage.cpp
+    src/network/package.cpp
     src/parser/ini.cpp src/parser/Json.cpp
     src/room/room.cpp
     src/room/groupRoom/groupRoom.cpp

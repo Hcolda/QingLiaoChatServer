@@ -7,8 +7,10 @@
 #include <atomic>
 #include <memory>
 
-#include "network.h"
 #include "JsonMsgProcess.h"
+#include "dataPackage.h"
+#include "package.h"
+#include "network.h"
 
 namespace qls
 {
@@ -19,7 +21,7 @@ namespace qls
         ~SocketFunction() = default;
 
         asio::awaitable<void> accecptFunction(asio::ip::tcp::socket& socket);
-        asio::awaitable<void> receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<Network::Package::DataPackage> pack);
+        asio::awaitable<void> receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<qls::DataPackage> pack);
         asio::awaitable<void> closeFunction(asio::ip::tcp::socket& socket);
     };
 
@@ -47,7 +49,7 @@ namespace qls
         * @param socket
         * @return asio协程 std::string, std::shared_ptr<Network::Package::DataPackage>
         */
-        asio::awaitable<std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>>
+        asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
             async_receive();
 
         /*
@@ -71,16 +73,13 @@ namespace qls
         * @param data 解密后的数据
         * @param pack 原始数据包
         */
-        asio::awaitable<void> process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const std::string& data, std::shared_ptr<Network::Package::DataPackage> pack);
+        asio::awaitable<void> process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const std::string& data, std::shared_ptr<qls::DataPackage> pack);
 
         /*
         * @brief 设置package
         * @param package
         */
-        void setPackageBuffer(const Network::Package& p)
-        {
-            m_package.setBuffer(p.readBuffer());
-        }
+        void setPackageBuffer(const qls::Package& p);
 
         /*
         * @brief 将socket所有权交到SocketService中
@@ -116,7 +115,7 @@ namespace qls
         // user
         LocalUser                               m_user;
         // package
-        Network::Package                        m_package;
+        qls::Package                            m_package;
     };
 }
 

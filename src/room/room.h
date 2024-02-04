@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef ROOM_H
+#define ROOM_H
 
 #include <asio.hpp>
 #include <mutex>
@@ -59,3 +60,5 @@ namespace qls
         std::shared_mutex                                           m_userDeleteQueue_mutex;
     };
 }
+
+#endif // !ROOM_H

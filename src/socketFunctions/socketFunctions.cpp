@@ -20,7 +20,7 @@ namespace qls
         co_return;
     }
 
-    asio::awaitable<void> SocketFunction::receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<Network::Package::DataPackage> pack)
+    asio::awaitable<void> SocketFunction::receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<qls::DataPackage> pack)
     {
         serverLogger.info("接收到数据：", data);
         /*业务逻辑*/
@@ -74,7 +74,7 @@ namespace qls
         m_user.uuid = uuid;
     }
 
-    asio::awaitable<std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>>
+    asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
         SocketService::async_receive()
     {
         std::string addr = socket2ip(*m_socket_ptr);
@@ -85,26 +85,26 @@ namespace qls
             do
             {
                 size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
-                serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({ buffer, size }))));
+                serverLogger.info((std::format("[{}]收到消息: {}", addr, qls::showBinaryData({ buffer, size }))));
                 m_package.write({ buffer, size });
             } while (!m_package.canRead());
         }
 
-        std::shared_ptr<Network::Package::DataPackage> datapack;
+        std::shared_ptr<qls::DataPackage> datapack;
 
         // 检测数据包是否正常
         {
             // 数据包
             try
             {
-                datapack = std::shared_ptr<Network::Package::DataPackage>(
-                    Network::Package::DataPackage::stringToPackage(
+                datapack = std::shared_ptr<qls::DataPackage>(
+                    qls::DataPackage::stringToPackage(
                         m_package.read()));
             }
             catch (const std::exception& e)
             {
                 serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
-                co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), nullptr};
+                co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{std::string(), nullptr};
             }
         }
 
@@ -116,10 +116,10 @@ namespace qls
             if (!m_aes.AES.encrypt(datapack->getData(), out, m_aes.AESKey, m_aes.AESiv, false))
             {
                 serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
-                co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{std::string(), datapack};
+                co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{std::string(), datapack};
             }
         }
-        co_return std::pair<std::string, std::shared_ptr<Network::Package::DataPackage>>{out, datapack};
+        co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{out, datapack};
     }
 
     asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
@@ -130,7 +130,7 @@ namespace qls
         {
             m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
         }
-        auto pack = Network::Package::DataPackage::makePackage(out);
+        auto pack = qls::DataPackage::makePackage(out);
         pack->requestID = requestID;
         pack->sequence = sequence;
         pack->type = type;
@@ -139,7 +139,7 @@ namespace qls
 
     asio::awaitable<void> SocketService::process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
         const std::string& data,
-        std::shared_ptr<Network::Package::DataPackage> pack)
+        std::shared_ptr<qls::DataPackage> pack)
     {
         //if (!this->m_jsonProcess)
         //{
@@ -176,6 +176,11 @@ namespace qls
             co_return;
         }
         co_return;
+    }
+
+    void SocketService::setPackageBuffer(const qls::Package& p)
+    {
+        m_package.setBuffer(p.readBuffer());
     }
     
     asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds)

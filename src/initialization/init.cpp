@@ -7,6 +7,7 @@
 
 #include "SQLProcess.hpp"
 #include "manager.h"
+#include "networkEndinass.hpp"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -49,7 +50,7 @@ namespace qls
         std::system("chcp 65001");
         serverLogger.info("服务器Log系统启动成功！");
 
-        if (isBigEndianness())
+        if (NetworkEndinass::isBigEndianness())
             serverLogger.info("服务器的本地端序为大端序");
         else
             serverLogger.info("服务器的本地端序为小端序");

@@ -12,6 +12,65 @@ extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
 extern qls::SocketFunction serverSocketFunction;
 
+qls::Network::Network() :
+    port_(55555),
+    thread_num_((12 > int(std::thread::hardware_concurrency())
+        ? int(std::thread::hardware_concurrency()) : 12)),
+    threads_(std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{})),
+    acceptFunction_([](tcp::socket&) -> asio::awaitable<void> {co_return; }),
+    receiveFunction_([](tcp::socket&,
+        std::string, std::shared_ptr<qls::DataPackage>
+        ) -> asio::awaitable<void> {co_return; }),
+    closeFunction_([](tcp::socket&) -> asio::awaitable<void> {co_return; }) {}
+
+qls::Network::~Network()
+{
+    for (int i = 0; i < thread_num_; i++)
+    {
+        if (threads_[i].joinable())
+            threads_[i].join();
+    }
+}
+
+void qls::Network::setFunctions(acceptFunction a, receiveFunction r, closeFunction c)
+{
+    acceptFunction_ = std::move(a);
+    receiveFunction_ = std::move(r);
+    closeFunction_ = std::move(c);
+}
+
+void qls::Network::run(std::string_view host, unsigned short port)
+{
+    host_ = host;
+    port_ = port;
+
+    try
+    {
+        asio::io_context io_context;
+
+        asio::signal_set signals(io_context, SIGINT, SIGTERM);
+        signals.async_wait([&](auto, auto) { io_context.stop(); });
+
+        for (int i = 0; i < thread_num_; i++)
+        {
+            threads_[i] = std::thread([&]() {
+                co_spawn(io_context, listener(), detached);
+                io_context.run();
+                });
+        }
+
+        for (int i = 0; i < thread_num_; i++)
+        {
+            if (threads_[i].joinable())
+                threads_[i].join();
+        }
+    }
+    catch (const std::exception& e)
+    {
+        std::printf("Exception: %s\n", e.what());
+    }
+}
+
 asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
 {
     auto executor = co_await asio::this_coro::executor;
@@ -56,7 +115,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
 
             while (sds->package.canRead())
             {
-                std::shared_ptr<Network::Package::DataPackage> datapack;
+                std::shared_ptr<qls::DataPackage> datapack;
 
                 // 检测数据包是否正常
                 {
@@ -64,8 +123,8 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                     try
                     {
                         // 数据包
-                        datapack = std::shared_ptr<Network::Package::DataPackage>(
-                            Network::Package::DataPackage::stringToPackage(
+                        datapack = std::shared_ptr<qls::DataPackage>(
+                            qls::DataPackage::stringToPackage(
                                 sds->package.read()));
                         if (datapack->getData() != "test")
                             throw std::logic_error("Test error!");
@@ -167,4 +226,90 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
         co_await closeFunction_(socket);
     }
     co_return;
+}
+
+asio::awaitable<void> qls::Network::listener()
+{
+    auto executor = co_await this_coro::executor;
+    tcp::acceptor acceptor(executor, { asio::ip::address::from_string(host_), port_ });
+    for (;;)
+    {
+        tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
+        co_spawn(executor, echo(std::move(socket)), detached);
+    }
+}
+
+std::string qls::socket2ip(const asio::ip::tcp::socket& s)
+{
+    auto ep = s.remote_endpoint();
+    return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
+}
+
+std::string qls::showBinaryData(const std::string& data)
+{
+    auto isShowableCharactor = [](unsigned char ch) -> bool {
+        return 32 <= ch && ch <= 126;
+        };
+
+    std::string result;
+
+    for (const auto& i : data)
+    {
+        if (isShowableCharactor((unsigned char)i))
+        {
+            result += i;
+        }
+        else
+        {
+            std::string hex;
+            int locch = (unsigned char)i;
+            while (locch)
+            {
+                if (locch % 16 < 10)
+                {
+                    hex += ('0' + (locch % 16));
+                    locch /= 16;
+                    continue;
+                }
+                switch (locch % 16)
+                {
+                case 10:
+                    hex += 'a';
+                    break;
+                case 11:
+                    hex += 'b';
+                    break;
+                case 12:
+                    hex += 'c';
+                    break;
+                case 13:
+                    hex += 'd';
+                    break;
+                case 14:
+                    hex += 'e';
+                    break;
+                case 15:
+                    hex += 'f';
+                    break;
+                }
+                locch /= 16;
+            }
+
+            //result += "\\x" + (hex.size() == 1 ? "0" + hex : hex);
+            if (hex.empty())
+            {
+                result += "\\x00";
+            }
+            else if (hex.size() == 1)
+            {
+                result += "\\x0" + hex;
+            }
+            else
+            {
+                result += "\\x" + hex;
+            }
+        }
+    }
+
+    return result;
 }
