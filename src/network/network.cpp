@@ -22,6 +22,7 @@ qls::Network::Network() :
         ) -> asio::awaitable<void> {co_return; }),
     closeFunction_([](tcp::socket&) -> asio::awaitable<void> {co_return; })
     {
+        // 等thread_num初始化之后才能申请threads内存
         threads_ = std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{});
     }
 
@@ -257,14 +258,14 @@ std::string qls::showBinaryData(const std::string& data)
 
     for (const auto& i : data)
     {
-        if (isShowableCharactor((unsigned char)i))
+        if (isShowableCharactor(static_cast<unsigned char>(i)))
         {
             result += i;
         }
         else
         {
             std::string hex;
-            int locch = (unsigned char)i;
+            int locch = static_cast<unsigned char>(i);
             while (locch)
             {
                 if (locch % 16 < 10)

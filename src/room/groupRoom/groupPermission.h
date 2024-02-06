@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <shared_mutex>
+#include <string>
 
 namespace qls
 {

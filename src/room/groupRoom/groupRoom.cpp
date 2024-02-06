@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <format>
+#include <memory>
 
 #include <QuqiCrypto.hpp>
 #include <Json.h>
@@ -21,15 +22,18 @@ namespace qls
         if (is_create)
         {
             // 创建群聊 sql
+            m_can_be_used = true;
         }
         else
         {
             // 加载群聊 sql
+            m_can_be_used = true;
         }
     }
 
     bool GroupRoom::addMember(long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         std::lock_guard<std::shared_mutex> lg(m_user_id_map_mutex);
         if (m_user_id_map.find(user_id) == m_user_id_map.end())
             m_user_id_map[user_id] = UserDataStruct{ serverManager.getUser(user_id)->getUserName(), 1 };
@@ -39,6 +43,7 @@ namespace qls
 
     bool GroupRoom::removeMember(long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         std::lock_guard<std::shared_mutex> lg(m_user_id_map_mutex);
         if (m_user_id_map.find(user_id) != m_user_id_map.end())
             m_user_id_map.erase(user_id);
@@ -48,16 +53,19 @@ namespace qls
 
     bool GroupRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         return baseJoinRoom(socket_ptr, user);
     }
 
     bool GroupRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         return baseLeaveRoom(socket_ptr);
     }
 
     asio::awaitable<bool> GroupRoom::sendMessage(long long sender_user_id, const std::string& message)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         // 是否有此user_id
         if (!hasUser(sender_user_id))
             co_return false;
@@ -107,6 +115,7 @@ namespace qls
     asio::awaitable<bool> GroupRoom::sendTipMessage(long long sender_user_id,
         const std::string& message)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         // 是否有此user_id
         if (!hasUser(sender_user_id))
             co_return false;
@@ -154,6 +163,7 @@ namespace qls
     asio::awaitable<bool> GroupRoom::sendUserTipMessage(long long sender_user_id,
         const std::string& message, long long receiver_user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         // 是否有此user_id
         if (!hasUser(receiver_user_id))
             co_return false;
@@ -192,6 +202,7 @@ namespace qls
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (from > to) co_return false;
 
         auto searchPoint = [this](
@@ -254,7 +265,7 @@ namespace qls
                 localjson["data"]["group_id"] = this->m_group_id;
                 localjson["data"]["message"] = messageStruct.message;
                 localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
-                returnJson.push_back(localjson);
+                returnJson.push_back(std::move(localjson));
             }
                 break;
             case MessageStruct::MessageType::TIP_MESSAGE:
@@ -266,7 +277,7 @@ namespace qls
                 localjson["data"]["group_id"] = this->m_group_id;
                 localjson["data"]["message"] = messageStruct.message;
                 localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
-                returnJson.push_back(localjson);
+                returnJson.push_back(std::move(localjson));
             }
                 break;
             default:
@@ -279,12 +290,16 @@ namespace qls
 
     bool GroupRoom::hasUser(long long user_id) const
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
         std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
         return m_user_id_map.find(user_id) != m_user_id_map.end();
     }
 
     std::unordered_map<long long, GroupRoom::UserDataStruct> GroupRoom::getUserList() const
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
         std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
         return m_user_id_map;
     }
@@ -292,17 +307,23 @@ namespace qls
     std::unordered_map<long long,
         GroupPermission::PermissionType> GroupRoom::getUserPermissionList() const
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
         return std::move(this->m_permission.getUserPermissionList());
     }
 
     long long GroupRoom::getAdministrator() const
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
         std::shared_lock<std::shared_mutex> sl(m_administrator_user_id_mutex);
         return m_administrator_user_id;
     }
 
     void GroupRoom::setAdministrator(long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
         std::unique_lock<std::shared_mutex> ul1(m_user_id_map_mutex, std::defer_lock);
         std::unique_lock<std::shared_mutex> ul2(m_administrator_user_id_mutex, std::defer_lock);
         std::lock(ul1, ul2);
@@ -340,6 +361,7 @@ namespace qls
 
     bool GroupRoom::muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (executorId == user_id &&
             !this->hasUser(user_id) &&
             !this->hasUser(executorId))
@@ -368,6 +390,7 @@ namespace qls
 
     bool GroupRoom::unmuteUser(long long executorId, long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (executorId == user_id &&
             !this->hasUser(user_id) &&
             !this->hasUser(executorId))
@@ -392,6 +415,7 @@ namespace qls
 
     bool GroupRoom::kickUser(long long executorId, long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (executorId == user_id &&
             !this->hasUser(user_id) &&
             !this->hasUser(executorId))
@@ -415,6 +439,7 @@ namespace qls
 
     bool GroupRoom::addOperator(long long executorId, long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (!this->hasUser(user_id) && !this->hasUser(executorId))
             return false;
 
@@ -435,6 +460,7 @@ namespace qls
 
     bool GroupRoom::removeOperator(long long executorId, long long user_id)
     {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (executorId == user_id &&
             !this->hasUser(user_id) &&
             !this->hasUser(executorId))
@@ -453,5 +479,21 @@ namespace qls
         sl.unlock();
 
         return true;
+    }
+
+    void GroupRoom::removeThisRoom()
+    {
+        m_can_be_used = false;
+
+        {
+            // sql 上面删除此房间
+        }
+
+        // 剩下其他东西
+    }
+
+    bool GroupRoom::canBeUsed() const
+    {
+        return m_can_be_used;
     }
 }

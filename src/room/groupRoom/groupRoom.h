@@ -5,7 +5,7 @@
 #include <vector>
 #include <shared_mutex>
 #include <unordered_map>
-#include <memory>
+#include <asio.hpp>
 
 #include "room.h"
 #include "groupPermission.h"
@@ -20,7 +20,7 @@ namespace qls
         struct UserDataStruct
         {
             std::string nickname;
-            long long groupLevel;
+            long long groupLevel = 1;
         };
 
         struct MessageStruct
@@ -35,14 +35,6 @@ namespace qls
             std::string message;
             MessageType type;
         };
-
-        /*enum class ReturnState
-        {
-            UNKNOWN_STATE = 0,
-            OK_STATE,
-            NO_MEMBER_STATE,
-            MEMBER_MUTED_STATE
-        };*/
 
         GroupRoom(long long group_id, long long administrator, bool is_create);
         GroupRoom(const GroupRoom&) = delete;
@@ -76,10 +68,15 @@ namespace qls
         bool addOperator(long long executorId, long long user_id);
         bool removeOperator(long long executorId, long long user_id);
 
+        void removeThisRoom();
+        bool canBeUsed() const;
+
     private:
         const long long                 m_group_id;
         long long                       m_administrator_user_id;
         mutable std::shared_mutex       m_administrator_user_id_mutex;
+
+        std::atomic<bool>               m_can_be_used;
 
         GroupPermission                 m_permission;
 

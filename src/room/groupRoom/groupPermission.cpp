@@ -1,7 +1,5 @@
 ﻿#include "groupPermission.h"
 
-#include <string>
-
 namespace qls
 {
     void GroupPermission::modifyPermission(const std::string& permissionName, PermissionType type)
