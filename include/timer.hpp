@@ -39,11 +39,11 @@ namespace qqbot
 				return false;
 			}
 
-			std::unique_lock<std::mutex> lock(m_mutex);
-
-			m_taskNames.push_back(taskName);
-			m_tasks.push({ std::clock(), taskName, std::bind(std::forward<Func>(func), std::forward<Args>(args)...), interval });
-
+			{
+				std::unique_lock<std::mutex> lock(m_mutex);
+				m_taskNames.push_back(taskName);
+				m_tasks.push({ std::clock(), taskName, std::bind(std::forward<Func>(func), std::forward<Args>(args)...), interval });
+			}
 			m_cv.notify_all();
 
 			return true;

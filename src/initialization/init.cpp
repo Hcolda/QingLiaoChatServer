@@ -50,7 +50,7 @@ namespace qls
         std::system("chcp 65001");
         serverLogger.info("服务器Log系统启动成功！");
 
-        if (NetworkEndinass::isBigEndianness())
+        if (qls::isBigEndianness())
             serverLogger.info("服务器的本地端序为大端序");
         else
             serverLogger.info("服务器的本地端序为小端序");

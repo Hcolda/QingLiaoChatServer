@@ -20,7 +20,7 @@ namespace qls
 
     std::shared_ptr<DataPackage> DataPackage::stringToPackage(const std::string& data)
     {
-        using namespace NetworkEndinass;
+        using namespace qls;
 
         // 数据包过小
         if (data.size() < sizeof(DataPackage)) throw std::logic_error("data is too small!");
@@ -56,7 +56,7 @@ namespace qls
 
     std::string DataPackage::packageToString() noexcept
     {
-        using namespace NetworkEndinass;
+        using namespace qls;
 
         size_t localLength = this->length;
 

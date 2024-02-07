@@ -16,6 +16,8 @@
 #include <future>
 #include <utility>
 
+#include <asio.hpp>
+
 namespace quqisql
 {
     class SQLDBProcess
@@ -108,14 +110,43 @@ namespace quqisql
         {
             auto package = std::make_shared<std::packaged_task<decltype(func(args...))(Args...)>>(std::forward<Func>(func));
 
-            std::unique_lock<std::mutex> lock(m_function_queue_mutex);
-            m_function_queue.push(std::bind([package](auto&&... args) -> void {
-                (*package)(std::forward<decltype(args)>(args)...);
-                }, std::forward<Args>(args)...));
-            lock.unlock();
+            {
+                std::unique_lock<std::mutex> lock(m_function_queue_mutex);
+                m_function_queue.push(std::bind([package](auto&&... args) -> void {
+                    (*package)(std::forward<decltype(args)>(args)...);
+                    }, std::forward<Args>(args)...));
+            }
             m_cv.notify_all();
 
             return package->get_future();
+        }
+
+        template<typename R, typename Func, typename... Args,
+            asio::completion_token_for<void(R)> CompletionToken>
+        auto awaitable_submit(CompletionToken&& token, Func&& func, Args&&... args)
+        {
+            auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
+                std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
+                std::thread([](auto completion_handler, std::future<R> future) {
+                    std::move(completion_handler)(future.get());
+                    }, std::move(completion_handler), std::move(future)).detach();
+                };
+
+            return asio::async_initiate<CompletionToken, void(R)>(
+                init, token, std::forward<Func>(func), std::forward<Args>(args)...);
+
+            /*auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
+                std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
+                std::unique_lock<std::mutex> lock(m_function_queue_2_mutex);
+                m_function_queue_2.push([](auto completion_handler, std::future<R> future) {
+                    std::move(completion_handler)(future.get());
+                    }, std::move(completion_handler), std::move(future));
+                lock.unlock();
+                m_cv_2.notify_all();
+                };
+
+            return asio::async_initiate<CompletionToken, void(R)>(
+                init, token, std::forward<Func>(func), std::forward<Args>(args)...);*/
         }
 
         std::shared_ptr<sql::ResultSet> executeQuery(const std::string& command)

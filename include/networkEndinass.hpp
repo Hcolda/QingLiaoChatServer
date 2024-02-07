@@ -3,7 +3,7 @@
 
 #include <concepts>
 
-namespace NetworkEndinass
+namespace qls
 {
     /*
     * @brief 判断本地序是否为大端序

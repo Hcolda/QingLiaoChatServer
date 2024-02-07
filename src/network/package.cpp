@@ -11,7 +11,7 @@ void qls::Package::write(std::string_view data)
 
 bool qls::Package::canRead() const
 {
-    using namespace NetworkEndinass;
+    using namespace qls;
 
     if (m_buffer.size() < sizeof(int))
         return false;
@@ -27,7 +27,7 @@ bool qls::Package::canRead() const
 
 size_t qls::Package::firstMsgLength() const
 {
-    using namespace NetworkEndinass;
+    using namespace qls;
 
     if (m_buffer.size() < sizeof(int))
         return 0;
