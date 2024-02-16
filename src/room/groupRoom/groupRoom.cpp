@@ -398,8 +398,8 @@ namespace qls
     bool GroupRoom::muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (executorId == user_id &&
-            !this->hasUser(user_id) &&
+        if (executorId == user_id ||
+            !this->hasUser(user_id) ||
             !this->hasUser(executorId))
             return false;
 
@@ -416,10 +416,13 @@ namespace qls
             mins };
         ul.unlock();
 
+        asio::io_context io_context;
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
-        this->sendTipMessage(executorId, std::format("{} was muted by {}",
-            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname));
+        asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was muted by {}",
+            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
+            asio::use_awaitable);
         sl.unlock();
+        io_context.run();
 
         return true;
     }
@@ -427,8 +430,8 @@ namespace qls
     bool GroupRoom::unmuteUser(long long executorId, long long user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (executorId == user_id &&
-            !this->hasUser(user_id) &&
+        if (executorId == user_id ||
+            !this->hasUser(user_id) ||
             !this->hasUser(executorId))
             return false;
 
@@ -441,10 +444,13 @@ namespace qls
         m_muted_user_map.erase(user_id);
         ul.unlock();
 
+        asio::io_context io_context;
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
-        this->sendTipMessage(executorId, std::format("{} was unmuted by {}",
-            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname));
+        asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was unmuted by {}",
+            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
+            asio::use_awaitable);
         sl.unlock();
+        io_context.run();
 
         return true;
     }
@@ -452,8 +458,8 @@ namespace qls
     bool GroupRoom::kickUser(long long executorId, long long user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (executorId == user_id &&
-            !this->hasUser(user_id) &&
+        if (executorId == user_id ||
+            !this->hasUser(user_id) ||
             !this->hasUser(executorId))
             return false;
 
@@ -465,10 +471,13 @@ namespace qls
         std::unique_lock<std::shared_mutex> sl1(m_user_id_map_mutex, std::defer_lock),
             sl2(m_muted_user_map_mutex, std::defer_lock);
 
+        asio::io_context io_context;
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
-        this->sendTipMessage(executorId, std::format("{} was kicked by {}",
-            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname));
+        asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was kicked by {}",
+            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
+            asio::use_awaitable);
         sl.unlock();
+        io_context.run();
 
         return true;
     }
@@ -476,20 +485,28 @@ namespace qls
     bool GroupRoom::addOperator(long long executorId, long long user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (!this->hasUser(user_id) && !this->hasUser(executorId))
+        if (executorId == user_id ||
+            !this->hasUser(user_id) ||
+            !this->hasUser(executorId))
             return false;
 
         if (this->m_permission.getUserPermissionType(executorId) !=
             GroupPermission::PermissionType::Administrator)
             return false;
+        if (this->m_permission.getUserPermissionType(user_id) !=
+            GroupPermission::PermissionType::Default)
+            return false;
 
         this->m_permission.modifyUserPermission(user_id,
             GroupPermission::PermissionType::Operator);
 
+        asio::io_context io_context;
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
-        this->sendTipMessage(executorId, std::format("{} was turned operator by {}",
-            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname));
+        asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was turned operator by {}",
+            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
+            asio::use_awaitable);
         sl.unlock();
+        io_context.run();
 
         return true;
     }
@@ -497,22 +514,28 @@ namespace qls
     bool GroupRoom::removeOperator(long long executorId, long long user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (executorId == user_id &&
-            !this->hasUser(user_id) &&
+        if (executorId == user_id ||
+            !this->hasUser(user_id) ||
             !this->hasUser(executorId))
             return false;
 
         if (this->m_permission.getUserPermissionType(executorId) !=
             GroupPermission::PermissionType::Administrator)
             return false;
+        if (this->m_permission.getUserPermissionType(user_id) !=
+            GroupPermission::PermissionType::Operator)
+            return false;
 
         this->m_permission.modifyUserPermission(user_id,
             GroupPermission::PermissionType::Default);
 
+        asio::io_context io_context;
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
-        this->sendTipMessage(executorId, std::format("{} was turned default user by {}",
-            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname));
+        asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was turned default user by {}",
+            this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
+            asio::use_awaitable);
         sl.unlock();
+        io_context.run();
 
         return true;
     }
