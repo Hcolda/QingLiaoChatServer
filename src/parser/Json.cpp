@@ -244,7 +244,9 @@ bool operator ==(const JObject& joa, const JObject& jo)
 	{
 		const dict_t& local = joa.getDict();
 		const dict_t& joDict = jo.getDict();
-		if (local.empty() ^ joDict.empty())
+		if (local.empty() && joDict.empty())
+			return true;
+		if (local.empty() != joDict.empty())
 			return false;
 		if (local.size() != joDict.size())
 			return false;
@@ -288,7 +290,7 @@ const JObject& JObject::operator[](size_t itor) const
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 	}
 }
 
@@ -310,7 +312,7 @@ JObject& JObject::operator[](size_t itor)
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 	}
 }
 
@@ -338,7 +340,7 @@ const JObject& JObject::operator[](const char* str) const
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JDict, 类型不是JDict.");
+		throw std::logic_error("The type isn't JDict.");
 	}
 }
 
@@ -356,7 +358,7 @@ JObject& JObject::operator[](const char* str)
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JDict, 类型不是JDict.");
+		throw std::logic_error("The type isn't JDict.");
 	}
 }
 
@@ -374,7 +376,7 @@ void JObject::push_back(const JObject& jo)
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 	}
 }
 
@@ -392,7 +394,7 @@ void JObject::push_back(JObject&& jo)
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 	}
 }
 
@@ -400,18 +402,18 @@ void JObject::pop_back()
 {
 	if (m_type == JValueType::JNull)
 	{
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 	}
 	else if (m_type == JValueType::JList)
 	{
 		list_t* local = std::get_if<list_t>(m_value);
 		if (local->empty())
-			throw std::logic_error("The JList is empty, JList为空.");
+			throw std::logic_error("The JList is empty.");
 		local->pop_back();
 	}
 	else
 	{
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 	}
 }
 
@@ -424,7 +426,7 @@ bool JObject::hasMember(const std::string& str) const
 			return true;
 		return false;
 	}
-	throw std::logic_error("The type isn't JDict, 类型不是JDict.");
+	throw std::logic_error("The type isn't JDict.");
 }
 
 JValueType JObject::getType() const
@@ -439,7 +441,7 @@ const list_t& JObject::getList() const
 		return *std::get_if<list_t>(m_value);
 	}
 	else
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 }
 
 list_t& JObject::getList()
@@ -449,7 +451,7 @@ list_t& JObject::getList()
 		return *std::get_if<list_t>(m_value);
 	}
 	else
-		throw std::logic_error("The type isn't JList, 类型不是JList.");
+		throw std::logic_error("The type isn't JList.");
 }
 
 const dict_t& JObject::getDict() const
@@ -459,7 +461,7 @@ const dict_t& JObject::getDict() const
 		return *std::get_if<dict_t>(m_value);
 	}
 	else
-		throw std::logic_error("The type isn't JDict, 类型不是JDict.");
+		throw std::logic_error("The type isn't JDict.");
 }
 
 dict_t& JObject::getDict()
@@ -469,7 +471,7 @@ dict_t& JObject::getDict()
 		return *std::get_if<dict_t>(m_value);
 	}
 	else
-		throw std::logic_error("The type isn't JDict, 类型不是JDict.");
+		throw std::logic_error("The type isn't JDict.");
 }
 
 const long long& JObject::getInt() const
@@ -480,7 +482,7 @@ const long long& JObject::getInt() const
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't int, 此JObject不是整形");
+		throw std::logic_error("This JObject isn't int");
 	}
 }
 
@@ -492,7 +494,7 @@ long long& JObject::getInt()
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't int, 此JObject不是整形");
+		throw std::logic_error("This JObject isn't int");
 	}
 }
 
@@ -504,7 +506,7 @@ const long double& JObject::getDouble() const
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't double, 此JObject不是浮点数");
+		throw std::logic_error("This JObject isn't double");
 	}
 }
 
@@ -516,7 +518,7 @@ long double& JObject::getDouble()
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't double, 此JObject不是浮点数");
+		throw std::logic_error("This JObject isn't double");
 	}
 }
 
@@ -528,7 +530,7 @@ const bool& JObject::getBool() const
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't bool, 此JObject不是布尔值");
+		throw std::logic_error("This JObject isn't bool");
 	}
 }
 
@@ -540,7 +542,7 @@ bool& JObject::getBool()
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't bool, 此JObject不是布尔值");
+		throw std::logic_error("This JObject isn't bool");
 	}
 }
 
@@ -552,7 +554,7 @@ const std::string& JObject::getString() const
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't string, 此JObject不是字符串");
+		throw std::logic_error("This JObject isn't string");
 	}
 }
 
@@ -564,7 +566,7 @@ std::string& JObject::getString()
 	}
 	else
 	{
-		throw std::logic_error("This JObject isn't string, 此JObject不是字符串");
+		throw std::logic_error("This JObject isn't string");
 	}
 }
 
@@ -603,7 +605,7 @@ JObject JParser::_parse(std::string_view data, size_t& itor)
 	skipSpace(data, itor, error_line);
 	if (data.size() <= itor)
 		throw std::logic_error(get_logic_error_string(error_line));
-	
+
 	if (data[itor] == '{')
 	{
 		JObject localJO(JValueType::JDict);
@@ -745,7 +747,9 @@ std::string JParser::getString(std::string_view data, size_t& itor, long long er
 #else
 						sscanf(strNum.c_str(), "%x", &nValude);
 #endif // _WIN32
-						str += static_cast<wchar_t>(nValude);
+						std::wstring wstr;
+						wstr += static_cast<wchar_t>(nValude);
+						str += std::string(wstr.begin(), wstr.end());
 						itor += 4;
 					}
 					break;
@@ -905,7 +909,7 @@ std::string JWriter::write(const JObject& jo)
 				switch (*i)
 				{
 				case 0:
-					throw std::logic_error("Lnvalid string");
+					throw std::logic_error("Invalid string");
 				case '\n':
 					str += "\\n";
 					break;
@@ -1027,7 +1031,7 @@ std::string JWriter::formatWrite(const JObject& jo, size_t n)
 			switch (*i)
 			{
 			case 0:
-				throw std::logic_error("Lnvalid string");
+				throw std::logic_error("Invalid string");
 			case '\n':
 				str += "\\n";
 				break;
