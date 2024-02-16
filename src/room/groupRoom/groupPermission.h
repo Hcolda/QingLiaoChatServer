@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <shared_mutex>
 #include <string>
+#include <vector>
 
 namespace qls
 {
@@ -27,9 +28,13 @@ namespace qls
 
         void modifyUserPermission(long long user_id, PermissionType type = PermissionType::Default);
         void removeUser(long long user_id);
+
         bool userHasPermission(long long user_id, const std::string& permissionName) const;
         PermissionType getUserPermissionType(long long user_id) const;
         std::unordered_map<long long, PermissionType> getUserPermissionList() const;
+        std::vector<long long> getDefaultUserList() const;
+        std::vector<long long> getOperatorList() const;
+        std::vector<long long> getAdministratorList() const;
 
     private:
         std::unordered_map<std::string, PermissionType> m_permission_map;

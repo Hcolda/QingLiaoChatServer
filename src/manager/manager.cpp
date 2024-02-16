@@ -214,7 +214,8 @@ namespace qls
                 m_FriendRoomVerification_map.end())
                 throw std::invalid_argument("Wrong argument!");
 
-            m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 }, FriendRoomVerification{ user_id_1, user_id_2 });
+            m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 },
+                                                 FriendRoomVerification{ user_id_1, user_id_2 });
         }
         
         // user1
@@ -250,7 +251,8 @@ namespace qls
             m_FriendRoomVerification_map.end();
     }
 
-    bool Manager::setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified)
+    bool Manager::setFriendVerified(long long user_id_1, long long user_id_2,
+                                    long long user_id, bool is_verified)
     {
         bool result = false;
         {
@@ -332,8 +334,8 @@ namespace qls
             m_FriendRoomVerification_map.erase(itor);
         }
 
-        getUser(user_id_1)->removeFriendVerification(user_id_2);
-        getUser(user_id_2)->removeFriendVerification(user_id_1);
+        this->getUser(user_id_1)->removeFriendVerification(user_id_2);
+        this->getUser(user_id_2)->removeFriendVerification(user_id_1);
     }
 
     void Manager::addGroupRoomVerification(long long group_id, long long user_id)
@@ -345,7 +347,8 @@ namespace qls
                 m_GroupVerification_map.end())
                 throw std::invalid_argument("Wrong argument!");
 
-            m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id }, GroupRoomVerification{ group_id, user_id });
+            m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id },
+                                            GroupRoomVerification{ group_id, user_id });
         }
 
         // 用户发送请求
@@ -482,8 +485,10 @@ namespace qls
             m_GroupVerification_map.erase(itor);
         }
 
-        getUser(getGroupRoom(group_id)->getAdministrator())->removeGroupVerification(group_id, user_id);
-        getUser(user_id)->removeGroupVerification(group_id, user_id);
+        this->getUser(getGroupRoom(group_id)->getAdministrator())
+            ->removeGroupVerification(group_id, user_id);
+
+        this->getUser(user_id)->removeGroupVerification(group_id, user_id);
     }
 
     quqisql::SQLDBProcess& Manager::getServerSqlProcess()

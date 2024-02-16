@@ -53,20 +53,24 @@ namespace qls
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 
-        bool hasUser(long long user_id) const;
+        bool                                    hasUser(long long user_id) const;
         std::unordered_map<long long,
-            UserDataStruct> getUserList() const;
+            UserDataStruct>                     getUserList() const;
+        std::string                             getUserNickname(long long user_id) const;
+        long long                               getUserGroupLevel(long long user_id) const;
         std::unordered_map<long long,
-            GroupPermission::PermissionType> getUserPermissionList() const;
-        long long getAdministrator() const;
-        void setAdministrator(long long user_id);
-        long long getGroupID() const;
+            GroupPermission::PermissionType>    getUserPermissionList() const;
+        long long                               getAdministrator() const;
+        long long                               getGroupID() const;
+        std::vector<long long>                  getDefaultUserList() const;
+        std::vector<long long>                  getOperatorList() const;
         
         bool muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins);
         bool unmuteUser(long long executorId, long long user_id);
         bool kickUser(long long executorId, long long user_id);
         bool addOperator(long long executorId, long long user_id);
         bool removeOperator(long long executorId, long long user_id);
+        void setAdministrator(long long user_id);
 
         void removeThisRoom();
         bool canBeUsed() const;

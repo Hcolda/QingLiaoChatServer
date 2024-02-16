@@ -304,6 +304,30 @@ namespace qls
         return m_user_id_map;
     }
 
+    std::string GroupRoom::getUserNickname(long long user_id) const
+    {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
+        std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
+        auto itor = m_user_id_map.find(user_id);
+        if (itor == m_user_id_map.end())
+            throw std::logic_error("The user isn't in the room");
+
+        return itor->second.nickname;
+    }
+
+    long long GroupRoom::getUserGroupLevel(long long user_id) const
+    {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+
+        std::shared_lock<std::shared_mutex> sl(m_user_id_map_mutex);
+        auto itor = m_user_id_map.find(user_id);
+        if (itor == m_user_id_map.end())
+            throw std::logic_error("The user isn't in the room");
+
+        return itor->second.groupLevel;
+    }
+
     std::unordered_map<long long,
         GroupPermission::PermissionType> GroupRoom::getUserPermissionList() const
     {
@@ -357,6 +381,18 @@ namespace qls
     long long GroupRoom::getGroupID() const
     {
         return m_group_id;
+    }
+
+    std::vector<long long> GroupRoom::getDefaultUserList() const
+    {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        return std::move(this->m_permission.getDefaultUserList());
+    }
+
+    std::vector<long long> GroupRoom::getOperatorList() const
+    {
+        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        return std::move(this->m_permission.getOperatorList());
     }
 
     bool GroupRoom::muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins)

@@ -68,7 +68,7 @@ namespace qls
         // 采用复制的方式，保证内存安全！！！
 
         bool userHasFriend(long long friend_user_id) const;
-        bool userHasGroup(long long group_user_id) const;
+        bool userHasGroup(long long group_id) const;
 
         std::unordered_set<long long> getFriendList() const;
         std::unordered_set<long long> getGroupList() const;
@@ -114,7 +114,7 @@ namespace qls
         * @param group_user_id 群聊id
         * @return true 提交申请成功 | false 失败
         */
-        bool addGroup(long long group_user_id);
+        bool addGroup(long long group_id);
 
         template<class T, class Y =
             std::enable_if_t<std::is_same_v<

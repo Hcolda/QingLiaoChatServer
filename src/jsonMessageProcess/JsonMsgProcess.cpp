@@ -34,7 +34,7 @@ namespace qls
         asio::awaitable<qjson::JObject> login(long long user_id, const std::string& password);
         asio::awaitable<qjson::JObject> login(const std::string& email, const std::string& password);
 
-        asio::awaitable<qjson::JObject> register_user(const std::string& email, const std::string& password);
+        asio::awaitable<qjson::JObject> registerUser(const std::string& email, const std::string& password);
 
         asio::awaitable<qjson::JObject> addFriend(long long friend_id);
         asio::awaitable<qjson::JObject> acceptFriendVerification(long long user_id, bool is_accept);
@@ -106,7 +106,7 @@ namespace qls
                 co_return co_await login(param["user_id"].getInt(), param["password"].getString());
             case 1:
                 // register
-                co_return co_await register_user(param["email"].getString(), param["password"].getString());
+                co_return co_await registerUser(param["email"].getString(), param["password"].getString());
             case 2:
                 // has user
                 co_return co_await hasUser(param["user_id"].getInt());
@@ -181,7 +181,7 @@ namespace qls
         co_return qjson::JObject();
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::register_user(const std::string& email, const std::string& password)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::registerUser(const std::string& email, const std::string& password)
     {
         if (!qls::RegexMatch::emailMatch(email))
             co_return makeErrorMessage("Email is invalid");
@@ -190,8 +190,8 @@ namespace qls
         ptr->firstUpdateUserPassword(password);
         ptr->updateUserEmail(email);
 
-        auto returnJson = makeSuccessMessage("Successfully create a new user!");
-        auto id = ptr->getUserID();
+        qjson::JObject returnJson = makeSuccessMessage("Successfully create a new user!");
+        long long id = ptr->getUserID();
         returnJson["user_id"] = id;
 
         serverLogger.info("注册了新用户: ", id);

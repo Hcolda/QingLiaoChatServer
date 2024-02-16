@@ -125,6 +125,7 @@ namespace quqisql
             asio::completion_token_for<void(R)> CompletionToken>
         auto awaitable_submit(CompletionToken&& token, Func&& func, Args&&... args)
         {
+            // 还有更好的方法，此处没有使用
             auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
                 std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
                 std::thread([](auto completion_handler, std::future<R> future) {

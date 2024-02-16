@@ -1,5 +1,7 @@
 ﻿#include "groupPermission.h"
 
+#include <algorithm>
+
 namespace qls
 {
     void GroupPermission::modifyPermission(const std::string& permissionName, PermissionType type)
@@ -92,5 +94,44 @@ namespace qls
     {
         std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
         return m_user_permission_map;
+    }
+
+    std::vector<long long> GroupPermission::getDefaultUserList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+
+        std::vector<long long> return_vector;
+        std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
+            [&return_vector](const std::pair<long long, PermissionType>& p) {
+            if (p.second == PermissionType::Default) return_vector.push_back(p.first);
+            });
+
+        return return_vector;
+    }
+
+    std::vector<long long> GroupPermission::getOperatorList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+
+        std::vector<long long> return_vector;
+        std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
+            [&return_vector](const std::pair<long long, PermissionType>& p) {
+                if (p.second == PermissionType::Operator) return_vector.push_back(p.first);
+            });
+
+        return return_vector;
+    }
+
+    std::vector<long long> GroupPermission::getAdministratorList() const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+
+        std::vector<long long> return_vector;
+        std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
+            [&return_vector](const std::pair<long long, PermissionType>& p) {
+                if (p.second == PermissionType::Administrator) return_vector.push_back(p.first);
+            });
+
+        return return_vector;
     }
 }
