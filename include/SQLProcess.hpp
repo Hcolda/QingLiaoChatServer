@@ -123,9 +123,9 @@ namespace quqisql
 
         template<typename R, typename Func, typename... Args,
             asio::completion_token_for<void(R)> CompletionToken>
-        auto awaitable_submit(CompletionToken&& token, Func&& func, Args&&... args)
+        auto awaitableSubmit(CompletionToken&& token, Func&& func, Args&&... args)
         {
-            // 还有更好的方法，此处没有使用
+            // 还有更好的方法，此处还没有实现更好的理想方法
             auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
                 std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
                 std::thread([](auto completion_handler, std::future<R> future) {
@@ -136,6 +136,7 @@ namespace quqisql
             return asio::async_initiate<CompletionToken, void(R)>(
                 init, token, std::forward<Func>(func), std::forward<Args>(args)...);
 
+            // 理想方法 但是是伪代码
             /*auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
                 std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
                 std::unique_lock<std::mutex> lock(m_function_queue_2_mutex);
@@ -170,6 +171,33 @@ namespace quqisql
             std::shared_ptr<sql::Statement> statement(m_sqlconnection->createStatement());
 
             statement->executeUpdate(command);
+        }
+
+        void preparedUpdate(const std::string& preparedCommand,
+            std::function<void(std::shared_ptr<sql::PreparedStatement>&)> callback)
+        {
+            if (!m_sqlconnection)
+                throw std::runtime_error("Connection is null");
+
+            std::shared_ptr<sql::PreparedStatement> stmnt(
+                m_sqlconnection->prepareStatement(preparedCommand));
+            callback(stmnt);
+
+            stmnt->executeUpdate();
+        }
+
+        std::shared_ptr<sql::ResultSet> preparedQuery(const std::string& preparedCommand,
+            std::function<void(std::shared_ptr<sql::PreparedStatement>&)> callback)
+        {
+            if (!m_sqlconnection)
+                throw std::runtime_error("Connection is null");
+
+            std::shared_ptr<sql::PreparedStatement> stmnt(
+                m_sqlconnection->prepareStatement(preparedCommand));
+            callback(stmnt);
+            
+            return std::shared_ptr<sql::ResultSet>{stmnt->executeQuery(),
+                [stmnt](sql::ResultSet* set) {set->last(); stmnt->close(); }};
         }
         
     private:
