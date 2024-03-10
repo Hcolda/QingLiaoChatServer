@@ -1,5 +1,6 @@
 ﻿#include "socketFunctions.h"
 
+#include <asio/experimental/awaitable_operators.hpp>
 #include <Logger.hpp>
 #include <QuqiCrypto.hpp>
 #include <Json.h>
@@ -75,39 +76,31 @@ namespace qls
         m_user.uuid = uuid;
     }
 
-    asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
-        SocketService::async_receive()
+    asio::awaitable<void>
+        SocketService::async_receive(std::string& out_data,
+                                    std::shared_ptr<qls::DataPackage>& out_pack)
     {
+        auto executor = co_await asio::this_coro::executor;
         std::string addr = socket2ip(*m_socket_ptr);
         char buffer[8192]{ 0 };
+
+        std::shared_ptr<qls::DataPackage> datapack;
         // 接收数据
         if (!m_package.canRead())
         {
             do
             {
                 size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
-                serverLogger.info((std::format("[{}]收到消息: {}", addr, qls::showBinaryData({ buffer, size }))));
-                m_package.write({ buffer, size });
+                serverLogger.info((std::format("[{}]收到消息: {}", addr, qls::showBinaryData({ buffer, static_cast<size_t>(size) }))));
+                m_package.write({ buffer, static_cast<size_t>(size) });
             } while (!m_package.canRead());
         }
 
-        std::shared_ptr<qls::DataPackage> datapack;
-
         // 检测数据包是否正常
-        {
-            // 数据包
-            try
-            {
-                datapack = std::shared_ptr<qls::DataPackage>(
-                    qls::DataPackage::stringToPackage(
-                        m_package.read()));
-            }
-            catch (const std::exception& e)
-            {
-                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
-                co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{std::string(), nullptr};
-            }
-        }
+        // 数据包
+        datapack = std::shared_ptr<qls::DataPackage>(
+            qls::DataPackage::stringToPackage(
+                m_package.read()));
 
         std::string out = datapack->getData();
 
@@ -117,10 +110,12 @@ namespace qls
             if (!m_aes.AES.encrypt(datapack->getData(), out, m_aes.AESKey, m_aes.AESiv, false))
             {
                 serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
-                co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{std::string(), datapack};
+                out_data = std::string(); out_pack = datapack;
+                co_return;
             }
         }
-        co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{out, datapack};
+        out_data = out; out_pack = datapack;
+        co_return;
     }
 
     asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
@@ -142,15 +137,6 @@ namespace qls
         const std::string& data,
         std::shared_ptr<qls::DataPackage> pack)
     {
-        //if (!this->m_jsonProcess)
-        //{
-        //    // 如果json process没有加载
-        //    // 获取用户的id并创建json process
-
-        //    // long long user_id = WebFunction::getUserID(this->m_user.uuid);
-        //    this->m_jsonProcess = std::make_shared<JsonMessageProcess>(-1);
-        //}
-
         if (co_await this->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
         {
             co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("You have't been logined!")), pack->requestID, 1);
@@ -186,8 +172,23 @@ namespace qls
     
     asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds)
     {
+        using namespace asio::experimental::awaitable_operators;
+
         if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
         std::shared_ptr<asio::ip::tcp::socket> socket_ptr = std::make_shared<asio::ip::tcp::socket>(std::move(socket));
+        auto watchdog = [](const std::chrono::steady_clock::time_point& deadline) -> asio::awaitable<void>
+            {
+                asio::steady_timer timer(co_await this_coro::executor);
+                auto now = std::chrono::steady_clock::now();
+                while (deadline > now)
+                {
+                    timer.expires_at(deadline);
+                    co_await timer.async_wait(use_awaitable);
+                    now = std::chrono::steady_clock::now();
+                }
+                throw std::system_error(std::make_error_code(std::errc::timed_out));
+                co_return;
+            };
 
         SocketService socketService(socket_ptr);
         socketService.setAESKeys(sds->AESKey, sds->AESiv);
@@ -199,9 +200,13 @@ namespace qls
 
         try
         {
+            long long heart_beat_times = 0;
+            auto heart_beat_time_point = std::chrono::steady_clock::now();
             for (;;)
             {
-                auto [data, pack] = co_await socketService.async_receive();
+                std::string data;
+                std::shared_ptr<DataPackage> pack;
+                co_await (socketService.async_receive(data, pack) && watchdog(std::chrono::steady_clock::now() + std::chrono::seconds(30)));
 
                 // 判断包是否可用
                 if (pack.get() == nullptr)
@@ -210,6 +215,21 @@ namespace qls
                     serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
                     socket_ptr->close();
                     co_return;
+                }
+                else if (pack->type == 4)
+                {
+                    // 心跳包
+                    heart_beat_times++;
+                    if (std::chrono::steady_clock::now() - heart_beat_time_point >= std::chrono::seconds(10))
+                    {
+                        heart_beat_time_point = std::chrono::steady_clock::now();
+                        if (heart_beat_times > 10)
+                        {
+                            serverLogger.error("[", addr, "]", "heart beat too much");
+                            co_return;
+                        }
+                    }
+                    continue;
                 }
                 else if (data.empty())
                 {
@@ -231,7 +251,7 @@ namespace qls
             }
             else
             {
-                serverLogger.warning(std::string(e.what()));
+                serverLogger.error(std::string(e.what()));
             }
         }
 
