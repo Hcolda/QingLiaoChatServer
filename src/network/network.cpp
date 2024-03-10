@@ -1,5 +1,6 @@
 ﻿#include "network.h"
 
+#include <asio/experimental/awaitable_operators.hpp>
 #include <Logger.hpp>
 #include <QuqiCrypto.hpp>
 #include <Json.h>
@@ -207,7 +208,34 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                 //    }
                 //}
 
-                asio::co_spawn(executor, SocketService::echo(std::move(socket), std::move(sds)), asio::detached);
+                auto execute_function = [](asio::ip::tcp::socket socket,
+                    std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
+                    using namespace asio::experimental::awaitable_operators;
+                    auto watchdog = [](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
+                    {
+                        asio::steady_timer timer(co_await this_coro::executor);
+                        auto now = std::chrono::steady_clock::now();
+                        while (deadline > now)
+                        {
+                            timer.expires_at(deadline);
+                            co_await timer.async_wait(use_awaitable);
+                            now = std::chrono::steady_clock::now();
+                        }
+                        throw std::system_error(std::make_error_code(std::errc::timed_out));
+                    };
+                    std::chrono::steady_clock::time_point deadline;
+                    try
+                    {
+                        co_await(SocketService::echo(std::move(socket), std::move(sds), deadline) && watchdog(deadline));
+                    }
+                    catch (const std::exception& e)
+                    {
+                        serverLogger.error(e.what());
+                    }
+                    co_return;
+                    };
+
+                asio::co_spawn(executor, execute_function(std::move(socket), std::move(sds)), asio::detached);
                 co_return;
             }
         }
@@ -220,7 +248,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
         }
         else
         {
-            serverLogger.warning(ERROR_WITH_STACKTRACE(e.what()));
+            serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
         }
     }
 

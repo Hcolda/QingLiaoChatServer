@@ -1,4 +1,4 @@
-import json, socket, struct, ctypes
+import json, socket, struct, ctypes, time
 from threading import Thread
 
 def stringhash(data: bytes) -> int:
@@ -39,3 +39,4 @@ sendPack(s, json.dumps({"function":"login", "parameters": {"user_id": 10000, "pa
 getdata = s.recv(1024)
 print(getdata)
 print(struct.unpack(">i", getdata[:4]), len(getdata))
+time.sleep(90)

@@ -49,9 +49,8 @@ namespace qls
         * @param socket
         * @return asio协程 std::string, std::shared_ptr<Network::Package::DataPackage>
         */
-        asio::awaitable<void>
-            async_receive(std::string& out_data,
-                std::shared_ptr<qls::DataPackage>& out_pack);
+        asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
+            async_receive();
 
         /*
         * @brief 异步发送消息
@@ -88,7 +87,7 @@ namespace qls
         * @param sds Network::SocketDataStructure类
         * @return asio协程 asio::awaitable<void>
         */
-        static asio::awaitable<void> echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds);
+        static asio::awaitable<void> echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds, std::chrono::steady_clock::time_point& deadline);
 
     protected:
         struct LocalAES

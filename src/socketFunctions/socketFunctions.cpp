@@ -76,9 +76,8 @@ namespace qls
         m_user.uuid = uuid;
     }
 
-    asio::awaitable<void>
-        SocketService::async_receive(std::string& out_data,
-                                    std::shared_ptr<qls::DataPackage>& out_pack)
+    asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
+        SocketService::async_receive()
     {
         auto executor = co_await asio::this_coro::executor;
         std::string addr = socket2ip(*m_socket_ptr);
@@ -110,12 +109,10 @@ namespace qls
             if (!m_aes.AES.encrypt(datapack->getData(), out, m_aes.AESKey, m_aes.AESiv, false))
             {
                 serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
-                out_data = std::string(); out_pack = datapack;
-                co_return;
+                co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{std::string(), datapack};
             }
         }
-        out_data = out; out_pack = datapack;
-        co_return;
+        co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{out, datapack};
     }
 
     asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
@@ -170,25 +167,12 @@ namespace qls
         m_package.setBuffer(p.readBuffer());
     }
     
-    asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds)
+    asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket,
+        std::shared_ptr<Network::SocketDataStructure> sds,
+        std::chrono::steady_clock::time_point& deadline)
     {
-        using namespace asio::experimental::awaitable_operators;
-
         if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
         std::shared_ptr<asio::ip::tcp::socket> socket_ptr = std::make_shared<asio::ip::tcp::socket>(std::move(socket));
-        auto watchdog = [](const std::chrono::steady_clock::time_point& deadline) -> asio::awaitable<void>
-            {
-                asio::steady_timer timer(co_await this_coro::executor);
-                auto now = std::chrono::steady_clock::now();
-                while (deadline > now)
-                {
-                    timer.expires_at(deadline);
-                    co_await timer.async_wait(use_awaitable);
-                    now = std::chrono::steady_clock::now();
-                }
-                throw std::system_error(std::make_error_code(std::errc::timed_out));
-                co_return;
-            };
 
         SocketService socketService(socket_ptr);
         socketService.setAESKeys(sds->AESKey, sds->AESiv);
@@ -204,9 +188,8 @@ namespace qls
             auto heart_beat_time_point = std::chrono::steady_clock::now();
             for (;;)
             {
-                std::string data;
-                std::shared_ptr<DataPackage> pack;
-                co_await (socketService.async_receive(data, pack) && watchdog(std::chrono::steady_clock::now() + std::chrono::seconds(30)));
+                deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+                auto [data, pack] = co_await socketService.async_receive();
 
                 // 判断包是否可用
                 if (pack.get() == nullptr)
