@@ -211,6 +211,7 @@ namespace qls
                             serverLogger.error("[", addr, "]", "heart beat too much");
                             co_return;
                         }
+                        heart_beat_times = 0;
                     }
                     continue;
                 }
