@@ -144,70 +144,70 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket socket)
                 }
 
                 // 加密检测
-                //{
-                //    // 加密检测函数 lambda（新）
-                //    auto encryptFunction_2 = [&]() -> asio::awaitable<int> {
-                //        
-                //        if (sds->has_encrypt == 0)
-                //        {
-                //            sds->uuid = datapack->getData(datapack);
+                /* {
+                    // 加密检测函数 lambda（新）
+                    auto encryptFunction_2 = [&]() -> asio::awaitable<int> {
 
-                //            WebFunction web;
-                //            auto [key, iv] = web.getAESKey(sds->uuid);
+                        if (sds->has_encrypt == 0)
+                        {
+                            sds->uuid = datapack->getData(datapack);
 
-                //            std::string key1, iv1;
-                //            qcrypto::Base64::encrypt(key, key1, false);
-                //            qcrypto::Base64::encrypt(iv, iv1, false);
+                            WebFunction web;
+                            auto [key, iv] = web.getAESKey(sds->uuid);
 
-                //            sds->AESKey = key1;
-                //            sds->AESiv = iv1;
+                            std::string key1, iv1;
+                            qcrypto::Base64::encrypt(key, key1, false);
+                            qcrypto::Base64::encrypt(iv, iv1, false);
 
-                //            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
-                //            std::string out;
-                //            aes.encrypt("hello client", out, sds->AESKey, sds->AESiv, true);
-                //            auto sendpack = Package::DataPackage::makePackage(out);
-                //            sendpack->requestID = datapack->requestID;
-                //            co_await socket.async_send(asio::buffer(sendpack->packageToString(sendpack)), asio::use_awaitable);
+                            sds->AESKey = key1;
+                            sds->AESiv = iv1;
 
-                //            sds->has_encrypt = 1;
-                //            co_return 1;
-                //        }
-                //        else if (sds->has_encrypt == 1)
-                //        {
-                //            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
-                //            std::string out;
-                //            if (!aes.encrypt(datapack->getData(datapack), out, sds->AESKey, sds->AESiv, false) || out != "hello server")
-                //            {
-                //                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
-                //                closeFunction_(socket);
-                //                socket.close();
-                //                co_return 0;
-                //            }
+                            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
+                            std::string out;
+                            aes.encrypt("hello client", out, sds->AESKey, sds->AESiv, true);
+                            auto sendpack = Package::DataPackage::makePackage(out);
+                            sendpack->requestID = datapack->requestID;
+                            co_await socket.async_send(asio::buffer(sendpack->packageToString(sendpack)), asio::use_awaitable);
 
-                //            sds->has_encrypt = 2;
-                //            co_return 2;
-                //        }
-                //        else co_return 2;
-                //        };
+                            sds->has_encrypt = 1;
+                            co_return 1;
+                        }
+                        else if (sds->has_encrypt == 1)
+                        {
+                            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
+                            std::string out;
+                            if (!aes.encrypt(datapack->getData(datapack), out, sds->AESKey, sds->AESiv, false) || out != "hello server")
+                            {
+                                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("decrypt error in file "));
+                                closeFunction_(socket);
+                                socket.close();
+                                co_return 0;
+                            }
 
-                //    // 1是加密到一半 2是完全加密
-                //    int code = co_await encryptFunction_2();
-                //    switch (code)
-                //    {
-                //    case 0:
-                //        co_return;
-                //    case 1:
-                //        continue;
-                //    case 2:
-                //    {
-                //        // 将socket所有权交给新类
-                //        asio::co_spawn(executor, SocketService::echo(std::move(socket), std::move(sds)), asio::detached);
-                //        co_return;
-                //    }
-                //    default:
-                //        break;
-                //    }
-                //}
+                            sds->has_encrypt = 2;
+                            co_return 2;
+                        }
+                        else co_return 2;
+                        };
+
+                    // 1是加密到一半 2是完全加密
+                    int code = co_await encryptFunction_2();
+                    switch (code)
+                    {
+                    case 0:
+                        co_return;
+                    case 1:
+                        continue;
+                    case 2:
+                    {
+                        // 将socket所有权交给新类
+                        asio::co_spawn(executor, SocketService::echo(std::move(socket), std::move(sds)), asio::detached);
+                        co_return;
+                    }
+                    default:
+                        break;
+                    }
+                } */
 
                 auto execute_function = [](asio::ip::tcp::socket socket,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
