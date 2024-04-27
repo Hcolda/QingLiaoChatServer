@@ -5,6 +5,8 @@
 #include <QuqiCrypto.hpp>
 #include <Json.h>
 
+#include "dataPackage.h"
+
 namespace qls
 {
     bool BaseRoom::joinRoom(
@@ -12,7 +14,6 @@ namespace qls
         const BaseUserSetting& user)
     {
         if (!socket_ptr) return false;
-        else if (!user.sendFunction) return false;
 
         std::lock_guard<std::shared_mutex> lock(m_userMap_mutex);
         m_userMap[socket_ptr] = user;
@@ -33,7 +34,7 @@ namespace qls
 
     asio::awaitable<bool> BaseRoom::sendData(const std::string& data)
     {
-        bool result = false;
+        bool result = true;
 
         // 广播数据
         {
@@ -44,8 +45,11 @@ namespace qls
             {
                 try
                 {
-                    result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
-                        ? true : false;
+                    auto pack = qls::DataPackage::makePackage(data);
+                    pack->requestID = 0;
+                    pack->type = 1;
+                    pack->sequence = -1;
+                    asio::async_write(*(i->first), asio::buffer(pack->packageToString()), asio::detached);
                 }
                 catch (...)
                 {
@@ -81,7 +85,7 @@ namespace qls
 
     asio::awaitable<bool> BaseRoom::sendData(const std::string& data, long long user_id)
     {
-        bool result = false;
+        bool result = true;
 
         // 广播数据给单个user
         {
@@ -94,8 +98,11 @@ namespace qls
                 {
                     try
                     {
-                        result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
-                            ? true : false;
+                        auto pack = qls::DataPackage::makePackage(data);
+                        pack->requestID = 0;
+                        pack->type = 1;
+                        pack->sequence = -1;
+                        asio::async_write(*(i->first), asio::buffer(pack->packageToString()), asio::detached);
                     }
                     catch (...)
                     {

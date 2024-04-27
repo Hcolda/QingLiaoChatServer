@@ -28,13 +28,8 @@ namespace qls
 
     struct BaseUserSetting
     {
-        // 发送函数
-        using SendFunction = std::function<asio::awaitable<size_t>(
-            std::string_view data, long long, int, int)>;
-
         long long user_id;
         Equipment equipment = Equipment::Unknown;
-        SendFunction sendFunction;
     };
 
     /*
