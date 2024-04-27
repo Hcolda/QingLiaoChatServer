@@ -7,7 +7,9 @@
 
 namespace qls
 {
-    bool BaseRoom::baseJoinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user)
+    bool BaseRoom::joinRoom(
+        const std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>& socket_ptr,
+        const BaseUserSetting& user)
     {
         if (!socket_ptr) return false;
         else if (!user.sendFunction) return false;
@@ -17,7 +19,8 @@ namespace qls
         return true;
     }
 
-    bool BaseRoom::baseLeaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    bool BaseRoom::leaveRoom(
+        const std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>& socket_ptr)
     {
         if (!socket_ptr) return false;
 
@@ -28,7 +31,7 @@ namespace qls
         return true;
     }
 
-    asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data)
+    asio::awaitable<bool> BaseRoom::sendData(const std::string& data)
     {
         bool result = false;
 
@@ -41,11 +44,6 @@ namespace qls
             {
                 try
                 {
-                    /*std::string out;
-                    if (!aes.encrypt(data, out, { i->second.key, 32 }, { i->second.iv, 16 }, true))
-                        throw std::logic_error("Key and ivec of AES are invalid");
-                    co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);*/
-
                     result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
                         ? true : false;
                 }
@@ -64,7 +62,9 @@ namespace qls
             {
                 do
                 {
-                    std::shared_ptr<asio::ip::tcp::socket> localSocket_ptr = std::move(m_userDeleteQueue.front());
+                    std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>
+                        localSocket_ptr = std::move(m_userDeleteQueue.front());
+
                     auto itor = m_userMap.find(localSocket_ptr);
                     if (itor != m_userMap.end())
                     {
@@ -79,7 +79,7 @@ namespace qls
         co_return result;
     }
 
-    asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data, long long user_id)
+    asio::awaitable<bool> BaseRoom::sendData(const std::string& data, long long user_id)
     {
         bool result = false;
 
@@ -94,11 +94,6 @@ namespace qls
                 {
                     try
                     {
-                        /*std::string out;
-                        if (!aes.encrypt(data, out, { i->second.key, 32 }, { i->second.iv, 16 }, true))
-                            throw std::logic_error("Key and ivec of AES are invalid");
-                        co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);*/
-
                         result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
                             ? true : false;
                     }
@@ -118,7 +113,9 @@ namespace qls
             {
                 do
                 {
-                    std::shared_ptr<asio::ip::tcp::socket> localSocket_ptr = std::move(m_userDeleteQueue.front());
+                    std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>
+                        localSocket_ptr = std::move(m_userDeleteQueue.front());
+
                     auto itor = m_userMap.find(localSocket_ptr);
                     if (itor != m_userMap.end())
                     {

@@ -24,21 +24,6 @@ namespace qls
         }
     }
 
-    bool PrivateRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr,
-        const User& user)
-    {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (!hasUser(user.user_id))
-            return false;
-        return baseJoinRoom(socket_ptr, user);
-    }
-
-    bool PrivateRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
-    {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        return baseLeaveRoom(socket_ptr);
-    }
-
     asio::awaitable<bool> PrivateRoom::sendMessage(const std::string& message,
         long long sender_user_id)
     {
@@ -61,7 +46,7 @@ namespace qls
         json["data"]["user_id"] = sender_user_id;
         json["data"]["message"] = message;
 
-        co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
+        co_return co_await sendData(qjson::JWriter::fastWrite(json));
     }
 
     asio::awaitable<bool> PrivateRoom::sendTipMessage(const std::string& message,
@@ -86,7 +71,7 @@ namespace qls
         json["data"]["user_id"] = sender_user_id;
         json["data"]["message"] = message;
 
-        co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
+        co_return co_await sendData(qjson::JWriter::fastWrite(json));
     }
 
     asio::awaitable<bool> PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from, const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
@@ -128,7 +113,7 @@ namespace qls
         std::unique_lock<std::shared_mutex> sl(m_message_queue_mutex);
         if (m_message_queue.empty())
         {
-            co_return co_await baseSendData(
+            co_return co_await sendData(
                 qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
         }
 
@@ -172,7 +157,7 @@ namespace qls
             }
         }
 
-        co_return co_await baseSendData(qjson::JWriter::fastWrite(returnJson));
+        co_return co_await sendData(qjson::JWriter::fastWrite(returnJson));
     }
 
     long long PrivateRoom::getUserID1() const
