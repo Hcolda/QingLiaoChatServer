@@ -21,28 +21,21 @@ namespace qls
         ~SocketFunction() = default;
 
         asio::awaitable<void> accecptFunction(asio::ip::tcp::socket& socket);
-        asio::awaitable<void> receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<qls::DataPackage> pack);
+        asio::awaitable<void> receiveFunction(
+            asio::ip::tcp::socket& socket,
+            std::string data,
+            std::shared_ptr<qls::DataPackage> pack);
         asio::awaitable<void> closeFunction(asio::ip::tcp::socket& socket);
     };
 
     class SocketService
     {
     public:
-        SocketService(std::shared_ptr<asio::ip::tcp::socket> socket_ptr);
+        SocketService(
+            std::shared_ptr<
+                asio::ssl::stream<
+                    asio::ip::tcp::socket>> socket_ptr);
         ~SocketService();
-
-        /*
-        * @brief 设置aes key iv
-        * @param key aes的key
-        * @param iv aes的iv
-        */
-        void setAESKeys(const std::string key, const std::string& iv);
-
-        /*
-        * @brief 设置用户的uuid
-        * @param uuid 用户uuid
-        */
-        void setUUID(const std::string& uuid);
 
         /*
         * @brief 异步接收数据
@@ -73,7 +66,11 @@ namespace qls
         * @param data 解密后的数据
         * @param pack 原始数据包
         */
-        asio::awaitable<void> process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr, const std::string& data, std::shared_ptr<qls::DataPackage> pack);
+        asio::awaitable<void> process(
+            std::shared_ptr<
+                asio::ssl::stream<
+                    asio::ip::tcp::socket>> socket_ptr,
+            const std::string& data, std::shared_ptr<qls::DataPackage> pack);
 
         /*
         * @brief 设置package
@@ -87,33 +84,18 @@ namespace qls
         * @param sds Network::SocketDataStructure类
         * @return asio协程 asio::awaitable<void>
         */
-        static asio::awaitable<void> echo(asio::ip::tcp::socket socket, std::shared_ptr<Network::SocketDataStructure> sds, std::chrono::steady_clock::time_point& deadline);
-
-    protected:
-        struct LocalAES
-        {
-            std::string                             AESKey;
-            std::string                             AESiv;
-            qcrypto::AES<qcrypto::AESMode::CBC_256> AES;
-            std::atomic<bool>                       hasAESKeys = false;
-        };
-
-        struct LocalUser
-        {
-            std::string uuid;
-            // std::string token;
-            std::atomic<bool> has_login = false;
-        };
+        static asio::awaitable<void> echo(
+            asio::ssl::stream<asio::ip::tcp::socket> socket,
+            std::shared_ptr<Network::SocketDataStructure> sds,
+            std::chrono::steady_clock::time_point& deadline);
 
     private:
         // socket ptr
-        std::shared_ptr<asio::ip::tcp::socket>  m_socket_ptr;
+        std::shared_ptr<
+            asio::ssl::stream<
+                asio::ip::tcp::socket>>         m_socket_ptr;
         // JsonMsgProcess
         JsonMessageProcess                      m_jsonProcess;
-        // aes
-        LocalAES                                m_aes;
-        // user
-        LocalUser                               m_user;
         // package
         qls::Package                            m_package;
     };

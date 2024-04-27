@@ -48,7 +48,10 @@ namespace qls
 // SocketService
 namespace qls
 {
-    SocketService::SocketService(std::shared_ptr<asio::ip::tcp::socket> socket_ptr) :
+    SocketService::SocketService(
+        std::shared_ptr<
+            asio::ssl::stream<
+                asio::ip::tcp::socket>> socket_ptr) :
         m_socket_ptr(socket_ptr),
         m_jsonProcess(-1)
     {
@@ -58,22 +61,6 @@ namespace qls
 
     SocketService::~SocketService()
     {
-    }
-
-    
-    void SocketService::setAESKeys(const std::string key, const std::string& iv)
-    {
-        m_aes.AESKey = key;
-        m_aes.AESiv = iv;
-        if (key.size() == 32 && iv.size() == 16)
-            m_aes.hasAESKeys = true;
-        else
-            m_aes.hasAESKeys = false;
-    }
-
-    void SocketService::setUUID(const std::string& uuid)
-    {
-        m_user.uuid = uuid;
     }
 
     asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
@@ -90,7 +77,7 @@ namespace qls
             do
             {
                 size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
-                serverLogger.info((std::format("[{}]收到消息: {}", addr, qls::showBinaryData({ buffer, static_cast<size_t>(size) }))));
+                // serverLogger.info((std::format("[{}]收到消息: {}", addr, qls::showBinaryData({ buffer, static_cast<size_t>(size) }))));
                 m_package.write({ buffer, static_cast<size_t>(size) });
             } while (!m_package.canRead());
         }
@@ -103,34 +90,25 @@ namespace qls
 
         std::string out = datapack->getData();
 
-        // 先不加密
-        if (m_aes.hasAESKeys)
-        {
-            if (!m_aes.AES.encrypt(datapack->getData(), out, m_aes.AESKey, m_aes.AESiv, false))
-            {
-                serverLogger.warning("[", addr, "]", ERROR_WITH_STACKTRACE("encrypt failed"));
-                co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{std::string(), datapack};
-            }
-        }
         co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{out, datapack};
     }
 
     asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
     {
         std::string out(data);
-        //先不加密
-        if (m_aes.hasAESKeys)
-        {
-            m_aes.AES.encrypt(data, out, m_aes.AESKey, m_aes.AESiv, true);
-        }
         auto pack = qls::DataPackage::makePackage(out);
         pack->requestID = requestID;
         pack->sequence = sequence;
         pack->type = type;
-        co_return co_await m_socket_ptr->async_send(asio::buffer(pack->packageToString()), asio::use_awaitable);
+        co_return co_await asio::async_write(*m_socket_ptr,
+            asio::buffer(pack->packageToString()),
+            asio::use_awaitable);
     }
 
-    asio::awaitable<void> SocketService::process(std::shared_ptr<asio::ip::tcp::socket> socket_ptr,
+    asio::awaitable<void> SocketService::process(
+        std::shared_ptr<
+            asio::ssl::stream<
+                asio::ip::tcp::socket>> socket_ptr,
         const std::string& data,
         std::shared_ptr<qls::DataPackage> pack)
     {
@@ -167,17 +145,18 @@ namespace qls
         m_package.setBuffer(p.readBuffer());
     }
     
-    asio::awaitable<void> SocketService::echo(asio::ip::tcp::socket socket,
+    asio::awaitable<void> SocketService::echo(
+        asio::ssl::stream<asio::ip::tcp::socket> socket,
         std::shared_ptr<Network::SocketDataStructure> sds,
         std::chrono::steady_clock::time_point& deadline)
     {
         if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
-        std::shared_ptr<asio::ip::tcp::socket> socket_ptr = std::make_shared<asio::ip::tcp::socket>(std::move(socket));
+        std::shared_ptr<
+            asio::ssl::stream<
+            asio::ip::tcp::socket>> socket_ptr = std::make_shared<asio::ssl::stream<
+                asio::ip::tcp::socket>>(std::move(socket));
 
         SocketService socketService(socket_ptr);
-        socketService.setAESKeys(sds->AESKey, sds->AESiv);
-        socketService.setPackageBuffer(sds->package);
-        socketService.setUUID(sds->uuid);
 
         // 地址
         std::string addr = socket2ip(*socket_ptr);
@@ -196,7 +175,7 @@ namespace qls
                 {
                     // 数据接收错误
                     serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
-                    socket_ptr->close();
+                    socket_ptr->lowest_layer().close();
                     co_return;
                 }
                 else if (pack->type == 4)
