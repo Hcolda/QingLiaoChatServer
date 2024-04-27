@@ -13,10 +13,10 @@
 
 // 服务器log系统
 Log::Logger serverLogger;
-// 服务器网络系统
-qls::Network serverNetwork;
 // ini配置
 qini::INIObject serverIni;
+// 服务器网络系统
+qls::Network serverNetwork;
 // manager
 qls::Manager serverManager;
 

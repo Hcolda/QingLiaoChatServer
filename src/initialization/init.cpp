@@ -33,10 +33,10 @@ namespace qls
             ini["mysql"]["username"] = "";
             ini["mysql"]["password"] = "";
 
-            ini["ssl"]["certificate_file"] = "./certs.pem";
+            ini["ssl"]["certificate_file"] = "certs.pem";
             ini["ssl"]["password"] = "";
-            ini["ssl"]["key_file"] = "./key.pem";
-            ini["ssl"]["dh_file"] = "./dh.pem";
+            ini["ssl"]["key_file"] = "key.pem";
+            ini["ssl"]["dh_file"] = "dh.pem";
 
             outfile << qini::INIWriter::fastWrite(ini);
         }
@@ -64,7 +64,17 @@ namespace qls
         {
             serverLogger.info("正在读取配置文件...");
             serverIni = Init::readConfig();
+        }
+        catch (const std::exception& e)
+        {
+            serverLogger.error(e.what());
+            Init::createConfig();
+            serverLogger.error("请修改配置文件");
+            return -1;
+        }
 
+        try
+        {
             if (std::stoll(serverIni["mysql"]["port"]) > 65535)
                 throw std::logic_error("ini配置文件 section: mysql, key: port port过大！");
 
