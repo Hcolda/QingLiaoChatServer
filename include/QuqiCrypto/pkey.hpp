@@ -152,7 +152,7 @@ public:
             return { EVP_RSA_gen(bits) };
         }
 
-        __declspec(deprecated("it can't be used now")) static PrivateKey generateECC(const std::string& curveName)
+        [[deprecated("it can't be used now")]] static PrivateKey generateECC(const std::string& curveName)
         {
             std::shared_ptr<EVP_PKEY> lp(EVP_EC_gen(curveName.c_str()), [](EVP_PKEY* pkey) {EVP_PKEY_free(pkey); });
             EVP_PKEY* lpkey = EVP_PKEY_new();
