@@ -90,6 +90,11 @@ namespace qls
                 serverIni["ssl"]["password"];
                 if (!cert || !key || !dh)
                     throw std::logic_error("ini配置文件 section: ssl, 无法读取文件！");
+
+                serverLogger.info("ceritificate_file路径: ", serverIni["ssl"]["certificate_file"]);
+                serverLogger.info("密码: ", (serverIni["ssl"]["password"].empty() ? "空" : serverIni["ssl"]["password"]));
+                serverLogger.info("key_file路径: ", serverIni["ssl"]["key_file"]);
+                serverLogger.info("dh_file路径: ", serverIni["ssl"]["dh_file"]);
             }
             
             serverLogger.info("配置文件读取成功！");

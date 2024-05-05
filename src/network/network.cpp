@@ -19,7 +19,7 @@ qls::Network::Network() :
     port_(55555),
     thread_num_((12 > int(std::thread::hardware_concurrency())
         ? int(std::thread::hardware_concurrency()) : 12)),
-    ssl_context_(asio::ssl::context::tlsv13)
+    ssl_context_(asio::ssl::context::tlsv12)
     {
         // 等thread_num初始化之后才能申请threads内存
         threads_ = std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{});
@@ -31,16 +31,15 @@ qls::Network::Network() :
             | asio::ssl::context::no_sslv3
             | asio::ssl::context::no_tlsv1
             | asio::ssl::context::no_tlsv1_1
-            | asio::ssl::context::no_tlsv1_2
-            | asio::ssl::context::single_dh_use
+            //| asio::ssl::context::single_dh_use
         );
 
         // 配置ssl context
-        if (!(serverIni["ssl"]["password"]).empty())
+        if (!serverIni["ssl"]["password"].empty())
             ssl_context_.set_password_callback(std::bind(&Network::get_password, this));
         ssl_context_.use_certificate_chain_file(serverIni["ssl"]["certificate_file"]);
         ssl_context_.use_private_key_file(serverIni["ssl"]["key_file"], asio::ssl::context::pem);
-        ssl_context_.use_tmp_dh_file(serverIni["ssl"]["dh_file"]);
+        //ssl_context_.use_tmp_dh_file(serverIni["ssl"]["dh_file"]);
     }
 
 qls::Network::~Network()
@@ -101,13 +100,14 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     // string地址，以便数据处理
     std::string addr = socket2ip(socket);
 
-    co_await socket.async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
-
     bool has_closed = false;
     std::string error_msg;
     try
     {
         serverLogger.info(std::format("[{}]连接至服务器", addr));
+
+        // ssl握手
+        co_await socket.async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
 
         char data[8192];
         for (;;)
@@ -124,24 +124,22 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                 std::shared_ptr<qls::DataPackage> datapack;
 
                 // 检测数据包是否正常
+                try
                 {
                     // 数据包
-                    try
-                    {
-                        // 数据包
-                        datapack = std::shared_ptr<qls::DataPackage>(
-                            qls::DataPackage::stringToPackage(
-                                sds->package.read()));
-                        if (datapack->type == 4) continue;
-                        if (datapack->getData() != "test")
-                            throw std::logic_error("Test error!");
-                    }
-                    catch (const std::exception& e)
-                    {
-                        serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
-                        socket.lowest_layer().close();
-                        co_return;
-                    }
+                    datapack = std::shared_ptr<qls::DataPackage>(
+                        qls::DataPackage::stringToPackage(
+                            sds->package.read()));
+                    if (datapack->type == 4) continue;
+                    if (datapack->getData() != "test")
+                        throw std::logic_error("Test error!");
+                }
+                catch (const std::exception& e)
+                {
+                    serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
+                    std::error_code ignore_error;
+                    socket.shutdown(ignore_error);
+                    co_return;
                 }
 
                 auto execute_function = [](asio::ssl::stream<tcp::socket> socket,

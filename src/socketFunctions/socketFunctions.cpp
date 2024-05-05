@@ -175,7 +175,8 @@ namespace qls
                 {
                     // 数据接收错误
                     serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
-                    socket_ptr->lowest_layer().close();
+                    std::error_code ignore_error;
+                    socket_ptr->shutdown(ignore_error);
                     co_return;
                 }
                 else if (pack->type == 4)
