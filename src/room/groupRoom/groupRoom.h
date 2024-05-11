@@ -46,10 +46,10 @@ namespace qls
         bool joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user);
         bool leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
         
-        asio::awaitable<bool> sendMessage(long long sender_user_id, const std::string& message);
-        asio::awaitable<bool> sendTipMessage(long long sender_user_id, const std::string& message);
-        asio::awaitable<bool> sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
-        asio::awaitable<bool> getMessage(
+        asio::awaitable<void> sendMessage(long long sender_user_id, const std::string& message);
+        asio::awaitable<void> sendTipMessage(long long sender_user_id, const std::string& message);
+        asio::awaitable<void> sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
+        asio::awaitable<void> getMessage(
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 

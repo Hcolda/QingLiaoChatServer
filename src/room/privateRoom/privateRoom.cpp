@@ -39,12 +39,12 @@ namespace qls
         return baseLeaveRoom(socket_ptr);
     }
 
-    asio::awaitable<bool> PrivateRoom::sendMessage(const std::string& message,
+    asio::awaitable<void> PrivateRoom::sendMessage(const std::string& message,
         long long sender_user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (!hasUser(sender_user_id))
-            co_return false;
+            co_return;
 
         // 存储数据
         {
@@ -64,12 +64,12 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> PrivateRoom::sendTipMessage(const std::string& message,
+    asio::awaitable<void> PrivateRoom::sendTipMessage(const std::string& message,
         long long sender_user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         if (!hasUser(sender_user_id))
-            co_return false;
+            co_return;
         
         // 存储数据
         {
@@ -89,10 +89,10 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from, const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
+    asio::awaitable<void> PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from, const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (from > to) co_return false;
+        if (from > to) co_return;
 
         auto searchPoint = [this](
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& p,

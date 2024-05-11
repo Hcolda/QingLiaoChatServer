@@ -48,8 +48,10 @@ namespace qls
         bool baseJoinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user);
         bool baseLeaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
 
-        asio::awaitable<bool> baseSendData(const std::string& data);
-        asio::awaitable<bool> baseSendData(const std::string& data, long long user_id);
+        asio::awaitable<void> baseSendData(const std::string& data);
+        void baseSendData(const std::string& data, std::function<void(std::error_code, size_t)>);
+        asio::awaitable<void> baseSendData(const std::string& data, long long user_id);
+        void baseSendData(const std::string& data, long long user_id, std::function<void(std::error_code, size_t)>);
 
     private:
         std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>,

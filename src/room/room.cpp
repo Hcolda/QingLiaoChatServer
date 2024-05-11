@@ -28,10 +28,8 @@ namespace qls
         return true;
     }
 
-    asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data)
+    asio::awaitable<void> BaseRoom::baseSendData(const std::string& data)
     {
-        bool result = false;
-
         // 广播数据
         {
             qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
@@ -46,8 +44,7 @@ namespace qls
                         throw std::logic_error("Key and ivec of AES are invalid");
                     co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);*/
 
-                    result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
-                        ? true : false;
+                    co_await i->second.sendFunction(data, 0, 1, -1);
                 }
                 catch (...)
                 {
@@ -76,13 +73,16 @@ namespace qls
             }
         }
 
-        co_return result;
+        co_return;
     }
 
-    asio::awaitable<bool> BaseRoom::baseSendData(const std::string& data, long long user_id)
+    void BaseRoom::baseSendData(const std::string& data, std::function<void(std::error_code, size_t)>)
     {
-        bool result = false;
+        
+    }
 
+    asio::awaitable<void> BaseRoom::baseSendData(const std::string& data, long long user_id)
+    {
         // 广播数据给单个user
         {
             qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
@@ -99,8 +99,7 @@ namespace qls
                             throw std::logic_error("Key and ivec of AES are invalid");
                         co_await i->first->async_send(asio::buffer(out), asio::use_awaitable);*/
 
-                        result = (co_await i->second.sendFunction(data, 0, 1, -1) == data.size())
-                            ? true : false;
+                        co_await i->second.sendFunction(data, 0, 1, -1);
                     }
                     catch (...)
                     {
@@ -130,6 +129,11 @@ namespace qls
             }
         }
 
-        co_return result;
+        co_return;
+    }
+
+    void BaseRoom::baseSendData(const std::string& data, long long user_id, std::function<void(std::error_code, size_t)>)
+    {
+        
     }
 }

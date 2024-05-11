@@ -28,6 +28,9 @@ namespace qls
 
         void init();
 
+        void addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
+        std::shared_ptr<BaseRoom> getGlobalRoom() const;
+
         long long addPrivateRoom(long long user1_id, long long user2_id);
         long long getPrivateRoomId(long long user1_id, long long user2_id) const;
         bool hasPrivateRoom(long long private_room_id) const;
@@ -119,6 +122,8 @@ namespace qls
                 return hasher(g.group_id) * hasher(g.user_id);
             }
         };
+
+        std::shared_ptr<BaseRoom>               m_globalRoom;
 
         // 群聊房间表
         std::unordered_map<long long,

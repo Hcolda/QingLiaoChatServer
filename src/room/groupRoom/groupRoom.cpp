@@ -63,12 +63,12 @@ namespace qls
         return baseLeaveRoom(socket_ptr);
     }
 
-    asio::awaitable<bool> GroupRoom::sendMessage(long long sender_user_id, const std::string& message)
+    asio::awaitable<void> GroupRoom::sendMessage(long long sender_user_id, const std::string& message)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         // 是否有此user_id
         if (!hasUser(sender_user_id))
-            co_return false;
+            co_return;
 
         // 发送者是否被禁言
         {
@@ -80,7 +80,7 @@ namespace qls
                     std::chrono::time_point_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now()))
                 {
-                    co_return false;
+                    co_return;
                 }
                 else
                 {
@@ -109,16 +109,17 @@ namespace qls
 
         auto returnJson = qjson::JWriter::fastWrite(json);
 
-        co_return co_await baseSendData(returnJson);
+        co_await baseSendData(returnJson);
+        co_return;
     }
 
-    asio::awaitable<bool> GroupRoom::sendTipMessage(long long sender_user_id,
+    asio::awaitable<void> GroupRoom::sendTipMessage(long long sender_user_id,
         const std::string& message)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         // 是否有此user_id
         if (!hasUser(sender_user_id))
-            co_return false;
+            co_return;
 
         // 发送者是否被禁言
         {
@@ -130,7 +131,7 @@ namespace qls
                     std::chrono::time_point_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now()))
                 {
-                    co_return false;
+                    co_return;
                 }
                 else
                 {
@@ -160,13 +161,13 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
     }
 
-    asio::awaitable<bool> GroupRoom::sendUserTipMessage(long long sender_user_id,
+    asio::awaitable<void> GroupRoom::sendUserTipMessage(long long sender_user_id,
         const std::string& message, long long receiver_user_id)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
         // 是否有此user_id
         if (!hasUser(receiver_user_id))
-            co_return false;
+            co_return;
 
         // 发送者是否被禁言
         {
@@ -178,7 +179,7 @@ namespace qls
                     std::chrono::time_point_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now()))
                 {
-                    co_return false;
+                    co_return;
                 }
                 else
                 {
@@ -198,12 +199,12 @@ namespace qls
         co_return co_await baseSendData(qjson::JWriter::fastWrite(json), receiver_user_id);
     }
 
-    asio::awaitable<bool> GroupRoom::getMessage(
+    asio::awaitable<void> GroupRoom::getMessage(
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
     {
         if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (from > to) co_return false;
+        if (from > to) co_return;
 
         auto searchPoint = [this](
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& p,
