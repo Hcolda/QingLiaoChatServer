@@ -2,11 +2,9 @@
 
 #include <asio/experimental/awaitable_operators.hpp>
 #include <Logger.hpp>
-#include <QuqiCrypto.hpp>
 #include <Json.h>
 
 #include "definition.hpp"
-#include "websiteFunctions.hpp"
 #include "manager.h"
 #include "returnStateMessage.hpp"
 
@@ -63,10 +61,9 @@ namespace qls
     {
     }
 
-    asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
+    asio::awaitable<std::shared_ptr<qls::DataPackage>>
         SocketService::async_receive()
     {
-        auto executor = co_await asio::this_coro::executor;
         std::string addr = socket2ip(*m_socket_ptr);
         char buffer[8192]{ 0 };
 
@@ -88,9 +85,7 @@ namespace qls
             qls::DataPackage::stringToPackage(
                 m_package.read()));
 
-        std::string out = datapack->getData();
-
-        co_return std::pair<std::string, std::shared_ptr<qls::DataPackage>>{out, datapack};
+        co_return datapack;
     }
 
     asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
@@ -168,7 +163,7 @@ namespace qls
             for (;;)
             {
                 deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
-                auto [data, pack] = co_await socketService.async_receive();
+                auto pack = co_await socketService.async_receive();
 
                 // 判断包是否可用
                 if (pack.get() == nullptr)
@@ -195,28 +190,26 @@ namespace qls
                     }
                     continue;
                 }
-                else if (data.empty())
-                {
-                    // 数据成功接收但是无法aes解密
-                    serverLogger.warning("[", addr, "]", "data is invalid");
-                    continue;
-                }
 
                 // 成功解密成功接收
-                co_await socketService.process(socket_ptr, data, pack);
+                co_await socketService.process(socket_ptr, pack->getData(), pack);
                 continue;
             }
         }
-        catch (const std::exception& e)
+        catch (const std::system_error& e)
         {
-            if (!strcmp(e.what(), "End of file"))
+            if (e.code().message() == "End of file")
             {
                 serverLogger.info(std::format("[{}]与服务器断开连接", addr));
             }
             else
             {
-                serverLogger.error(std::string(e.what()));
+                serverLogger.error(e.code().message());
             }
+        }
+        catch (const std::exception& e)
+        {
+            serverLogger.error(std::string(e.what()));
         }
 
         co_return;

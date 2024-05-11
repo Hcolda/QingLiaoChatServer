@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 
-#include <QuqiCrypto.hpp>
 #include <Json.h>
 
 namespace qls

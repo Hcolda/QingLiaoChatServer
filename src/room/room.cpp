@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 
-#include <QuqiCrypto.hpp>
 #include <Json.h>
 
 #include "dataPackage.h"
@@ -38,7 +37,6 @@ namespace qls
 
         // 广播数据
         {
-            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
             std::shared_lock<std::shared_mutex> sharedLock(m_userMap_mutex);
 
             for (auto i = m_userMap.begin(); i != m_userMap.end(); i++)
@@ -89,7 +87,6 @@ namespace qls
 
         // 广播数据给单个user
         {
-            qcrypto::AES<qcrypto::AESMode::CBC_256> aes;
             std::shared_lock<std::shared_mutex> sharedLock(m_userMap_mutex);
 
             for (auto i = m_userMap.begin(); i != m_userMap.end(); i++)

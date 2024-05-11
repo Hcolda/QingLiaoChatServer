@@ -12,8 +12,6 @@
 #include <string>
 #include <memory>
 
-#include <QuqiCrypto.hpp>
-
 #include "definition.hpp"
 #include "package.h"
 #include "dataPackage.h"

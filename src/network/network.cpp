@@ -2,13 +2,11 @@
 
 #include <asio/experimental/awaitable_operators.hpp>
 #include <Logger.hpp>
-#include <QuqiCrypto.hpp>
 #include <Json.h>
 #include <Ini.h>
 
 #include "socketFunctions.h"
 #include "definition.hpp"
-#include "websiteFunctions.hpp"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -39,7 +37,8 @@ qls::Network::Network() :
             ssl_context_.set_password_callback(std::bind(&Network::get_password, this));
         ssl_context_.use_certificate_chain_file(serverIni["ssl"]["certificate_file"]);
         ssl_context_.use_private_key_file(serverIni["ssl"]["key_file"], asio::ssl::context::pem);
-        //ssl_context_.use_tmp_dh_file(serverIni["ssl"]["dh_file"]);
+        // SSL_CTX_set_cipher_list(ssl_context_.native_handle(), "ECDHE-RSA-AES256-GCM-SHA384");
+        // ssl_context_.use_tmp_dh_file(serverIni["ssl"]["dh_file"]);
     }
 
 qls::Network::~Network()
@@ -79,7 +78,7 @@ void qls::Network::run(std::string_view host, unsigned short port)
     }
     catch (const std::exception& e)
     {
-        std::printf("Exception: %s\n", e.what());
+        serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
 }
 
@@ -100,7 +99,6 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     // string地址，以便数据处理
     std::string addr = socket2ip(socket);
 
-    bool has_closed = false;
     std::string error_msg;
     try
     {
@@ -174,16 +172,20 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
             }
         }
     }
-    catch (std::exception& e)
+    catch (const std::system_error& e)
     {
-        if (!strcmp(e.what(), "End of file"))
+        if (e.code().message() == "End of file")
         {
-            has_closed = true;
+            serverLogger.info(std::format("[{}]与服务器断开连接", addr));
         }
         else
         {
-            serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
+            serverLogger.error(e.code().message());
         }
+    }
+    catch (const std::exception& e)
+    {
+        serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
     co_return;
 }

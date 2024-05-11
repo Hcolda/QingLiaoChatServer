@@ -42,7 +42,7 @@ namespace qls
         * @param socket
         * @return asio协程 std::string, std::shared_ptr<Network::Package::DataPackage>
         */
-        asio::awaitable<std::pair<std::string, std::shared_ptr<qls::DataPackage>>>
+        asio::awaitable<std::shared_ptr<qls::DataPackage>>
             async_receive();
 
         /*
