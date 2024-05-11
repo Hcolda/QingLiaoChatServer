@@ -11,6 +11,7 @@
 #include "dataPackage.h"
 #include "package.h"
 #include "network.h"
+#include "socket.h"
 
 namespace qls
 {
@@ -31,10 +32,7 @@ namespace qls
     class SocketService
     {
     public:
-        SocketService(
-            std::shared_ptr<
-                asio::ssl::stream<
-                    asio::ip::tcp::socket>> socket_ptr);
+        SocketService(std::shared_ptr<Socket> socket_ptr);
         ~SocketService();
 
         /*
@@ -67,9 +65,7 @@ namespace qls
         * @param pack 原始数据包
         */
         asio::awaitable<void> process(
-            std::shared_ptr<
-                asio::ssl::stream<
-                    asio::ip::tcp::socket>> socket_ptr,
+            std::shared_ptr<Socket> socket_ptr,
             const std::string& data, std::shared_ptr<qls::DataPackage> pack);
 
         /*
@@ -84,20 +80,17 @@ namespace qls
         * @param sds Network::SocketDataStructure类
         * @return asio协程 asio::awaitable<void>
         */
-        static asio::awaitable<void> echo(
-            asio::ssl::stream<asio::ip::tcp::socket> socket,
+        static asio::awaitable<void> echo(Socket socket,
             std::shared_ptr<Network::SocketDataStructure> sds,
             std::chrono::steady_clock::time_point& deadline);
 
     private:
         // socket ptr
-        std::shared_ptr<
-            asio::ssl::stream<
-                asio::ip::tcp::socket>>         m_socket_ptr;
+        std::shared_ptr<Socket> m_socket_ptr;
         // JsonMsgProcess
-        JsonMessageProcess                      m_jsonProcess;
+        JsonMessageProcess      m_jsonProcess;
         // package
-        qls::Package                            m_package;
+        qls::Package            m_package;
     };
 }
 

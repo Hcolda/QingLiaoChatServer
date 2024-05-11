@@ -9,7 +9,7 @@
 namespace qls
 {
     bool BaseRoom::joinRoom(
-        const std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>& socket_ptr,
+        const std::shared_ptr<Socket>& socket_ptr,
         const BaseUserSetting& user)
     {
         if (!socket_ptr) return false;
@@ -20,7 +20,7 @@ namespace qls
     }
 
     bool BaseRoom::leaveRoom(
-        const std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>& socket_ptr)
+        const std::shared_ptr<Socket>& socket_ptr)
     {
         if (!socket_ptr) return false;
 
@@ -64,7 +64,7 @@ namespace qls
             {
                 do
                 {
-                    std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>
+                    std::shared_ptr<Socket>
                         localSocket_ptr = std::move(m_userDeleteQueue.front());
 
                     auto itor = m_userMap.find(localSocket_ptr);
@@ -117,7 +117,7 @@ namespace qls
             {
                 do
                 {
-                    std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>
+                    std::shared_ptr<Socket>
                         localSocket_ptr = std::move(m_userDeleteQueue.front());
 
                     auto itor = m_userMap.find(localSocket_ptr);

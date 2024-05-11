@@ -7,6 +7,7 @@
 
 #include "socketFunctions.h"
 #include "definition.hpp"
+#include "socket.h"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -92,7 +93,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     auto executor = co_await asio::this_coro::executor;
 
     // 加载ssl
-    asio::ssl::stream<tcp::socket> socket(
+    Socket socket(
         std::move(origin_socket), ssl_context_);
     // socket加密结构体
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
@@ -140,7 +141,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     co_return;
                 }
 
-                auto execute_function = [](asio::ssl::stream<tcp::socket> socket,
+                auto execute_function = [](Socket socket,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
                     auto watchdog = [](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>

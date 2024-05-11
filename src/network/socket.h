@@ -6,12 +6,7 @@
 
 namespace qls
 {
-    class Socket : public asio::ssl::stream<asio::ip::tcp::socket>
-    {
-    public:
-        Socket(asio::ip::tcp::socket, asio::ssl::context&);
-        virtual ~Socket() = default;
-    };
+    using Socket = asio::ssl::stream<asio::ip::tcp::socket>;
 }
 
 #endif // !SOCKET_H

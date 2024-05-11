@@ -47,9 +47,7 @@ namespace qls
 namespace qls
 {
     SocketService::SocketService(
-        std::shared_ptr<
-            asio::ssl::stream<
-                asio::ip::tcp::socket>> socket_ptr) :
+        std::shared_ptr<Socket> socket_ptr) :
         m_socket_ptr(socket_ptr),
         m_jsonProcess(-1)
     {
@@ -101,9 +99,7 @@ namespace qls
     }
 
     asio::awaitable<void> SocketService::process(
-        std::shared_ptr<
-            asio::ssl::stream<
-                asio::ip::tcp::socket>> socket_ptr,
+        std::shared_ptr<Socket> socket_ptr,
         const std::string& data,
         std::shared_ptr<qls::DataPackage> pack)
     {
@@ -140,16 +136,12 @@ namespace qls
         m_package.setBuffer(p.readBuffer());
     }
     
-    asio::awaitable<void> SocketService::echo(
-        asio::ssl::stream<asio::ip::tcp::socket> socket,
+    asio::awaitable<void> SocketService::echo(Socket socket,
         std::shared_ptr<Network::SocketDataStructure> sds,
         std::chrono::steady_clock::time_point& deadline)
     {
         if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
-        std::shared_ptr<
-            asio::ssl::stream<
-            asio::ip::tcp::socket>> socket_ptr = std::make_shared<asio::ssl::stream<
-                asio::ip::tcp::socket>>(std::move(socket));
+        std::shared_ptr<Socket> socket_ptr = std::make_shared<Socket>(std::move(socket));
 
         SocketService socketService(socket_ptr);
 

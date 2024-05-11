@@ -15,6 +15,8 @@
 #include <chrono>
 #include <functional>
 
+#include "socket.h"
+
 namespace qls
 {
     enum class Equipment
@@ -42,23 +44,21 @@ namespace qls
         virtual ~BaseRoom() = default;
 
         virtual bool joinRoom(
-            const std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>& socket_ptr,
+            const std::shared_ptr<Socket>& socket_ptr,
             const BaseUserSetting& user);
 
         virtual bool leaveRoom(
-            const std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>& socket_ptr);
+            const std::shared_ptr<Socket>& socket_ptr);
 
         virtual asio::awaitable<bool> sendData(const std::string& data);
         virtual asio::awaitable<bool> sendData(const std::string& data, long long user_id);
 
     private:
-        std::unordered_map<std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>>,
+        std::unordered_map<std::shared_ptr<Socket>,
             BaseUserSetting>    m_userMap;
         std::shared_mutex       m_userMap_mutex;
 
-        std::queue<std::shared_ptr<
-                asio::ssl::stream<
-                asio::ip::tcp::socket>>>
+        std::queue<std::shared_ptr<Socket>>
                                 m_userDeleteQueue;
         std::shared_mutex       m_userDeleteQueue_mutex;
     };
