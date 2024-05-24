@@ -33,6 +33,11 @@ namespace qls
             ini["mysql"]["username"] = "";
             ini["mysql"]["password"] = "";
 
+            ini["ssl"]["certificate_file"] = "certs.pem";
+            ini["ssl"]["password"] = "";
+            ini["ssl"]["key_file"] = "key.pem";
+            ini["ssl"]["dh_file"] = "dh.pem";
+
             outfile << qini::INIWriter::fastWrite(ini);
         }
         return;
@@ -59,19 +64,45 @@ namespace qls
         {
             serverLogger.info("正在读取配置文件...");
             serverIni = Init::readConfig();
+        }
+        catch (const std::exception& e)
+        {
+            serverLogger.error(e.what());
+            Init::createConfig();
+            serverLogger.error("请修改配置文件");
+            return -1;
+        }
 
+        try
+        {
             if (std::stoll(serverIni["mysql"]["port"]) > 65535)
-                throw std::logic_error("ini配置文件 section:mysql, key:port port过大！");
+                throw std::logic_error("ini配置文件 section: mysql, key: port port过大！");
 
             if (std::stoll(serverIni["mysql"]["port"]) < 0)
-                throw std::logic_error("ini配置文件 section:mysql, key:port port过小！");
+                throw std::logic_error("ini配置文件 section: mysql, key: port port过小！");
+
+            // 读取cert && key
+            {
+                std::ifstream cert(serverIni["ssl"]["certificate_file"]),
+                    key(serverIni["ssl"]["key_file"]),
+                    dh(serverIni["ssl"]["dh_file"]);
+
+                serverIni["ssl"]["password"];
+                if (!cert || !key || !dh)
+                    throw std::logic_error("ini配置文件 section: ssl, 无法读取文件！");
+
+                serverLogger.info("ceritificate_file路径: ", serverIni["ssl"]["certificate_file"]);
+                serverLogger.info("密码: ", (serverIni["ssl"]["password"].empty() ? "空" : serverIni["ssl"]["password"]));
+                serverLogger.info("key_file路径: ", serverIni["ssl"]["key_file"]);
+                serverLogger.info("dh_file路径: ", serverIni["ssl"]["dh_file"]);
+            }
             
             serverLogger.info("配置文件读取成功！");
         }
         catch (const std::exception& e)
         {
             serverLogger.error(e.what());
-            Init::createConfig();
+            // Init::createConfig();
             serverLogger.error("请修改配置文件");
             return -1;
         }

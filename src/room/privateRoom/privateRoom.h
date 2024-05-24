@@ -18,7 +18,7 @@ namespace qls
     class PrivateRoom : public qls::BaseRoom
     {
     public:
-        struct User : public qls::BaseRoom::BaseUserSetting {};
+        struct User : public qls::BaseUserSetting {};
 
         struct MessageStruct
         {
@@ -38,9 +38,6 @@ namespace qls
         PrivateRoom(PrivateRoom&&) = delete;
 
         ~PrivateRoom() = default;
-
-        bool joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user);
-        bool leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
 
         asio::awaitable<bool> sendMessage(const std::string& message, long long sender_user_id);
         asio::awaitable<bool> sendTipMessage(const std::string& message, long long sender_user_id);

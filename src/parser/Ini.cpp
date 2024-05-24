@@ -276,15 +276,9 @@ INIObject INIParser::parse(std::string_view data)
 
             std::string localKey = getString(i, data, error_line);
 
-            if (!skipSpace(i, data, error_line))
-                throw std::logic_error(get_logic_error_string(error_line));
-
             if (*i == '=')
                 i++;
             else
-                throw std::logic_error(get_logic_error_string(error_line));
-
-            if (!skipSpace(i, data, error_line))
                 throw std::logic_error(get_logic_error_string(error_line));
 
             localObject.m_sections[localSection][localKey] = getString(i, data, error_line);

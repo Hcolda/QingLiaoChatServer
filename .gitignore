@@ -368,3 +368,4 @@ FodyWeavers.xsd
 build/
 mariadb-connector-cpp/
 vcpkg/
+enc_temp_folder/
