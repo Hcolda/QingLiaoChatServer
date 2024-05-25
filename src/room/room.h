@@ -3,36 +3,15 @@
 
 #include <asio.hpp>
 #include <asio/ssl.hpp>
-#include <mutex>
-#include <shared_mutex>
-#include <thread>
-#include <atomic>
 #include <memory>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <queue>
-#include <chrono>
 #include <functional>
+#include <stdexcept>
 
 #include "socket.h"
 
 namespace qls
 {
-    enum class Equipment
-    {
-        Unknown,
-        Windows,
-        Unix,
-        Android,
-        Ios
-    };
-
-    struct BaseUserSetting
-    {
-        long long user_id;
-        Equipment equipment = Equipment::Unknown;
-    };
+    struct BaseRoomImpl;
 
     /*
     * @brief 基类房间
@@ -40,27 +19,24 @@ namespace qls
     class BaseRoom
     {
     public:
-        BaseRoom() = default;
+        BaseRoom();
         virtual ~BaseRoom() = default;
 
         virtual bool joinRoom(
             const std::shared_ptr<Socket>& socket_ptr,
-            const BaseUserSetting& user);
+            long long user_id);
 
-        virtual bool leaveRoom(
+        virtual bool leaveRoom(long long user_id,
             const std::shared_ptr<Socket>& socket_ptr);
 
-        virtual asio::awaitable<bool> sendData(const std::string& data);
-        virtual asio::awaitable<bool> sendData(const std::string& data, long long user_id);
+        virtual asio::awaitable<void> sendData(const std::string& data);
+        virtual asio::awaitable<void> sendData(const std::string& data, long long user_id);
+
+        virtual void sendData(const std::string& data, std::function<void(std::error_code, size_t)>);
+        virtual void sendData(const std::string& data, long long user_id, std::function<void(std::error_code, size_t)>);
 
     private:
-        std::unordered_map<std::shared_ptr<Socket>,
-            BaseUserSetting>    m_userMap;
-        std::shared_mutex       m_userMap_mutex;
-
-        std::queue<std::shared_ptr<Socket>>
-                                m_userDeleteQueue;
-        std::shared_mutex       m_userDeleteQueue_mutex;
+        std::shared_ptr<BaseRoomImpl> m_impl;
     };
 }
 

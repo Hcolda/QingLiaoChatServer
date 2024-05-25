@@ -18,8 +18,6 @@ namespace qls
     class PrivateRoom : public qls::BaseRoom
     {
     public:
-        struct User : public qls::BaseUserSetting {};
-
         struct MessageStruct
         {
             enum class MessageType
@@ -39,9 +37,9 @@ namespace qls
 
         ~PrivateRoom() = default;
 
-        asio::awaitable<bool> sendMessage(const std::string& message, long long sender_user_id);
-        asio::awaitable<bool> sendTipMessage(const std::string& message, long long sender_user_id);
-        asio::awaitable<bool> getMessage(
+        asio::awaitable<void> sendMessage(const std::string& message, long long sender_user_id);
+        asio::awaitable<void> sendTipMessage(const std::string& message, long long sender_user_id);
+        asio::awaitable<void> getMessage(
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 

@@ -4,6 +4,7 @@
 #include <Ini.h>
 
 #include "user.h"
+#include "dataPackage.h"
 
 extern qini::INIObject serverIni;
 
@@ -15,6 +16,8 @@ namespace qls
 
     void Manager::init()
     {
+        m_globalRoom = std::make_shared<BaseRoom>();
+
         // sql 初始化
         /*this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
             serverIni["mysql"]["password"],
@@ -32,6 +35,22 @@ namespace qls
             // sql更新初始化数据
             // ...
         }
+    }
+
+    void Manager::addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<Socket>& socket_ptr)
+    {
+        {
+            std::shared_lock<std::shared_mutex> lock(m_user_map_mutex);
+            if (m_user_map.find(user_id) == m_user_map.cend())
+                throw std::logic_error("There is not a user match this id");
+        }
+
+        m_globalRoom->joinRoom(socket_ptr, user_id);
+    }
+
+    std::shared_ptr<BaseRoom> Manager::getGlobalRoom() const
+    {
+        return m_globalRoom;
     }
 
     long long Manager::addPrivateRoom(long long user1_id, long long user2_id)
@@ -228,6 +247,9 @@ namespace qls
 
             auto ptr = this->getUser(user_id_1);
             ptr->addFriendVerification(user_id_2, std::move(uv));
+
+            // 未完成 通知另一方
+            // m_globalRoom->baseSendData()
         }
 
         // user2
@@ -240,6 +262,9 @@ namespace qls
 
             auto ptr = this->getUser(user_id_2);
             ptr->addFriendVerification(user_id_1, std::move(uv));
+
+            // 未完成 通知另一方
+            // m_globalRoom->baseSendData()
         }
     }
 
@@ -314,6 +339,9 @@ namespace qls
 
                     ptr->removeFriendVerification(user_id_1);
                 }
+
+                // 未完成 通知另一方
+                // m_globalRoom->baseSendData()
             }
 
             if (error) throw std::invalid_argument("Wrong argument!");
@@ -374,6 +402,9 @@ namespace qls
             auto ptr = this->getUser(this->getGroupRoom(group_id)->getAdministrator());
             ptr->addGroupVerification(group_id, std::move(uv));
         }
+
+        // 未完成 通知另一方
+        // m_globalRoom->baseSendData()
     }
 
     bool Manager::hasGroupRoomVerification(long long group_id, long long user_id) const
@@ -421,6 +452,9 @@ namespace qls
             auto set = std::move(ptr->getGroupList());
             set.insert(group_id);
             ptr->updateGroupList(std::move(set));
+
+            // 未完成 通知另一方
+            // m_globalRoom->baseSendData()
         }
         return result;
     }

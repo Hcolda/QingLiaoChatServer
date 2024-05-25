@@ -15,7 +15,6 @@ namespace qls
     class GroupRoom : public qls::BaseRoom
     {
     public:
-        struct User : public qls::BaseUserSetting {};
 
         struct UserDataStruct
         {
@@ -44,10 +43,10 @@ namespace qls
         bool addMember(long long user_id);
         bool removeMember(long long user_id);
         
-        asio::awaitable<bool> sendMessage(long long sender_user_id, const std::string& message);
-        asio::awaitable<bool> sendTipMessage(long long sender_user_id, const std::string& message);
-        asio::awaitable<bool> sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
-        asio::awaitable<bool> getMessage(
+        asio::awaitable<void> sendMessage(long long sender_user_id, const std::string& message);
+        asio::awaitable<void> sendTipMessage(long long sender_user_id, const std::string& message);
+        asio::awaitable<void> sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
+        asio::awaitable<void> getMessage(
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 
