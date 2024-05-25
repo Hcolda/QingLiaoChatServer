@@ -5,7 +5,6 @@
 #include <format>
 #include <memory>
 
-#include <QuqiCrypto.hpp>
 #include <Json.h>
 
 #include "manager.h"
@@ -49,18 +48,6 @@ namespace qls
             m_user_id_map.erase(user_id);
 
         return true;
-    }
-
-    bool GroupRoom::joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user)
-    {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        return baseJoinRoom(socket_ptr, user);
-    }
-
-    bool GroupRoom::leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
-    {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        return baseLeaveRoom(socket_ptr);
     }
 
     asio::awaitable<void> GroupRoom::sendMessage(long long sender_user_id, const std::string& message)
@@ -109,7 +96,7 @@ namespace qls
 
         auto returnJson = qjson::JWriter::fastWrite(json);
 
-        co_await baseSendData(returnJson);
+        co_await sendData(returnJson);
         co_return;
     }
 
@@ -158,7 +145,7 @@ namespace qls
         json["data"]["group_id"] = this->m_group_id;
         json["data"]["message"] = message;
 
-        co_return co_await baseSendData(qjson::JWriter::fastWrite(json));
+        co_return co_await sendData(qjson::JWriter::fastWrite(json));
     }
 
     asio::awaitable<void> GroupRoom::sendUserTipMessage(long long sender_user_id,
@@ -196,7 +183,7 @@ namespace qls
         json["data"]["group_id"] = this->m_group_id;
         json["data"]["message"] = message;
 
-        co_return co_await baseSendData(qjson::JWriter::fastWrite(json), receiver_user_id);
+        co_return co_await sendData(qjson::JWriter::fastWrite(json), receiver_user_id);
     }
 
     asio::awaitable<void> GroupRoom::getMessage(
@@ -240,7 +227,7 @@ namespace qls
         std::unique_lock<std::shared_mutex> sl(m_message_queue_mutex);
         if (m_message_queue.empty())
         {
-            co_return co_await baseSendData(
+            co_return co_await sendData(
                 qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
         }
 
@@ -286,7 +273,7 @@ namespace qls
             }
         }
 
-        co_return co_await baseSendData(qjson::JWriter::fastWrite(returnJson));
+        co_return co_await sendData(qjson::JWriter::fastWrite(returnJson));
     }
 
     bool GroupRoom::hasUser(long long user_id) const

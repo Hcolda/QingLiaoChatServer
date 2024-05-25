@@ -2,64 +2,41 @@
 #define ROOM_H
 
 #include <asio.hpp>
-#include <mutex>
-#include <shared_mutex>
-#include <thread>
-#include <atomic>
+#include <asio/ssl.hpp>
 #include <memory>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <queue>
-#include <chrono>
 #include <functional>
+#include <stdexcept>
+
+#include "socket.h"
 
 namespace qls
 {
+    struct BaseRoomImpl;
+
     /*
     * @brief 基类房间
     */
     class BaseRoom
     {
     public:
-        enum class Equipment
-        {
-            Unknown,
-            Windows,
-            Unix,
-            Android,
-            Ios
-        };
-
-        struct BaseUserSetting
-        {
-            // 发送函数
-            using SendFunction = std::function<asio::awaitable<size_t>(
-                std::string_view data, long long, int, int)>;
-
-            long long user_id;
-            Equipment equipment = Equipment::Unknown;
-            SendFunction sendFunction;
-        };
-
-        BaseRoom() = default;
+        BaseRoom();
         virtual ~BaseRoom() = default;
 
-        bool baseJoinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const BaseUserSetting& user);
-        bool baseLeaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
+        virtual bool joinRoom(
+            const std::shared_ptr<Socket>& socket_ptr,
+            long long user_id);
 
-        asio::awaitable<void> baseSendData(const std::string& data);
-        void baseSendData(const std::string& data, std::function<void(std::error_code, size_t)>);
-        asio::awaitable<void> baseSendData(const std::string& data, long long user_id);
-        void baseSendData(const std::string& data, long long user_id, std::function<void(std::error_code, size_t)>);
+        virtual bool leaveRoom(long long user_id,
+            const std::shared_ptr<Socket>& socket_ptr);
+
+        virtual asio::awaitable<void> sendData(const std::string& data);
+        virtual asio::awaitable<void> sendData(const std::string& data, long long user_id);
+
+        virtual void sendData(const std::string& data, std::function<void(std::error_code, size_t)>);
+        virtual void sendData(const std::string& data, long long user_id, std::function<void(std::error_code, size_t)>);
 
     private:
-        std::unordered_map<std::shared_ptr<asio::ip::tcp::socket>,
-            BaseUserSetting>                                        m_userMap;
-        std::shared_mutex                                           m_userMap_mutex;
-
-        std::queue<std::shared_ptr<asio::ip::tcp::socket>>          m_userDeleteQueue;
-        std::shared_mutex                                           m_userDeleteQueue_mutex;
+        std::shared_ptr<BaseRoomImpl> m_impl;
     };
 }
 

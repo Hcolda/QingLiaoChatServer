@@ -37,7 +37,7 @@ namespace qls
         }
     }
 
-    void Manager::addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr)
+    void Manager::addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<Socket>& socket_ptr)
     {
         {
             std::shared_lock<std::shared_mutex> lock(m_user_map_mutex);
@@ -45,18 +45,7 @@ namespace qls
                 throw std::logic_error("There is not a user match this id");
         }
 
-        m_globalRoom->baseJoinRoom(socket_ptr, { user_id, BaseRoom::Equipment::Unknown,
-            [socket_ptr](std::string_view data,
-                long long requestID,
-                int type,
-                int sequence) -> asio::awaitable<size_t> {
-            auto pack = DataPackage::makePackage(data);
-            pack->requestID = requestID;
-            pack->type = type;
-            pack->sequence = sequence;
-            co_return co_await asio::async_write(*socket_ptr,
-                asio::buffer(pack->packageToString()), asio::use_awaitable);
-            }});
+        m_globalRoom->joinRoom(socket_ptr, user_id);
     }
 
     std::shared_ptr<BaseRoom> Manager::getGlobalRoom() const

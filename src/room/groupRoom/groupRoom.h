@@ -15,7 +15,6 @@ namespace qls
     class GroupRoom : public qls::BaseRoom
     {
     public:
-        struct User : public qls::BaseRoom::BaseUserSetting {};
 
         struct UserDataStruct
         {
@@ -43,8 +42,6 @@ namespace qls
 
         bool addMember(long long user_id);
         bool removeMember(long long user_id);
-        bool joinRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr, const User& user);
-        bool leaveRoom(const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
         
         asio::awaitable<void> sendMessage(long long sender_user_id, const std::string& message);
         asio::awaitable<void> sendTipMessage(long long sender_user_id, const std::string& message);

@@ -31,22 +31,24 @@ add_library(libmariadbcpp STATIC IMPORTED)
 set_target_properties(libmariadbcpp PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/mariadb-connector-cpp/build/Release/mariadbcpp-static.lib)
 
 add_executable(QingLiaoChatServer
-    src/main/main.cpp
-    src/initialization/init.cpp
-    src/jsonMessageProcess/JsonMsgProcess.cpp
-    src/manager/manager.cpp
-    src/network/network.cpp
-    src/network/dataPackage.cpp
-    src/network/package.cpp
-    src/parser/ini.cpp src/parser/Json.cpp
-    src/room/room.cpp
-    src/room/groupRoom/groupRoom.cpp
-    src/room/groupRoom/groupRoomVerification.cpp
-    src/room/privateRoom/privateRoom.cpp
-    src/room/privateRoom/friendRoomVerification.cpp
-    src/socketFunctions/socketFunctions.cpp
-    src/user/user.cpp
-    src/room/groupRoom/groupPermission.cpp)
+    "src/main/main.cpp"
+    "src/initialization/init.cpp"
+    "src/jsonMessageProcess/JsonMsgProcess.cpp"
+    "src/manager/manager.cpp"
+    "src/network/network.cpp"
+    "src/network/dataPackage.cpp"
+    "src/network/package.cpp"
+    "src/parser/ini.cpp"
+    "src/parser/Json.cpp"
+    "src/room/room.cpp"
+    "src/room/groupRoom/groupRoom.cpp"
+    "src/room/groupRoom/groupRoomVerification.cpp"
+    "src/room/privateRoom/privateRoom.cpp"
+    "src/room/privateRoom/friendRoomVerification.cpp"
+    "src/socketFunctions/socketFunctions.cpp"
+    "src/user/user.cpp"
+    "src/room/groupRoom/groupPermission.cpp"
+    "src/network/socket.cpp")
 
 set_property(TARGET QingLiaoChatServer PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

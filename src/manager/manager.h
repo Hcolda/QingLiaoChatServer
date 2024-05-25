@@ -15,6 +15,7 @@
 #include "user.h"
 #include "friendRoomVerification.h"
 #include "groupRoomVerification.h"
+#include "socket.h"
 
 namespace qls
 {
@@ -28,7 +29,7 @@ namespace qls
 
         void init();
 
-        void addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<asio::ip::tcp::socket>& socket_ptr);
+        void addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<Socket>& socket_ptr);
         std::shared_ptr<BaseRoom> getGlobalRoom() const;
 
         long long addPrivateRoom(long long user1_id, long long user2_id);
