@@ -1,0 +1,10 @@
+﻿{
+  "name": "qingliao-server",
+  "version-string": "0.0.1",
+  "dependencies": [
+    "asio",
+    "openssl",
+    "mariadb-connector-cpp",
+    "kcp"
+  ]
+}

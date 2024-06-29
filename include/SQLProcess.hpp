@@ -6,7 +6,6 @@
 #include <string>
 #include <memory>
 #include <format>
-#include <conncpp.hpp>
 #include <mutex>
 #include <condition_variable>
 #include <thread>
@@ -17,6 +16,7 @@
 #include <utility>
 
 #include <asio.hpp>
+#include <conncpp.hpp>
 
 namespace quqisql
 {

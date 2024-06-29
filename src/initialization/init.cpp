@@ -83,25 +83,50 @@ namespace qls
 
             // 读取cert && key
             {
-                std::ifstream cert(serverIni["ssl"]["certificate_file"]),
-                    key(serverIni["ssl"]["key_file"]),
-                    dh(serverIni["ssl"]["dh_file"]);
+                {
+                    std::ifstream cert(serverIni["ssl"]["certificate_file"]),
+                        key(serverIni["ssl"]["key_file"]),
+                        dh(serverIni["ssl"]["dh_file"]);
 
-                serverIni["ssl"]["password"];
-                if (!cert || !key || !dh)
-                    throw std::logic_error("ini配置文件 section: ssl, 无法读取文件！");
+                    serverIni["ssl"]["password"];
+                    if (!cert || !key)
+                        throw std::logic_error("ini配置文件 section: ssl, 无法读取文件！");
+                }
 
                 serverLogger.info("ceritificate_file路径: ", serverIni["ssl"]["certificate_file"]);
                 serverLogger.info("密码: ", (serverIni["ssl"]["password"].empty() ? "空" : serverIni["ssl"]["password"]));
                 serverLogger.info("key_file路径: ", serverIni["ssl"]["key_file"]);
                 serverLogger.info("dh_file路径: ", serverIni["ssl"]["dh_file"]);
+
+                serverNetwork.set_tls_config([](){
+                    std::shared_ptr<asio::ssl::context> ssl_context =
+                            std::make_shared<asio::ssl::context>(asio::ssl::context::tlsv12);
+
+                    // 设置ssl参数
+                    ssl_context->set_options(
+                        asio::ssl::context::default_workarounds
+                        | asio::ssl::context::no_sslv2
+                        | asio::ssl::context::no_sslv3
+                        | asio::ssl::context::no_tlsv1
+                        | asio::ssl::context::no_tlsv1_1
+                        | asio::ssl::context::single_dh_use
+                    );
+
+                    // 配置ssl context
+                    if (!serverIni["ssl"]["password"].empty())
+                        ssl_context->set_password_callback(std::bind([](){ return serverIni["ssl"]["password"]; }));
+                    ssl_context->use_certificate_chain_file(serverIni["ssl"]["certificate_file"]);
+                    ssl_context->use_private_key_file(serverIni["ssl"]["key_file"], asio::ssl::context::pem);
+                    return ssl_context;
+                });
+                serverLogger.info("设置TLS成功");
             }
             
             serverLogger.info("配置文件读取成功！");
         }
         catch (const std::exception& e)
         {
-            serverLogger.error(e.what());
+            serverLogger.error(std::string(e.what()));
             // Init::createConfig();
             serverLogger.error("请修改配置文件");
             return -1;

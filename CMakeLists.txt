@@ -13,22 +13,7 @@ project(QingLiaoChatServer)
 find_package(OpenSSL REQUIRED)
 find_package(asio CONFIG REQUIRED)
 find_package(kcp CONFIG REQUIRED)
-
-# include_directories(QingLiaoChatServer
-#     include/
-#     src/initialization/
-#     src/jsonMessageProcess/
-#     src/manager/
-#     src/network/
-#     src/parser/
-#     src/room/groupRoom/
-#     src/room/privateRoom/
-#     src/room/
-#     src/socketFunctions/
-#     src/user/)
-
-add_library(libmariadbcpp STATIC IMPORTED)
-set_target_properties(libmariadbcpp PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/mariadb-connector-cpp/build/Release/mariadbcpp-static.lib)
+find_package(unofficial-mariadbcpp CONFIG REQUIRED)
 
 add_executable(QingLiaoChatServer
     "src/main/main.cpp"
@@ -65,9 +50,9 @@ target_include_directories(QingLiaoChatServer PUBLIC src/room/)
 target_include_directories(QingLiaoChatServer PUBLIC src/socketFunctions/)
 target_include_directories(QingLiaoChatServer PUBLIC src/user/)
 
-target_include_directories(QingLiaoChatServer PUBLIC mariadb-connector-cpp/include/)
-
-target_link_libraries(QingLiaoChatServer PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-target_link_libraries(QingLiaoChatServer PRIVATE libmariadbcpp)
-target_link_libraries(QingLiaoChatServer PRIVATE asio::asio)
-target_link_libraries(QingLiaoChatServer PRIVATE kcp::kcp)
+target_link_libraries(QingLiaoChatServer PRIVATE
+  OpenSSL::SSL
+  OpenSSL::Crypto
+  unofficial::mariadbcpp
+  asio::asio
+  kcp::kcp)

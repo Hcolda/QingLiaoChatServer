@@ -17,29 +17,10 @@ extern qini::INIObject serverIni;
 qls::Network::Network() :
     port_(55555),
     thread_num_((12 > int(std::thread::hardware_concurrency())
-        ? int(std::thread::hardware_concurrency()) : 12)),
-    ssl_context_(asio::ssl::context::tlsv12)
+        ? 12 : int(std::thread::hardware_concurrency())))
     {
         // 等thread_num初始化之后才能申请threads内存
         threads_ = std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{});
-
-        // 设置ssl参数
-        ssl_context_.set_options(
-            asio::ssl::context::default_workarounds
-            | asio::ssl::context::no_sslv2
-            | asio::ssl::context::no_sslv3
-            | asio::ssl::context::no_tlsv1
-            | asio::ssl::context::no_tlsv1_1
-            //| asio::ssl::context::single_dh_use
-        );
-
-        // 配置ssl context
-        if (!serverIni["ssl"]["password"].empty())
-            ssl_context_.set_password_callback(std::bind(&Network::get_password, this));
-        ssl_context_.use_certificate_chain_file(serverIni["ssl"]["certificate_file"]);
-        ssl_context_.use_private_key_file(serverIni["ssl"]["key_file"], asio::ssl::context::pem);
-        // SSL_CTX_set_cipher_list(ssl_context_.native_handle(), "ECDHE-RSA-AES256-GCM-SHA384");
-        // ssl_context_.use_tmp_dh_file(serverIni["ssl"]["dh_file"]);
     }
 
 qls::Network::~Network()
@@ -49,6 +30,14 @@ qls::Network::~Network()
         if (threads_[i].joinable())
             threads_[i].join();
     }
+}
+
+void qls::Network::set_tls_config(
+    std::function<std::shared_ptr<
+        asio::ssl::context>()> callback_handle)
+{
+    if (!callback_handle) throw std::logic_error("Tls callback_handle could not be nullptr");
+    ssl_context_ptr_ = callback_handle();
 }
 
 void qls::Network::run(std::string_view host, unsigned short port)
@@ -94,7 +83,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 
     // 加载ssl
     Socket socket(
-        std::move(origin_socket), ssl_context_);
+        std::move(origin_socket), *ssl_context_ptr_);
     // socket加密结构体
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
     // string地址，以便数据处理
@@ -114,7 +103,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
             do
             {
                 std::size_t n = co_await socket.async_read_some(asio::buffer(data), use_awaitable);
-                serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({data, n}))));
+                // serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({data, n}))));
                 sds->package.write({ data,n });
             } while (!sds->package.canRead());
 
