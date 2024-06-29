@@ -52,6 +52,13 @@ namespace qls
         ~Network();
 
         /*
+        * @brief 设置tls
+        * @param callback_handle 用于设置tls的回调函数
+        */
+        void set_tls_config(std::function<std::shared_ptr<
+            asio::ssl::context>()> callback_handle);
+
+        /*
         * @brief 运行network
         * @param host 主机地址
         * @param port 端口
@@ -68,7 +75,8 @@ namespace qls
         std::unique_ptr<std::thread[]>  threads_;
         const int                       thread_num_;
         asio::io_context                io_context_;
-        asio::ssl::context              ssl_context_;
+        std::shared_ptr<
+            asio::ssl::context>         ssl_context_ptr_;
     };
 }
 
