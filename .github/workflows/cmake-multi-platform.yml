@@ -54,6 +54,11 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    - name: run-vcpkg
+      uses: lukka/run-vcpkg@v7.6
+      with:
+        vcpkgGitURL: https://github.com/quqiOnfree/vcpkg.git
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -62,6 +67,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
         -S ${{ github.workspace }}
 
     - name: Build
@@ -73,18 +79,3 @@ jobs:
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }}
-
-    - name: run-vcpkg
-      # You may pin to the exact commit or the version.
-      # uses: lukka/run-vcpkg@8a5116de2b552d6fc8894e9774aacaf2e5db4823
-      uses: lukka/run-vcpkg@v7.6
-      with:
-        vcpkgDirectory: ${{ github.workspace }}/vcpkg
-        # Specify entries to append to the .artifactignore file. This file specifies which directory to ignore or to include by the Cache task. For more info: https://docs.microsoft.com/en-us/azure/devops/artifacts/reference/artifactignore?view=azure-devops . The file is created if not already existing.
-        # Specify the URL Git repository to download vcpkg from. Defaults to https://github.com/microsoft/vcpkg.git
-        vcpkgGitURL: https://github.com/microsoft/vcpkg.git
-        cleanAfterBuild: true
-        # Specify which shell to be used when launching commands. 'true' means the default shell is used. 'false' means no shell is used. It also can be an absolute path and arguments of the shell to spawn commands with.
-        useShell: true
-        # Specifies a semicolon separated list of regular expressions that are used to identify log file paths in the workflow output. A regular expression must have a single capturing group, that is a single pair of parenthesis such as 'See also (.+.log)'. When a match occurs, the content of the file is written into the workflow output for disclosing its content to the user. The default regular expressions are for CMake's and vcpkg's log files.
-        logCollectionRegExps: \s*"(.+CMakeOutput\.log)"\.\s*;\s*"(.+CMakeError\.log)"\.\s*;\s*(.+out\.log)\s*;\s+(.+err\.log)\s*
