@@ -17,7 +17,7 @@ extern qini::INIObject serverIni;
 qls::Network::Network() :
     port_(55555),
     thread_num_((12 > int(std::thread::hardware_concurrency())
-        ? int(std::thread::hardware_concurrency()) : 12)),
+        ? 12 : int(std::thread::hardware_concurrency()))),
     ssl_context_(asio::ssl::context::tlsv12)
     {
         // 等thread_num初始化之后才能申请threads内存
@@ -30,7 +30,7 @@ qls::Network::Network() :
             | asio::ssl::context::no_sslv3
             | asio::ssl::context::no_tlsv1
             | asio::ssl::context::no_tlsv1_1
-            //| asio::ssl::context::single_dh_use
+            | asio::ssl::context::single_dh_use
         );
 
         // 配置ssl context
@@ -38,7 +38,10 @@ qls::Network::Network() :
             ssl_context_.set_password_callback(std::bind(&Network::get_password, this));
         ssl_context_.use_certificate_chain_file(serverIni["ssl"]["certificate_file"]);
         ssl_context_.use_private_key_file(serverIni["ssl"]["key_file"], asio::ssl::context::pem);
-        // SSL_CTX_set_cipher_list(ssl_context_.native_handle(), "ECDHE-RSA-AES256-GCM-SHA384");
+        if (SSL_CTX_set_cipher_list(ssl_context_.native_handle(), "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!3DES:!MD5:!PSK")
+            != 1){
+                serverLogger.error("无法设置ssl cipher");
+            }
         // ssl_context_.use_tmp_dh_file(serverIni["ssl"]["dh_file"]);
     }
 

@@ -9,17 +9,16 @@
 3. [cmake](https://cmake.org/)
 4. [vcpkg](https://github.com/microsoft/vcpkg)
 
+### 配置cmake
+1. 设置全局变量`VCPKG_ROOT=你的vcpkg路径`
+2. 设置全局变量`CMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake`  
+   （以上是Windows的方法，Linux下需要稍作修改）
+
 ### 构建 QingLiao Chat Server
-
-#### Windows
-1. 安装git cmake c++编译器 vcpkg
-2. 修改[build.bat](./build.bat)中的`VCPKG_PATH=你的vcpkg root`
-3. 构建 在cmd中运行[build.bat](./build.bat)
-
-#### Unix
-1. 安装git cmake c++编译器 vcpkg
-2. 修改[build.sh](./build.sh)中的`VCPKG_PATH=你的vcpkg root`
-3. 构建 运行[build.sh](./build.sh)
+```cmd
+cmake -S . -B build
+cmake --build build --config Release
+```
 
 ## 开发规则
 1. 必须使用驼峰法命名

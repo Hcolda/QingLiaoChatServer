@@ -368,4 +368,7 @@ FodyWeavers.xsd
 build/
 mariadb-connector-cpp/
 vcpkg/
+vcpkg_installed/
 enc_temp_folder/
+.vs/
+.vscode/

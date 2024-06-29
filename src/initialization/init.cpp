@@ -83,13 +83,15 @@ namespace qls
 
             // 读取cert && key
             {
-                std::ifstream cert(serverIni["ssl"]["certificate_file"]),
-                    key(serverIni["ssl"]["key_file"]),
-                    dh(serverIni["ssl"]["dh_file"]);
+                {
+                    std::ifstream cert(serverIni["ssl"]["certificate_file"]),
+                        key(serverIni["ssl"]["key_file"]),
+                        dh(serverIni["ssl"]["dh_file"]);
 
-                serverIni["ssl"]["password"];
-                if (!cert || !key || !dh)
-                    throw std::logic_error("ini配置文件 section: ssl, 无法读取文件！");
+                    serverIni["ssl"]["password"];
+                    if (!cert || !key)
+                        throw std::logic_error("ini配置文件 section: ssl, 无法读取文件！");
+                }
 
                 serverLogger.info("ceritificate_file路径: ", serverIni["ssl"]["certificate_file"]);
                 serverLogger.info("密码: ", (serverIni["ssl"]["password"].empty() ? "空" : serverIni["ssl"]["password"]));
@@ -101,7 +103,7 @@ namespace qls
         }
         catch (const std::exception& e)
         {
-            serverLogger.error(e.what());
+            serverLogger.error(std::string(e.what()));
             // Init::createConfig();
             serverLogger.error("请修改配置文件");
             return -1;
