@@ -12,7 +12,6 @@ project(QingLiaoChatServer)
 
 find_package(OpenSSL REQUIRED)
 find_package(asio CONFIG REQUIRED)
-find_package(kcp CONFIG REQUIRED)
 find_package(unofficial-mariadbcpp CONFIG REQUIRED)
 
 add_executable(QingLiaoChatServer
@@ -53,6 +52,5 @@ target_include_directories(QingLiaoChatServer PUBLIC src/user/)
 target_link_libraries(QingLiaoChatServer PRIVATE
   OpenSSL::SSL
   OpenSSL::Crypto
-  unofficial::mariadbcpp
-  asio::asio
-  kcp::kcp)
+  unofficial::mariadbcpp::mariadbcpp
+  asio::asio)

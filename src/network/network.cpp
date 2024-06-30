@@ -36,14 +36,22 @@ void qls::Network::set_tls_config(
     std::function<std::shared_ptr<
         asio::ssl::context>()> callback_handle)
 {
-    if (!callback_handle) throw std::logic_error("Tls callback_handle could not be nullptr");
+    if (!callback_handle)
+        throw std::logic_error("TLS callback_handle could not be nullptr");
     ssl_context_ptr_ = callback_handle();
+    if (!ssl_context_ptr_)
+        throw std::logic_error("TLS context is nullptr");
 }
 
 void qls::Network::run(std::string_view host, unsigned short port)
 {
     host_ = host;
     port_ = port;
+
+    // 检查SSL context ptr是否为空
+    if (!ssl_context_ptr_)
+        throw std::logic_error("TLS context is nullptr, "
+            "please call Network::set_tls_config() function");
 
     try
     {

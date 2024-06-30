@@ -196,7 +196,7 @@ namespace qls
             }
             else
             {
-                serverLogger.error(e.code().message());
+                serverLogger.error("[", addr, "]", e.code().message());
             }
         }
         catch (const std::exception& e)

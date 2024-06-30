@@ -6,17 +6,17 @@
 
 namespace qls
 {
-    // using Socket = asio::ssl::stream<asio::ip::tcp::socket>;
+    using Socket = asio::ssl::stream<asio::ip::tcp::socket>;
 
-    class Socket: public asio::ssl::stream<asio::ip::tcp::socket>
-    {
-    public:
-        Socket(asio::ip::tcp::socket&&, asio::ssl::context&);
-        ~Socket() = default;
+    // class Socket: public asio::ssl::stream<asio::ip::tcp::socket>
+    // {
+    // public:
+    //     Socket(asio::ip::tcp::socket&&, asio::ssl::context&);
+    //     ~Socket() = default;
 
-        Socket(Socket&&) noexcept;
-        Socket(const Socket&) = delete;
-    };
+    //     Socket(Socket&&) noexcept;
+    //     Socket(const Socket&) = delete;
+    // };
 }
 
 #endif // !SOCKET_H
