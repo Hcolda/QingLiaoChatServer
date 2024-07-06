@@ -150,18 +150,21 @@ namespace qls
 
         try
         {
+            serverLogger.info("服务器命令行启动...");
+            std::thread([](){
+                Input input;
+                std::string command;
+                while (true)
+                {
+                    std::cin >> command;
+                    if (!input.input(command))
+                        break;
+                }
+            }).detach();
+            
             serverLogger.info("服务器监听正在启动，地址：", serverIni["server"]["host"], ":", serverIni["server"]["port"]);
             serverNetwork.run(serverIni["server"]["host"], std::stoi(serverIni["server"]["port"]));
-
-            serverLogger.info("服务器命令行启动...");
-            Input input;
-            std::string command;
-            while (true)
-            {
-                std::cin >> command;
-                if (!input.input(command))
-                    break;
-            }
+            
         }
         catch (const std::exception& e)
         {

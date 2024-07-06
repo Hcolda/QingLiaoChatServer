@@ -65,6 +65,12 @@ void qls::Network::run(std::string_view host, unsigned short port)
                 io_context_.run();
                 });
         }
+
+        for (int i = 0; i < thread_num_; i++)
+        {
+            if (threads_[i].joinable())
+                threads_[i].join();
+        }
     }
     catch (const std::exception& e)
     {
@@ -75,12 +81,6 @@ void qls::Network::run(std::string_view host, unsigned short port)
 void qls::Network::stop()
 {
     io_context_.stop();
-
-    for (int i = 0; i < thread_num_; i++)
-    {
-        if (threads_[i].joinable())
-            threads_[i].join();
-    }
 }
 
 std::string qls::Network::get_password() const
@@ -141,10 +141,10 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     co_return;
                 }
 
-                auto execute_function = [](Socket socket,
+                auto execute_function = [addr](Socket socket,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
-                    auto watchdog = [](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
+                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
                     {
                         asio::steady_timer timer(co_await this_coro::executor);
                         auto now = std::chrono::steady_clock::now();
@@ -161,9 +161,20 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     {
                         co_await(SocketService::echo(std::move(socket), std::move(sds), deadline) && watchdog(deadline));
                     }
+                    catch (const std::system_error& e)
+                    {
+                        if (e.code().message() == "End of file")
+                        {
+                            serverLogger.info(std::format("[{}]与服务器断开连接", addr));
+                        }
+                        else
+                        {
+                            serverLogger.error(e.code().message());
+                        }
+                    }
                     catch (const std::exception& e)
                     {
-                        serverLogger.error(e.what());
+                        serverLogger.error(std::string(e.what()));
                     }
                     co_return;
                     };
