@@ -19,13 +19,13 @@ namespace qls
         m_globalRoom = std::make_shared<BaseRoom>();
 
         // sql 初始化
-        /*this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
-            serverIni["mysql"]["password"],
-            "mysql",
-            serverIni["mysql"]["host"],
-            unsigned short(std::stoi(serverIni["mysql"]["port"])));
+        // this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
+        //     serverIni["mysql"]["password"],
+        //     "mysql",
+        //     serverIni["mysql"]["host"],
+        //     unsigned short(std::stoi(serverIni["mysql"]["port"])));
 
-        this->m_sqlProcess.connectSQLServer();*/
+        // this->m_sqlProcess.connectSQLServer();
 
         {
             this->m_newUserId = 10000;

@@ -252,4 +252,20 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(m_user_group_verification_map_mutex);
         return m_user_group_verification_map;
     }
+
+    void User::addSocket(const std::shared_ptr<qls::Socket> &socket_ptr)
+    {
+    }
+
+    void User::removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr)
+    {
+    }
+
+    void User::notifyAll(const std::string_view &data)
+    {
+    }
+    
+    void User::notifyWithType(DeviceType type, const std::string_view &data)
+    {
+    }
 }

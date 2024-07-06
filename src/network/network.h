@@ -65,6 +65,8 @@ namespace qls
         */
         void run(std::string_view host, unsigned short port);
 
+        void stop();
+
     private:
         std::string get_password() const;
         awaitable<void> echo(tcp::socket socket);

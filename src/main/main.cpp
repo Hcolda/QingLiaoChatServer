@@ -24,6 +24,5 @@ int main()
     using namespace std::chrono;
 
     int code = qls::init();
-    std::this_thread::sleep_for(1s);
     return code;
 }

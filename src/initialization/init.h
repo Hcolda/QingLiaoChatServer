@@ -16,14 +16,11 @@ namespace qls
         Init() = default;
         ~Init() = default;
 
-        /*
-        * @brief 创建配置文件
-        */
+        /// @brief Create config file
         static void createConfig();
 
-        /*
-        * @brief 读取配置文件
-        */
+        /// @brief Read config file
+        /// @return Ini object
         static qini::INIObject readConfig();
     };
 

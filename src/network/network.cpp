@@ -55,28 +55,31 @@ void qls::Network::run(std::string_view host, unsigned short port)
 
     try
     {
-        asio::io_context io_context;
-
-        asio::signal_set signals(io_context, SIGINT, SIGTERM);
-        signals.async_wait([&](auto, auto) { io_context.stop(); });
+        asio::signal_set signals(io_context_, SIGINT, SIGTERM);
+        signals.async_wait([&](auto, auto) { io_context_.stop(); });
 
         for (int i = 0; i < thread_num_; i++)
         {
             threads_[i] = std::thread([&]() {
-                co_spawn(io_context, listener(), detached);
-                io_context.run();
+                co_spawn(io_context_, listener(), detached);
+                io_context_.run();
                 });
-        }
-
-        for (int i = 0; i < thread_num_; i++)
-        {
-            if (threads_[i].joinable())
-                threads_[i].join();
         }
     }
     catch (const std::exception& e)
     {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
+    }
+}
+
+void qls::Network::stop()
+{
+    io_context_.stop();
+
+    for (int i = 0; i < thread_num_; i++)
+    {
+        if (threads_[i].joinable())
+            threads_[i].join();
     }
 }
 

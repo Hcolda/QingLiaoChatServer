@@ -43,12 +43,17 @@ namespace quqisql
 
         SQLDBProcess(const SQLDBProcess&) = delete;
         SQLDBProcess(SQLDBProcess&) = delete;
+
         ~SQLDBProcess()
         {
             m_thread_is_running = false;
+            m_thread_is_running_2 = false;
             m_cv.notify_all();
+            m_cv_2.notify_all();
             if (m_work_thread.joinable())
                 m_work_thread.join();
+            if (m_work_thread_2.joinable())
+                m_work_thread_2.join();
         }
 
         void setSQLServerInfo(const std::string& username,
@@ -103,6 +108,26 @@ namespace quqisql
                     func();
                 }
                 });
+
+            this->m_thread_is_running_2 = true;
+            this->m_work_thread_2 = std::thread([this]() -> void {
+                while (m_thread_is_running_2)
+                {
+                    std::unique_lock<std::mutex> lock(m_function_queue_mutex_2);
+                    this->m_cv_2.wait(lock,
+                        [this](){ return !m_function_queue_2.empty() || !m_thread_is_running_2; });
+
+                    if (!m_thread_is_running_2) return;
+                    if (m_function_queue_2.empty())
+                        continue;
+
+                    auto func = std::move(m_function_queue_2.front());
+                    m_function_queue_2.pop();
+                    lock.unlock();
+
+                    func();
+                }
+                });
         }
 
         template<typename Func, typename... Args>
@@ -121,34 +146,47 @@ namespace quqisql
             return package->get_future();
         }
 
+        template<typename Func, typename... Args>
+        auto submit_2(Func&& func, Args&&... args) -> std::future<decltype(func(args...))>
+        {
+            auto package = std::make_shared<std::packaged_task<decltype(func(args...))(Args...)>>(std::forward<Func>(func));
+
+            {
+                std::unique_lock<std::mutex> lock(m_function_queue_mutex_2);
+                m_function_queue_2.push(std::bind([package](auto&&... args) -> void {
+                    (*package)(std::forward<decltype(args)>(args)...);
+                    }, std::forward<Args>(args)...));
+            }
+            m_cv.notify_all();
+
+            return package->get_future();
+        }
+
         template<typename R, typename Func, typename... Args,
             asio::completion_token_for<void(R)> CompletionToken>
         auto awaitableSubmit(CompletionToken&& token, Func&& func, Args&&... args)
         {
             // 还有更好的方法，此处还没有实现更好的理想方法
+            // auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
+            //     std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
+            //     std::thread([](auto completion_handler, std::future<R> future) {
+            //         std::move(completion_handler)(future.get());
+            //         }, std::move(completion_handler), std::move(future)).detach();
+            //     };
+
+            // return asio::async_initiate<CompletionToken, void(R)>(
+            //     init, token, std::forward<Func>(func), std::forward<Args>(args)...);
+
+            // 理想方法 但是是伪代码
             auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
                 std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
-                std::thread([](auto completion_handler, std::future<R> future) {
+                this->submit_2([](auto completion_handler, std::future<R> future) {
                     std::move(completion_handler)(future.get());
-                    }, std::move(completion_handler), std::move(future)).detach();
+                    }, std::move(completion_handler), std::move(future));
                 };
 
             return asio::async_initiate<CompletionToken, void(R)>(
                 init, token, std::forward<Func>(func), std::forward<Args>(args)...);
-
-            // 理想方法 但是是伪代码
-            /*auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
-                std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
-                std::unique_lock<std::mutex> lock(m_function_queue_2_mutex);
-                m_function_queue_2.push([](auto completion_handler, std::future<R> future) {
-                    std::move(completion_handler)(future.get());
-                    }, std::move(completion_handler), std::move(future));
-                lock.unlock();
-                m_cv_2.notify_all();
-                };
-
-            return asio::async_initiate<CompletionToken, void(R)>(
-                init, token, std::forward<Func>(func), std::forward<Args>(args)...);*/
         }
 
         std::shared_ptr<sql::ResultSet> executeQuery(const std::string& command)
@@ -214,6 +252,12 @@ namespace quqisql
         std::mutex                          m_function_queue_mutex;
         std::atomic<bool>                   m_thread_is_running;
         std::condition_variable             m_cv;
+
+        std::thread                         m_work_thread_2;
+        std::queue<std::function<void()>>   m_function_queue_2;
+        std::mutex                          m_function_queue_mutex_2;
+        std::atomic<bool>                   m_thread_is_running_2;
+        std::condition_variable             m_cv_2;
     };
 }
 

@@ -10,8 +10,18 @@
 #include <shared_mutex>
 #include <string>
 
+#include "Socket.h"
+
 namespace qls
 {
+    enum class DeviceType
+    {
+        Unknown = 0,
+        Personal_Computer,
+        Phone,
+        Web
+    };
+
     class User
     {
     public:
@@ -149,6 +159,11 @@ namespace qls
         std::multimap<long long,
             UserVerificationStruct> getGroupVerificationList() const;
 
+        void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
+        void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
+        void notifyAll(const std::string_view& data);
+        void notifyWithType(DeviceType type, const std::string_view& data);
+
     private:
         // 用户数据
         long long                   user_id;
@@ -182,6 +197,10 @@ namespace qls
         std::multimap<long long,
             UserVerificationStruct>     m_user_group_verification_map;
         mutable std::shared_mutex       m_user_group_verification_map_mutex;
+
+        std::multimap<DeviceType, std::shared_ptr<qls::Socket>>
+                                        m_socket_map;
+        mutable std::shared_mutex       m_socket_map_mutex;
     };
 }
 

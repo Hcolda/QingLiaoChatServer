@@ -5,10 +5,8 @@
 
 namespace qls
 {
-    /*
-    * @brief 判断本地序是否为大端序
-    * @return true 为大端序 | false 为小端序
-    */
+    /// @brief Determine if the system is big endianness
+    /// @return True if it is big endianness
     constexpr inline bool isBigEndianness()
     {
         union u_data
@@ -22,11 +20,10 @@ namespace qls
         return data.a == 0x12;
     }
 
-    /*
-    * @brief 端序转换
-    * @param value 数据 (整数型)
-    * @return 转换端序后的数据
-    */
+    /// @brief Convert number of endianness
+    /// @tparam T Type of integral
+    /// @param value Integral of the other endianness
+    /// @return Integral of new endianness
     template<typename T>
         requires std::integral<T>
     constexpr inline T swapEndianness(T value) {
@@ -37,11 +34,10 @@ namespace qls
         return result;
     }
 
-    /*
-    * @brief 本地序与网络序互转
-    * @param value 数据 (整数型)
-    * @return 转换端序后的数据
-    */
+    /// @brief Convert if the network endianness is different from local system
+    /// @tparam T Type of integral
+    /// @param value Integral of the other endianness
+    /// @return Integral of new endianness
     template<typename T>
         requires std::integral<T>
     constexpr inline T swapNetworkEndianness(T value)
