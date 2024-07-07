@@ -1,5 +1,7 @@
 #include "inputCommands.h"
 
+#include <format>
+
 #include <option.hpp>
 
 #include "network.h"
@@ -26,5 +28,17 @@ namespace qls
         serverNetwork.stop();
         return false;
     }
-} // namespace qls
 
+    bool show_user_command::execute()
+    {
+        std::string show;
+        auto list = serverManager.getUserList();
+        for (auto i = list.begin(); i != list.end(); i++)
+        {
+            show += std::format("user id: {}, name: {}\n",
+                i->first, i->second->getUserName());
+        }
+        serverLogger.info("用户表: \n", show);
+        return true;
+    }
+} // namespace qls

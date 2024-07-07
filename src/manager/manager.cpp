@@ -224,6 +224,12 @@ namespace qls
         return itor->second;
     }
 
+    std::unordered_map<long long, std::shared_ptr<qls::User>> Manager::getUserList() const
+    {
+        std::shared_lock lock(m_user_map_mutex);
+        return m_user_map;
+    }
+
     void Manager::addFriendRoomVerification(long long user_id_1, long long user_id_2)
     {
         {

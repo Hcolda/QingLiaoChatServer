@@ -154,9 +154,11 @@ namespace qls
             std::thread([](){
                 Input input;
                 std::string command;
+                char buffer[1024] {0};
                 while (true)
                 {
-                    std::cin >> command;
+                    std::cin.getline(buffer, 1023);
+                    command = buffer;
                     if (!input.input(command))
                         break;
                 }

@@ -161,8 +161,8 @@ namespace qls
 
         void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
         void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
-        void notifyAll(const std::string_view& data);
-        void notifyWithType(DeviceType type, const std::string_view& data);
+        void notifyAll(std::string_view data);
+        void notifyWithType(DeviceType type, std::string_view data);
 
     private:
         // 用户数据

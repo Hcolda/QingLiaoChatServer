@@ -261,11 +261,11 @@ namespace qls
     {
     }
 
-    void User::notifyAll(const std::string_view &data)
+    void User::notifyAll(std::string_view data)
     {
     }
     
-    void User::notifyWithType(DeviceType type, const std::string_view &data)
+    void User::notifyWithType(DeviceType type, std::string_view data)
     {
     }
 }

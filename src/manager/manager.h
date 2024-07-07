@@ -46,6 +46,8 @@ namespace qls
         std::shared_ptr<qls::User> addNewUser();
         bool hasUser(long long user_id) const;
         std::shared_ptr<qls::User> getUser(long long user_id) const;
+        std::unordered_map<long long,
+            std::shared_ptr<qls::User>> getUserList() const;
 
         void addFriendRoomVerification(long long user_id_1, long long user_id_2);
         bool hasFriendRoomVerification(long long user_id_1, long long user_id_2) const;

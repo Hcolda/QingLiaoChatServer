@@ -20,6 +20,13 @@ namespace qls
         stop_command() = default;
         virtual bool execute();
     };
+
+    class show_user_command: public Command
+    {
+    public:
+        show_user_command() = default;
+        virtual bool execute();
+    };
 }
 
 #endif // !INPUT_COMMANDS_H
