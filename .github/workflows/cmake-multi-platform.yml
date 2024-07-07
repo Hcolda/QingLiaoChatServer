@@ -59,7 +59,7 @@ jobs:
       with:
         vcpkgGitURL: https://github.com/quqiOnfree/vcpkg.git
         runVcpkgInstall: true
-        vcpkgGitCommitId: 4c569f8069f96b0eb89a094e2c9ffc20b9c76fcd
+        vcpkgGitCommitId: 7faa9ad05a0261acd0dea227d68a8e3f9c11fb1a
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
