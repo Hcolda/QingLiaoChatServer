@@ -198,7 +198,7 @@ namespace qls
             UserVerificationStruct>     m_user_group_verification_map;
         mutable std::shared_mutex       m_user_group_verification_map_mutex;
 
-        std::multimap<DeviceType, std::shared_ptr<qls::Socket>>
+        std::vector<std::pair<DeviceType, std::shared_ptr<qls::Socket>>>
                                         m_socket_map;
         mutable std::shared_mutex       m_socket_map_mutex;
     };

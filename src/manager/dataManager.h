@@ -14,9 +14,7 @@ namespace qls
         DataManager() = default;
         ~DataManager() = default;
 
-        /// @brief It must be set before run the data manager
-        /// @param process SQLDBProcess
-        void setSQLDBProcess(std::shared_ptr<quqisql::SQLDBProcess> process);
+        void init();
 
         /// @brief add user
         /// @param user_id 
@@ -33,9 +31,6 @@ namespace qls
         /// @param pwd_hash hash of password
         /// @return true if verified successfully
         bool verifyUserPassword(long long user_id, size_t pwd_hash);
-
-    private:
-        std::shared_ptr<quqisql::SQLDBProcess> m_sql_process;
     };
 }
 

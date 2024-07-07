@@ -215,12 +215,13 @@ namespace qls
     
     bool User::addFriend(long long friend_user_id)
     {
-        if (!serverManager.hasFriendRoomVerification(this->user_id,
+        auto& ver = serverManager.getServerVerificationManager();
+        if (!ver.hasFriendRoomVerification(this->user_id,
             friend_user_id))
         {
-            serverManager.addFriendRoomVerification(this->user_id,
+            ver.addFriendRoomVerification(this->user_id,
                 friend_user_id);
-            serverManager.setFriendVerified(this->user_id, friend_user_id,
+            ver.setFriendVerified(this->user_id, friend_user_id,
                 this->user_id, true);
             return true;
         }
@@ -235,12 +236,13 @@ namespace qls
 
     bool User::addGroup(long long group_id)
     {
-        if (!serverManager.hasGroupRoomVerification(group_id,
+        auto& ver = serverManager.getServerVerificationManager();
+        if (!ver.hasGroupRoomVerification(group_id,
             this->user_id))
         {
-            serverManager.addGroupRoomVerification(group_id,
+            ver.addGroupRoomVerification(group_id,
                 this->user_id);
-            serverManager.setGroupRoomUserVerified(group_id,
+            ver.setGroupRoomUserVerified(group_id,
                 this->user_id, true);
             return true;
         }

@@ -13,9 +13,10 @@
 #include "privateRoom.h"
 #include "groupRoom.h"
 #include "user.h"
-#include "friendRoomVerification.h"
-#include "groupRoomVerification.h"
 #include "socket.h"
+#include "structHasher.h"
+#include "verificationManager.h"
+#include "dataManager.h"
 
 namespace qls
 {
@@ -49,82 +50,13 @@ namespace qls
         std::unordered_map<long long,
             std::shared_ptr<qls::User>> getUserList() const;
 
-        void addFriendRoomVerification(long long user_id_1, long long user_id_2);
-        bool hasFriendRoomVerification(long long user_id_1, long long user_id_2) const;
-        bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
-        void removeFriendRoomVerification(long long user_id_1, long long user_id_2);
-
-        void addGroupRoomVerification(long long group_id, long long user_id);
-        bool hasGroupRoomVerification(long long group_id, long long user_id) const;
-        bool setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified);
-        bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
-        void removeGroupRoomVerification(long long group_id, long long user_id);
-
         quqisql::SQLDBProcess& getServerSqlProcess();
+        qls::DataManager& getServerDataManager();
+        qls::VerificationManager& getServerVerificationManager();
 
     private:
-        struct PrivateRoomIDStruct
-        {
-            long long user_id_1;
-            long long user_id_2;
-
-            friend bool operator ==(const PrivateRoomIDStruct& a,
-                const PrivateRoomIDStruct& b)
-            {
-                return (a.user_id_1 == b.user_id_1 && a.user_id_2 == b.user_id_2) ||
-                    (a.user_id_2 == b.user_id_1 && a.user_id_1 == b.user_id_2);
-            }
-
-            friend bool operator !=(const PrivateRoomIDStruct& a,
-                const PrivateRoomIDStruct& b)
-            {
-                return !(a == b);
-            }
-        };
-
-        class PrivateRoomIDStructHasher
-        {
-        public:
-            PrivateRoomIDStructHasher() = default;
-            ~PrivateRoomIDStructHasher() = default;
-
-            size_t operator()(const PrivateRoomIDStruct& s) const
-            {
-                std::hash<long long> hasher;
-                return hasher(s.user_id_1) * hasher(s.user_id_2);
-            }
-        };
-
-        struct GroupVerificationStruct
-        {
-            long long group_id;
-            long long user_id;
-
-            friend bool operator ==(const GroupVerificationStruct& a,
-                const GroupVerificationStruct& b)
-            {
-                return a.group_id == b.group_id && a.user_id == b.user_id;
-            }
-
-            friend bool operator !=(const GroupVerificationStruct& a,
-                const GroupVerificationStruct& b)
-            {
-                return !(a == b);
-            }
-        };
-
-        class GroupVerificationStructHasher
-        {
-        public:
-            GroupVerificationStructHasher() = default;
-            ~GroupVerificationStructHasher() = default;
-
-            size_t operator()(const GroupVerificationStruct& g) const
-            {
-                std::hash<long long> hasher;
-                return hasher(g.group_id) * hasher(g.user_id);
-            }
-        };
+        qls::DataManager                        m_dataManager;
+        qls::VerificationManager                m_verificationManager;
 
         std::shared_ptr<BaseRoom>               m_globalRoom;
 
@@ -148,18 +80,6 @@ namespace qls
         std::unordered_map<long long,
             std::shared_ptr<qls::User>>         m_user_map;
         mutable std::shared_mutex               m_user_map_mutex;
-
-        // 用户添加用户申请表
-        std::unordered_map<PrivateRoomIDStruct,
-            qls::FriendRoomVerification,
-            PrivateRoomIDStructHasher>          m_FriendRoomVerification_map;
-        mutable std::shared_mutex               m_FriendRoomVerification_map_mutex;
-
-        // 用户添加群聊申请表
-        std::unordered_map<GroupVerificationStruct,
-            qls::GroupRoomVerification,
-            GroupVerificationStructHasher>      m_GroupVerification_map;
-        mutable std::shared_mutex               m_GroupVerification_map_mutex;
 
         // 新用户id
         std::atomic<long long>                  m_newUserId;

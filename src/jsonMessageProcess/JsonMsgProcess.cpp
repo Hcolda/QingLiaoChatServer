@@ -213,12 +213,12 @@ namespace qls
     {
         if (is_accept)
         {
-            serverManager.setFriendVerified(this->m_user_id, user_id, this->m_user_id, true);
+            serverManager.getServerVerificationManager().setFriendVerified(this->m_user_id, user_id, this->m_user_id, true);
             co_return makeSuccessMessage("Successfully adding a friend!");
         }
         else
         {
-            serverManager.removeFriendRoomVerification(this->m_user_id, user_id);
+            serverManager.getServerVerificationManager().removeFriendRoomVerification(this->m_user_id, user_id);
             co_return makeSuccessMessage("Successfully rejecting a user!");
         }
     }
@@ -275,12 +275,12 @@ namespace qls
     {
         if (is_accept)
         {
-            serverManager.setGroupRoomGroupVerified(group_id, user_id, true);
+            serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id, true);
             co_return makeSuccessMessage("Successfully adding a member into the group!");
         }
         else
         {
-            serverManager.removeGroupRoomVerification(group_id, user_id);
+            serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);
             co_return makeSuccessMessage("Successfully rejecting a user!");
         }
     }
