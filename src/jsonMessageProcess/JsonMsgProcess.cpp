@@ -6,6 +6,7 @@
 #include "manager.h"
 #include "regexMatch.hpp"
 #include "returnStateMessage.hpp"
+#include "userStructure.h"
 
 extern qls::Manager serverManager;
 extern Log::Logger serverLogger;
@@ -27,12 +28,12 @@ namespace qls
         static asio::awaitable<qjson::JObject> hasUser(long long user_id);
         static asio::awaitable<qjson::JObject> searchUser(const std::string& user_name);
 
-        asio::awaitable<long long> getLocalUserID() const;
+        long long getLocalUserID() const;
 
-        asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json);
+        asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
-        asio::awaitable<qjson::JObject> login(long long user_id, const std::string& password);
-        asio::awaitable<qjson::JObject> login(const std::string& email, const std::string& password);
+        asio::awaitable<qjson::JObject> login(long long user_id, const std::string& password, const std::string& device, const SocketService& sf);
+        asio::awaitable<qjson::JObject> login(const std::string& email, const std::string& password, const std::string& device);
 
         asio::awaitable<qjson::JObject> registerUser(const std::string& email, const std::string& password);
 
@@ -77,12 +78,12 @@ namespace qls
         co_return makeErrorMessage("This function is imcompleted.");
     }
 
-    asio::awaitable<long long> JsonMessageProcessImpl::getLocalUserID() const
+    long long JsonMessageProcessImpl::getLocalUserID() const
     {
-        co_return static_cast<long long>(this->m_user_id);
+        return static_cast<long long>(this->m_user_id);
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
     {
         try
         {
@@ -103,7 +104,7 @@ namespace qls
             {
             case 0:
                 // login
-                co_return co_await login(param["user_id"].getInt(), param["password"].getString());
+                co_return co_await login(param["user_id"].getInt(), param["password"].getString(), param["device"].getString(), sf);
             case 1:
                 // register
                 co_return co_await registerUser(param["email"].getString(), param["password"].getString());
@@ -154,24 +155,37 @@ namespace qls
         }
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(long long user_id, const std::string& password)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(long long user_id, const std::string& password, const std::string& device, const SocketService& sf)
     {
         if (!serverManager.hasUser(user_id))
-            co_return makeErrorMessage("There isn't a user match the ID of this user!");
-
-        if (serverManager.getUser(user_id)->isUserPassword(password))
+            co_return makeErrorMessage("The user ID or password is wrong!");
+        
+        auto user = serverManager.getUser(user_id);
+        
+        if (user->isUserPassword(password))
         {
+            // check device type
+            if (device == "PersonalComputer")
+                user->addSocket(sf.get_socket_ptr(), DeviceType::PersonalComputer);
+            else if (device == "Phone")
+                user->addSocket(sf.get_socket_ptr(), DeviceType::Phone);
+            else if (device == "Web")
+                user->addSocket(sf.get_socket_ptr(), DeviceType::Web);
+            else
+                user->addSocket(sf.get_socket_ptr(), DeviceType::Unknown);
+
             auto returnJson = makeSuccessMessage("Logining successfully!");
             this->m_user_id = user_id;
 
+            
             serverLogger.info("用户", user_id, "登录至服务器");
 
             co_return returnJson;
         }
-        else co_return makeErrorMessage("Password is wrong!");
+        else co_return makeErrorMessage("The user ID or password is wrong!");
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(const std::string& email, const std::string& password)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(const std::string& email, const std::string& password, const std::string& device)
     {
         if (!qls::RegexMatch::emailMatch(email))
             co_return makeErrorMessage("Email is invalid");
@@ -348,13 +362,13 @@ namespace qls
     // json process
     // -----------------------------------------------------------------------------------------------
 
-    asio::awaitable<long long> JsonMessageProcess::getLocalUserID() const
+    long long JsonMessageProcess::getLocalUserID() const
     {
         return m_process->getLocalUserID();
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json)
+    asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
     {
-        return m_process->processJsonMessage(json);
+        co_return co_await m_process->processJsonMessage(json, sf);
     }
 }

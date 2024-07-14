@@ -7,7 +7,6 @@
 #include <atomic>
 #include <memory>
 
-#include "JsonMsgProcess.h"
 #include "dataPackage.h"
 #include "package.h"
 #include "network.h"
@@ -29,11 +28,17 @@ namespace qls
         asio::awaitable<void> closeFunction(asio::ip::tcp::socket& socket);
     };
 
+    struct SocketServiceImpl;
+
     class SocketService
     {
     public:
         SocketService(std::shared_ptr<Socket> socket_ptr);
         ~SocketService();
+
+        /// @brief Get the socket pointer
+        /// @return Socket pointer
+        std::shared_ptr<Socket> get_socket_ptr() const;
 
         /*
         * @brief 异步接收数据
@@ -85,12 +90,7 @@ namespace qls
             std::chrono::steady_clock::time_point& deadline);
 
     private:
-        // socket ptr
-        std::shared_ptr<Socket> m_socket_ptr;
-        // JsonMsgProcess
-        JsonMessageProcess      m_jsonProcess;
-        // package
-        qls::Package            m_package;
+        std::shared_ptr<SocketServiceImpl> m_impl;
     };
 }
 
