@@ -103,9 +103,9 @@ namespace qls
         const std::string& data,
         std::shared_ptr<qls::DataPackage> pack)
     {
-        if (co_await this->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
+        if (co_await m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
         {
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("You have't been logined!")), pack->requestID, 1);
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You have't been logined!")), pack->requestID, 1);
             co_return;
         }
 
@@ -113,19 +113,20 @@ namespace qls
         {
         case 1:
             // json文本类型
-            co_await this->async_send(qjson::JWriter::fastWrite(co_await this->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data))), pack->requestID, 1);
+            co_await async_send(qjson::JWriter::fastWrite(
+                co_await m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data))), pack->requestID, 1);
             co_return;
         case 2:
             // 文件类型
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
             co_return;
         case 3:
             // 二进制流类型
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
             co_return;
         default:
             // 没有这种类型，返回错误
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);
             co_return;
         }
         co_return;

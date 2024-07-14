@@ -18,7 +18,7 @@ namespace qls
         * @param user_id 用户的userid
         * @param is_verified 是否验证
         */
-        void setUserVerified(long long user_id, bool is_verified);
+        void setUserVerified(long long user_id);
 
         /*
         * @brief 获取用户是否验证

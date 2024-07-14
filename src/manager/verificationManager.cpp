@@ -14,7 +14,7 @@ namespace qls
 
 void VerificationManager::init()
 {
-    
+    // sql init
 }
 
 void VerificationManager::addFriendRoomVerification(long long user_id_1, long long user_id_2)
@@ -24,7 +24,7 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
 
         if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) ==
             m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification has existed!");
 
         m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 },
                                                 FriendRoomVerification{ user_id_1, user_id_2 });
@@ -32,11 +32,11 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
     
     // user1
     {
-        qls::User::UserVerificationStruct uv;
+        qls::UserVerificationStruct uv;
 
         uv.user_id = user_id_2;
         uv.verification_type =
-            qls::User::UserVerificationStruct::VerificationType::Sent;
+            qls::UserVerificationStruct::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id_1);
         ptr->addFriendVerification(user_id_2, std::move(uv));
@@ -47,11 +47,11 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
 
     // user2
     {
-        qls::User::UserVerificationStruct uv;
+        qls::UserVerificationStruct uv;
 
         uv.user_id = user_id_1;
         uv.verification_type =
-            qls::User::UserVerificationStruct::VerificationType::Received;
+            qls::UserVerificationStruct::VerificationType::Received;
 
         auto ptr = serverManager.getUser(user_id_2);
         ptr->addFriendVerification(user_id_1, std::move(uv));
@@ -70,7 +70,7 @@ bool VerificationManager::hasFriendRoomVerification(long long user_id_1, long lo
 }
 
 bool VerificationManager::setFriendVerified(long long user_id_1, long long user_id_2,
-                                long long user_id, bool is_verified)
+                                long long user_id)
 {
     bool result = false;
     {
@@ -78,10 +78,10 @@ bool VerificationManager::setFriendVerified(long long user_id_1, long long user_
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification has existed!");
 
         auto& ver = itor->second;
-        ver.setUserVerified(user_id, is_verified);
+        ver.setUserVerified(user_id);
 
         result = ver.getUserVerified(user_id_1) && ver.getUserVerified(user_id_2);
     }
@@ -139,7 +139,7 @@ void VerificationManager::removeFriendRoomVerification(long long user_id_1, long
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification has existed!");
 
         m_FriendRoomVerification_map.erase(itor);
     }
@@ -155,7 +155,7 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
         if (m_GroupVerification_map.find({ group_id, user_id }) ==
             m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification has existed!");
 
         m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id },
                                         GroupRoomVerification{ group_id, user_id });
@@ -163,11 +163,11 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
     // 用户发送请求
     {
-        qls::User::UserVerificationStruct uv;
+        qls::UserVerificationStruct uv;
 
         uv.user_id = group_id;
         uv.verification_type =
-            qls::User::UserVerificationStruct::VerificationType::Sent;
+            qls::UserVerificationStruct::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id);
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -175,11 +175,11 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
     // 群聊拥有者接收请求
     {
-        qls::User::UserVerificationStruct uv;
+        qls::UserVerificationStruct uv;
 
         uv.user_id = user_id;
         uv.verification_type =
-            qls::User::UserVerificationStruct::VerificationType::Received;
+            qls::UserVerificationStruct::VerificationType::Received;
 
         auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -197,7 +197,7 @@ bool VerificationManager::hasGroupRoomVerification(long long group_id, long long
         m_GroupVerification_map.end();
 }
 
-bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified)
+bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long long user_id)
 {
     bool result = false;
     {
@@ -208,7 +208,7 @@ bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long lon
             throw std::invalid_argument("Wrong argument!");
 
         auto& ver = itor->second;
-        ver.setGroupVerified(is_verified);
+        ver.setGroupVerified();
         result = ver.getGroupVerified() && ver.getUserVerified();
     }
 
@@ -232,7 +232,7 @@ bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long lon
     return result;
 }
 
-bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified)
+bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long user_id)
 {
     bool result = false;
     {
@@ -243,7 +243,7 @@ bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long
             throw std::invalid_argument("Wrong argument!");
 
         auto& ver = itor->second;
-        ver.setUserVerified(is_verified);
+        ver.setUserVerified();
         result = ver.getGroupVerified() && ver.getUserVerified();
     }
 
@@ -256,17 +256,18 @@ bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long
         // 更新user的friendlist
         if (!serverManager.hasUser(user_id))
             throw std::invalid_argument("Wrong argument!");
-        auto ptr = serverManager.getUser(user_id);
-        auto set = std::move(ptr->getGroupList());
-        set.insert(group_id);
-        ptr->updateGroupList(std::move(set));
-
-        ptr->removeGroupVerification(group_id, user_id);
 
         {
-            auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
+            auto ptr = serverManager.getUser(user_id);
+            auto set = std::move(ptr->getGroupList());
+            set.insert(group_id);
+            ptr->updateGroupList(std::move(set));
+
             ptr->removeGroupVerification(group_id, user_id);
         }
+
+        serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator())
+            ->removeGroupVerification(group_id, user_id);
     }
     return result;
 }

@@ -37,12 +37,12 @@ namespace qls
         asio::awaitable<qjson::JObject> registerUser(const std::string& email, const std::string& password);
 
         asio::awaitable<qjson::JObject> addFriend(long long friend_id);
-        asio::awaitable<qjson::JObject> acceptFriendVerification(long long user_id, bool is_accept);
+        asio::awaitable<qjson::JObject> acceptFriendVerification(long long user_id);
         asio::awaitable<qjson::JObject> getFriendList();
         asio::awaitable<qjson::JObject> getFriendVerificationList();
 
         asio::awaitable<qjson::JObject> addGroup(long long group_id);
-        asio::awaitable<qjson::JObject> acceptGroupVerification(long long group_id, long long user_id, bool is_accept);
+        asio::awaitable<qjson::JObject> acceptGroupVerification(long long group_id, long long user_id);
         asio::awaitable<qjson::JObject> getGroupList();
         asio::awaitable<qjson::JObject> getGroupVerificationList();
 
@@ -133,15 +133,14 @@ namespace qls
                 co_return co_await sendGroupMessage(param["group_id"].getInt(), param["message"].getString());
             case 10:
                 // accept friend verification
-                co_return co_await acceptFriendVerification(param["user_id"].getInt(),
-                    param["is_accept"].getBool());
+                co_return co_await acceptFriendVerification(param["user_id"].getInt());
             case 11:
                 // get friend verification list
                 co_return co_await getFriendVerificationList();
             case 12:
                 // accept group verification
                 co_return co_await acceptGroupVerification(param["group_id"].getInt(),
-                    param["user_id"].getInt(), param["is_accept"].getBool());
+                    param["user_id"].getInt());
             case 13:
                 // get group verification list
                 co_return co_await getGroupVerificationList();
@@ -209,18 +208,10 @@ namespace qls
         else co_return makeErrorMessage("Can't send application");
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptFriendVerification(long long user_id, bool is_accept)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptFriendVerification(long long user_id)
     {
-        if (is_accept)
-        {
-            serverManager.getServerVerificationManager().setFriendVerified(this->m_user_id, user_id, this->m_user_id, true);
+        serverManager.getServerVerificationManager().setFriendVerified(this->m_user_id, user_id, this->m_user_id);
             co_return makeSuccessMessage("Successfully adding a friend!");
-        }
-        else
-        {
-            serverManager.getServerVerificationManager().removeFriendRoomVerification(this->m_user_id, user_id);
-            co_return makeSuccessMessage("Successfully rejecting a user!");
-        }
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendList()
@@ -271,18 +262,10 @@ namespace qls
         else co_return makeErrorMessage("Can't send an application!");
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptGroupVerification(long long group_id, long long user_id, bool is_accept)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptGroupVerification(long long group_id, long long user_id)
     {
-        if (is_accept)
-        {
-            serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id, true);
+        serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id);
             co_return makeSuccessMessage("Successfully adding a member into the group!");
-        }
-        else
-        {
-            serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);
-            co_return makeSuccessMessage("Successfully rejecting a user!");
-        }
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupList()
@@ -367,11 +350,11 @@ namespace qls
 
     asio::awaitable<long long> JsonMessageProcess::getLocalUserID() const
     {
-        co_return co_await m_process->getLocalUserID();
+        return m_process->getLocalUserID();
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json)
     {
-        co_return co_await m_process->processJsonMessage(json);
+        return m_process->processJsonMessage(json);
     }
 }

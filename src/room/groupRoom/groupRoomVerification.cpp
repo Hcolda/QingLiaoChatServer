@@ -26,9 +26,9 @@ namespace qls
     {
     }
 
-    void GroupRoomVerification::setGroupVerified(bool is_verified)
+    void GroupRoomVerification::setGroupVerified()
     {
-        m_group_is_verified = is_verified;
+        m_group_is_verified = true;
     }
 
     bool GroupRoomVerification::getGroupVerified() const
@@ -36,9 +36,9 @@ namespace qls
         return m_group_is_verified;
     }
 
-    void GroupRoomVerification::setUserVerified(bool is_verified)
+    void GroupRoomVerification::setUserVerified()
     {
-        m_user_is_verified = is_verified;
+        m_user_is_verified = true;
     }
 
     bool GroupRoomVerification::getUserVerified() const

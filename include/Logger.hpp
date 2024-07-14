@@ -38,7 +38,7 @@ namespace Log
             m_thread(std::bind(&Logger::workFunction, this))
         {
             if (!openFile())
-                throw std::runtime_error("Can't no open log file.");
+                throw std::runtime_error("Could not open the log file.");
         }
 
         ~Logger()

@@ -17,7 +17,7 @@ namespace qls
         * @brief 设置群聊是否验证
         * @param is_verified 是否验证
         */
-        void setGroupVerified(bool is_verified);
+        void setGroupVerified();
 
         /*
         * @brief 获取群聊是否验证
@@ -29,7 +29,7 @@ namespace qls
         * @brief 设置用户是否验证
         * @param is_verified 是否验证
         */
-        void setUserVerified(bool is_verified);
+        void setUserVerified();
 
         /*
         * @brief 获取用户是否验证

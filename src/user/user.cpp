@@ -1,10 +1,14 @@
-﻿#include "user.h"
+#include "user.h"
 
 #include <chrono>
 #include <random>
+#include <asio.hpp>
 
 #include "manager.h"
+#include "Logger.hpp"
 
+// 服务器log系统
+extern Log::Logger serverLogger;
 // 服务器manager
 extern qls::Manager serverManager;
 
@@ -222,13 +226,13 @@ namespace qls
             ver.addFriendRoomVerification(this->user_id,
                 friend_user_id);
             ver.setFriendVerified(this->user_id, friend_user_id,
-                this->user_id, true);
+                this->user_id);
             return true;
         }
         else return false;
     }
 
-    std::unordered_map<long long, User::UserVerificationStruct> User::getFriendVerificationList() const
+    std::unordered_map<long long, UserVerificationStruct> User::getFriendVerificationList() const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_friend_verification_map_mutex);
         return m_user_friend_verification_map;
@@ -243,31 +247,79 @@ namespace qls
             ver.addGroupRoomVerification(group_id,
                 this->user_id);
             ver.setGroupRoomUserVerified(group_id,
-                this->user_id, true);
+                this->user_id);
             return true;
         }
         else return false;
     }
 
-    std::multimap<long long, User::UserVerificationStruct> User::getGroupVerificationList() const
+    std::multimap<long long, UserVerificationStruct> User::getGroupVerificationList() const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_group_verification_map_mutex);
         return m_user_group_verification_map;
     }
 
-    void User::addSocket(const std::shared_ptr<qls::Socket> &socket_ptr)
+    void User::addSocket(const std::shared_ptr<qls::Socket> &socket_ptr, DeviceType type)
     {
+        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        if (m_socket_map.find(socket_ptr) == m_socket_map.cend())
+            throw std::logic_error("The same socket pointer has existed!");
+
+        m_socket_map.emplace(socket_ptr, type);
+    }
+
+    bool User::hasSocket(const std::shared_ptr<qls::Socket> &socket_ptr) const
+    {
+        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        return m_socket_map.find(socket_ptr) != m_socket_map.cend();
+    }
+
+    void User::modifySocketType(const std::shared_ptr<qls::Socket> &socket_ptr, DeviceType type)
+    {
+        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        auto iter = m_socket_map.find(socket_ptr);
+        if (iter == m_socket_map.cend())
+            throw std::logic_error("The socket pointer doesn't exist!");
+
+        iter->second = type;
     }
 
     void User::removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr)
     {
+        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        auto iter = m_socket_map.find(socket_ptr);
+        if (iter == m_socket_map.cend())
+            throw std::logic_error("The socket pointer doesn't exist!");
+        
+        m_socket_map.erase(iter);
     }
 
     void User::notifyAll(std::string_view data)
     {
+        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        for (auto& [socket_ptr, type]: m_socket_map)
+        {
+            asio::async_write(*socket_ptr, asio::buffer(data),
+                [this](std::error_code ec, size_t n){
+                    if (ec) serverLogger.error("Error occured at asio::async_write with: ",
+                        ec.message());
+                });
+        }
     }
     
     void User::notifyWithType(DeviceType type, std::string_view data)
     {
+        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        for (auto& [socket_ptr, dtype]: m_socket_map)
+        {
+            if (dtype == type)
+            {
+                asio::async_write(*socket_ptr, asio::buffer(data),
+                    [this](std::error_code ec, size_t n){
+                        if (ec) serverLogger.error("Error occured at asio::async_write with: ",
+                            ec.message());
+                    });
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿#ifndef USER_H
+#ifndef USER_H
 #define USER_H
 
 #include <string>
@@ -11,42 +11,13 @@
 #include <string>
 
 #include "Socket.h"
+#include "userStructure.h"
 
 namespace qls
 {
-    enum class DeviceType
-    {
-        Unknown = 0,
-        Personal_Computer,
-        Phone,
-        Web
-    };
-
     class User
     {
     public:
-        struct UserVerificationStruct
-        {
-            enum class VerificationType
-            {
-                Unknown = 0,
-                Sent,
-                Received
-            };
-
-            long long user_id = 0;
-            /*
-            * @brief 验证类型:
-            * @brief {Unknown:  无状态}
-            * @brief {Sent:     发出的申请}
-            * @brief {Received: 接收的申请}
-            */
-            VerificationType verification_type =
-                VerificationType::Unknown;
-            bool has_message = false;
-            std::string message;
-        };
-
         User(long long user_id, bool is_create);
         User(const User&) = delete;
         User(User&&) = delete;
@@ -108,7 +79,7 @@ namespace qls
             std::unique_lock<std::shared_mutex> ul(m_user_friend_verification_map_mutex);
             auto itor = m_user_friend_verification_map.find(friend_user_id);
             if (itor == m_user_friend_verification_map.end())
-                throw std::invalid_argument("Wrong argument!");
+                throw std::invalid_argument("There is not any friend verification!");
             m_user_friend_verification_map.erase(itor);
         }
 
@@ -140,7 +111,7 @@ namespace qls
         {
             std::unique_lock<std::shared_mutex> ul(m_user_group_verification_map_mutex);
             size_t size = m_user_group_verification_map.count(group_id);
-            if (!size) throw std::invalid_argument("Wrong argument!");
+            if (!size) throw std::invalid_argument("There is not any group verification!");
 
             auto itor = m_user_group_verification_map.find(group_id);
             for (; itor->first == group_id && itor != m_user_group_verification_map.end(); itor++)
@@ -159,7 +130,9 @@ namespace qls
         std::multimap<long long,
             UserVerificationStruct> getGroupVerificationList() const;
 
-        void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
+        void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
+        bool hasSocket(const std::shared_ptr<qls::Socket>& socket_ptr) const;
+        void modifySocketType(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
         void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
         void notifyAll(std::string_view data);
         void notifyWithType(DeviceType type, std::string_view data);
@@ -198,7 +171,7 @@ namespace qls
             UserVerificationStruct>     m_user_group_verification_map;
         mutable std::shared_mutex       m_user_group_verification_map_mutex;
 
-        std::vector<std::pair<DeviceType, std::shared_ptr<qls::Socket>>>
+        std::unordered_map<std::shared_ptr<qls::Socket>, DeviceType>
                                         m_socket_map;
         mutable std::shared_mutex       m_socket_map_mutex;
     };

@@ -20,13 +20,13 @@ namespace qls
 
         void addFriendRoomVerification(long long user_id_1, long long user_id_2);
         bool hasFriendRoomVerification(long long user_id_1, long long user_id_2) const;
-        bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
+        bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id);
         void removeFriendRoomVerification(long long user_id_1, long long user_id_2);
 
         void addGroupRoomVerification(long long group_id, long long user_id);
         bool hasGroupRoomVerification(long long group_id, long long user_id) const;
-        bool setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified);
-        bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
+        bool setGroupRoomGroupVerified(long long group_id, long long user_id);
+        bool setGroupRoomUserVerified(long long group_id, long long user_id);
         void removeGroupRoomVerification(long long group_id, long long user_id);
 
     private:
