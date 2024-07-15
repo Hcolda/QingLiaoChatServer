@@ -20,19 +20,33 @@
 
 namespace quqisql
 {
+    /**
+     * @class SQLDBProcess
+     * @brief Handles SQL database processes including connection, query execution, and task management.
+     */
     class SQLDBProcess
     {
     public:
+        /**
+         * @brief Default constructor.
+         */
         SQLDBProcess() :
             m_port(-1),
             m_thread_is_running(false) {}
 
+        /**
+         * @brief Parameterized constructor.
+         * @param username Database username.
+         * @param password Database password.
+         * @param database_name Database name.
+         * @param host Database host address.
+         * @param port Database port.
+         */
         SQLDBProcess(const std::string& username,
                      const std::string& password,
                      const std::string& database_name,
                      const std::string& host,
-                     unsigned short port
-        )
+                     unsigned short port)
         {
             m_username = username;
             m_password = password;
@@ -41,9 +55,15 @@ namespace quqisql
             m_port = port;
         }
 
+        // Delete copy constructor and assignment operator
         SQLDBProcess(const SQLDBProcess&) = delete;
-        SQLDBProcess(SQLDBProcess&) = delete;
+        SQLDBProcess(SQLDBProcess&&) = delete;
+        SQLDBProcess& operator=(const SQLDBProcess&) = delete;
+        SQLDBProcess& operator=(SQLDBProcess&&) = delete;
 
+        /**
+         * @brief Destructor.
+         */
         ~SQLDBProcess()
         {
             m_thread_is_running = false;
@@ -56,12 +76,19 @@ namespace quqisql
                 m_work_thread_2.join();
         }
 
+        /**
+         * @brief Sets SQL server information.
+         * @param username Database username.
+         * @param password Database password.
+         * @param database_name Database name.
+         * @param host Database host address.
+         * @param port Database port.
+         */
         void setSQLServerInfo(const std::string& username,
                               const std::string& password,
                               const std::string& database_name,
                               const std::string& host,
-                              unsigned short port
-                              )
+                              unsigned short port)
         {
             m_username = username;
             m_password = password;
@@ -70,6 +97,9 @@ namespace quqisql
             m_port = port;
         }
 
+        /**
+         * @brief Connects to the SQL server and starts the worker threads.
+         */
         void connectSQLServer()
         {
             if (this->m_port == -1 || this->m_port > 65535)
@@ -87,7 +117,7 @@ namespace quqisql
                 m_host, m_port, m_database_name).c_str());
             m_sqlconnection = std::shared_ptr<sql::Connection>(
                 driver->connect(url, properties),
-                [](sql::Connection* conn) {conn->close(); });
+                [](sql::Connection* conn) { conn->close(); });
 
             this->m_thread_is_running = true;
             this->m_work_thread = std::thread([this]() -> void {
@@ -95,7 +125,7 @@ namespace quqisql
                 {
                     std::unique_lock<std::mutex> lock(m_function_queue_mutex);
                     this->m_cv.wait(lock,
-                        [this](){ return !m_function_queue.empty() || !m_thread_is_running; });
+                        [this]() { return !m_function_queue.empty() || !m_thread_is_running; });
 
                     if (!m_thread_is_running) return;
                     if (m_function_queue.empty())
@@ -115,7 +145,7 @@ namespace quqisql
                 {
                     std::unique_lock<std::mutex> lock(m_function_queue_mutex_2);
                     this->m_cv_2.wait(lock,
-                        [this](){ return !m_function_queue_2.empty() || !m_thread_is_running_2; });
+                        [this]() { return !m_function_queue_2.empty() || !m_thread_is_running_2; });
 
                     if (!m_thread_is_running_2) return;
                     if (m_function_queue_2.empty())
@@ -130,6 +160,14 @@ namespace quqisql
                 });
         }
 
+        /**
+         * @brief Submits a function to the task queue and returns a future to get the result.
+         * @tparam Func Function type.
+         * @tparam Args Argument types.
+         * @param func Function to submit.
+         * @param args Arguments to pass to the function.
+         * @return std::future to get the result of the function.
+         */
         template<typename Func, typename... Args>
         auto submit(Func&& func, Args&&... args) -> std::future<decltype(func(args...))>
         {
@@ -146,6 +184,14 @@ namespace quqisql
             return package->get_future();
         }
 
+        /**
+         * @brief Submits a function to the secondary task queue and returns a future to get the result.
+         * @tparam Func Function type.
+         * @tparam Args Argument types.
+         * @param func Function to submit.
+         * @param args Arguments to pass to the function.
+         * @return std::future to get the result of the function.
+         */
         template<typename Func, typename... Args>
         auto submit_2(Func&& func, Args&&... args) -> std::future<decltype(func(args...))>
         {
@@ -162,22 +208,22 @@ namespace quqisql
             return package->get_future();
         }
 
+        /**
+         * @brief Submits a function as an awaitable task.
+         * @tparam R Return type.
+         * @tparam Func Function type.
+         * @tparam Args Argument types.
+         * @tparam CompletionToken Type of the completion token.
+         * @param token Completion token.
+         * @param func Function to submit.
+         * @param args Arguments to pass to the function.
+         * @return An awaitable object.
+         */
         template<typename R, typename Func, typename... Args,
             asio::completion_token_for<void(R)> CompletionToken>
         auto awaitableSubmit(CompletionToken&& token, Func&& func, Args&&... args)
         {
-            // 还有更好的方法，此处还没有实现更好的理想方法
-            // auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
-            //     std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
-            //     std::thread([](auto completion_handler, std::future<R> future) {
-            //         std::move(completion_handler)(future.get());
-            //         }, std::move(completion_handler), std::move(future)).detach();
-            //     };
-
-            // return asio::async_initiate<CompletionToken, void(R)>(
-            //     init, token, std::forward<Func>(func), std::forward<Args>(args)...);
-
-            // 理想方法 但是是伪代码
+            // Ideal method but not implemented
             auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
                 std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
                 this->submit_2([](auto completion_handler, std::future<R> future) {
@@ -189,6 +235,12 @@ namespace quqisql
                 init, token, std::forward<Func>(func), std::forward<Args>(args)...);
         }
 
+        /**
+         * @brief Executes an SQL query and returns the result set.
+         * @param command SQL query string.
+         * @return std::shared_ptr<sql::ResultSet> containing the query result.
+         * @throws std::runtime_error if the connection is null.
+         */
         std::shared_ptr<sql::ResultSet> executeQuery(const std::string& command)
         {
             if (!m_sqlconnection)
@@ -198,9 +250,14 @@ namespace quqisql
 
             // Execute query
             return std::shared_ptr<sql::ResultSet>{statement->executeQuery(command),
-                [statement](sql::ResultSet* set){set->last(); statement->close();}};
+                [statement](sql::ResultSet* set) { set->last(); statement->close(); }};
         }
 
+        /**
+         * @brief Executes an SQL update command.
+         * @param command SQL update string.
+         * @throws std::runtime_error if the connection is null.
+         */
         void executeUpdate(const std::string& command)
         {
             if (!m_sqlconnection)
@@ -211,6 +268,12 @@ namespace quqisql
             statement->executeUpdate(command);
         }
 
+        /**
+         * @brief Executes a prepared SQL update command with a callback.
+         * @param preparedCommand Prepared SQL update string.
+         * @param callback Callback to set the prepared statement parameters.
+         * @throws std::runtime_error if the connection is null.
+         */
         void preparedUpdate(const std::string& preparedCommand,
             std::function<void(std::shared_ptr<sql::PreparedStatement>&)> callback)
         {
@@ -224,6 +287,13 @@ namespace quqisql
             stmnt->executeUpdate();
         }
 
+        /**
+         * @brief Executes a prepared SQL query command with a callback and returns the result set.
+         * @param preparedCommand Prepared SQL query string.
+         * @param callback Callback to set the prepared statement parameters.
+         * @return std::shared_ptr<sql::ResultSet> containing the query result.
+         * @throws std::runtime_error if the connection is null.
+         */
         std::shared_ptr<sql::ResultSet> preparedQuery(const std::string& preparedCommand,
             std::function<void(std::shared_ptr<sql::PreparedStatement>&)> callback)
         {
@@ -233,31 +303,31 @@ namespace quqisql
             std::shared_ptr<sql::PreparedStatement> stmnt(
                 m_sqlconnection->prepareStatement(preparedCommand));
             callback(stmnt);
-            
+
             return std::shared_ptr<sql::ResultSet>{stmnt->executeQuery(),
-                [stmnt](sql::ResultSet* set) {set->last(); stmnt->close(); }};
+                [stmnt](sql::ResultSet* set) { set->last(); stmnt->close(); }};
         }
-        
+
     private:
-        std::string     m_username;
-        std::string     m_password;
-        std::string     m_database_name;
-        std::string     m_host;
-        int             m_port;
+        std::string     m_username; ///< Database username.
+        std::string     m_password; ///< Database password.
+        std::string     m_database_name; ///< Database name.
+        std::string     m_host; ///< Database host address.
+        int             m_port; ///< Database port.
 
-        std::shared_ptr<sql::Connection>    m_sqlconnection;
+        std::shared_ptr<sql::Connection>    m_sqlconnection; ///< SQL connection.
 
-        std::thread                         m_work_thread;
-        std::queue<std::function<void()>>   m_function_queue;
-        std::mutex                          m_function_queue_mutex;
-        std::atomic<bool>                   m_thread_is_running;
-        std::condition_variable             m_cv;
+        std::thread                         m_work_thread; ///< Main worker thread.
+        std::queue<std::function<void()>>   m_function_queue; ///< Task queue for main worker thread.
+        std::mutex                          m_function_queue_mutex; ///< Mutex for main task queue.
+        std::atomic<bool>                   m_thread_is_running; ///< Flag indicating if main worker thread is running.
+        std::condition_variable             m_cv; ///< Condition variable for main task queue.
 
-        std::thread                         m_work_thread_2;
-        std::queue<std::function<void()>>   m_function_queue_2;
-        std::mutex                          m_function_queue_mutex_2;
-        std::atomic<bool>                   m_thread_is_running_2;
-        std::condition_variable             m_cv_2;
+        std::thread                         m_work_thread_2; ///< Secondary worker thread.
+        std::queue<std::function<void()>>   m_function_queue_2; ///< Task queue for secondary worker thread.
+        std::mutex                          m_function_queue_mutex_2; ///< Mutex for secondary task queue.
+        std::atomic<bool>                   m_thread_is_running_2; ///< Flag indicating if secondary worker thread is running.
+        std::condition_variable             m_cv_2; ///< Condition variable for secondary task queue.
     };
 }
 

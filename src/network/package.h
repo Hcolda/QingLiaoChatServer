@@ -6,9 +6,9 @@
 
 namespace qls
 {
-    /*
-    * @brief 数据包处理类
-    */
+    /**
+     * @brief A class to handle data packages.
+     */
     class Package
     {
     public:
@@ -18,54 +18,54 @@ namespace qls
         Package(const Package&) = delete;
         Package(Package&&) = delete;
 
-        Package& operator =(const Package&) = delete;
-        Package& operator =(Package&&) = delete;
+        Package& operator=(const Package&) = delete;
+        Package& operator=(Package&&) = delete;
 
-        /*
-        * @brief 写入数据到类中
-        * @param data 二进制数据
-        */
+        /**
+         * @brief Writes data into the class.
+         * @param data The binary data to write.
+         */
         void write(std::string_view data);
 
-        /*
-        * @brief 是否可以读取
-        * @return true 是, false 否
-        */
+        /**
+         * @brief Checks if data can be read from the package.
+         * @return true if data can be read, false otherwise.
+         */
         bool canRead() const;
 
-        /*
-        * @brief 第一个数据包的长度
-        * @return size 第一个数据包的长度
-        */
+        /**
+         * @brief Gets the length of the first message in the package.
+         * @return The length of the first message.
+         */
         size_t firstMsgLength() const;
 
-        /*
-        * @brief 读取数据包
-        * @return 返回数据包
-        */
+        /**
+         * @brief Reads a data package.
+         * @return The data package.
+         */
         std::string read();
 
-        /*
-        * @brief 读取类中buffer数据
-        * @return string buffer
-        */
+        /**
+         * @brief Reads the buffer data in the package.
+         * @return The buffer as a string.
+         */
         const std::string& readBuffer() const;
 
-        /*
-        * @brief 设置buffer
-        * @param buffer
-        */
-        void setBuffer(const std::string& b);
+        /**
+         * @brief Sets the buffer with the given data.
+         * @param buffer The data to set in the buffer.
+         */
+        void setBuffer(const std::string& buffer);
 
-        /*
-        * @brief 制造数据包
-        * @param 二进制数据
-        * @return 经过数据包包装的二进制数据
-        */
+        /**
+         * @brief Creates a data package from binary data.
+         * @param data The binary data.
+         * @return The binary data wrapped in a data package.
+         */
         static std::string makePackage(std::string_view data);
 
     private:
-        std::string m_buffer;
+        std::string m_buffer; ///< The buffer to store the data.
     };
 }
 
