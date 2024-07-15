@@ -213,13 +213,7 @@ asio::awaitable<void> qls::Network::listener()
     }
 }
 
-std::string qls::socket2ip(const asio::ip::tcp::socket& s)
-{
-    auto ep = s.remote_endpoint();
-    return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
-}
-
-std::string qls::socket2ip(const asio::ssl::stream<tcp::socket>& s)
+std::string qls::socket2ip(const qls::Socket& s)
 {
     auto ep = s.lowest_layer().remote_endpoint();
     return std::format("{}:{}", ep.address().to_string(), int(ep.port()));

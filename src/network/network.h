@@ -15,6 +15,7 @@
 #include "definition.hpp"
 #include "package.h"
 #include "dataPackage.h"
+#include "socket.h"
 
 namespace qls
 {
@@ -30,8 +31,7 @@ namespace qls
      * @param s The socket.
      * @return The string representation of the socket's address.
      */
-    inline std::string socket2ip(const asio::ip::tcp::socket& s);
-    inline std::string socket2ip(const asio::ssl::stream<tcp::socket>& s);
+    inline std::string socket2ip(const qls::Socket& s);
 
     /**
      * @brief Displays binary data as a string.
