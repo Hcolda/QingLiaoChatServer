@@ -7,7 +7,7 @@
 
 #include "SQLProcess.hpp"
 #include "manager.h"
-#include "networkEndinass.hpp"
+#include "networkEndianness.hpp"
 #include "input.h"
 
 extern Log::Logger serverLogger;
@@ -53,36 +53,36 @@ namespace qls
 
     int init()
     {
-        std::system("chcp 65001");
-        serverLogger.info("服务器Log系统启动成功!");
+        std::system("chcp 65001"); // Set the console code page to UTF-8
+        serverLogger.info("Server log system started successfully!");
 
         if (qls::isBigEndianness())
-            serverLogger.info("服务器的本地端序为大端序");
+            serverLogger.info("The local endianness of the server is big-endian");
         else
-            serverLogger.info("服务器的本地端序为小端序");
+            serverLogger.info("The local endianness of the server is little-endian");
 
         try
         {
-            serverLogger.info("正在读取配置文件...");
+            serverLogger.info("Reading configuration file...");
             serverIni = Init::readConfig();
         }
         catch (const std::exception& e)
         {
             serverLogger.error(std::string(e.what()));
             Init::createConfig();
-            serverLogger.error("请修改配置文件");
+            serverLogger.error("Please modify the configuration file");
             return -1;
         }
 
         try
         {
             if (std::stoll(serverIni["mysql"]["port"]) > 65535)
-                throw std::logic_error("ini配置文件 section: mysql, key: port port过大!");
+                throw std::logic_error("INI configuration file section: mysql, key: port, the port is too large!");
 
             if (std::stoll(serverIni["mysql"]["port"]) < 0)
-                throw std::logic_error("ini配置文件 section: mysql, key: port port过小!");
+                throw std::logic_error("INI configuration file section: mysql, key: port, the port is too small!");
 
-            // 读取cert && key
+            // Read cert & key
             {
                 {
                     std::ifstream cert(serverIni["ssl"]["certificate_file"]),
@@ -91,19 +91,19 @@ namespace qls
 
                     serverIni["ssl"]["password"];
                     if (!cert || !key)
-                        throw std::logic_error("ini配置文件 section: ssl, 无法读取文件!");
+                        throw std::logic_error("INI configuration file section: ssl, unable to read files!");
                 }
 
-                serverLogger.info("ceritificate_file路径: ", serverIni["ssl"]["certificate_file"]);
-                serverLogger.info("密码: ", (serverIni["ssl"]["password"].empty() ? "空" : serverIni["ssl"]["password"]));
-                serverLogger.info("key_file路径: ", serverIni["ssl"]["key_file"]);
-                serverLogger.info("dh_file路径: ", serverIni["ssl"]["dh_file"]);
+                serverLogger.info("Certificate file path: ", serverIni["ssl"]["certificate_file"]);
+                serverLogger.info("Password: ", (serverIni["ssl"]["password"].empty() ? "empty" : serverIni["ssl"]["password"]));
+                serverLogger.info("Key file path: ", serverIni["ssl"]["key_file"]);
+                serverLogger.info("DH file path: ", serverIni["ssl"]["dh_file"]);
 
                 serverNetwork.set_tls_config([](){
                     std::shared_ptr<asio::ssl::context> ssl_context =
                             std::make_shared<asio::ssl::context>(asio::ssl::context::tlsv12);
 
-                    // 设置ssl参数
+                    // Set SSL parameters
                     ssl_context->set_options(
                         asio::ssl::context::default_workarounds
                         | asio::ssl::context::no_sslv2
@@ -113,44 +113,44 @@ namespace qls
                         | asio::ssl::context::single_dh_use
                     );
 
-                    // 配置ssl context
+                    // Configure SSL context
                     if (!serverIni["ssl"]["password"].empty())
                         ssl_context->set_password_callback(std::bind([](){ return serverIni["ssl"]["password"]; }));
                     ssl_context->use_certificate_chain_file(serverIni["ssl"]["certificate_file"]);
                     ssl_context->use_private_key_file(serverIni["ssl"]["key_file"], asio::ssl::context::pem);
                     return ssl_context;
                 });
-                serverLogger.info("设置TLS成功");
+                serverLogger.info("TLS configuration set successfully");
             }
             
-            serverLogger.info("配置文件读取成功！");
+            serverLogger.info("Configuration file read successfully!");
         }
         catch (const std::exception& e)
         {
             serverLogger.error(std::string(e.what()));
             // Init::createConfig();
-            serverLogger.error("请修改配置文件");
+            serverLogger.error("Please modify the configuration file");
             return -1;
         }
 
         try
         {
-            serverLogger.info("正在加载serverManager...");
+            serverLogger.info("Loading serverManager...");
 
             serverManager.init();
 
-            serverLogger.info("serverManager加载成功!");
+            serverLogger.info("serverManager loaded successfully!");
         }
         catch (const std::exception& e)
         {
             serverLogger.critical(std::string(e.what()));
-            serverLogger.critical("serverManager加载失败!");
+            serverLogger.critical("serverManager failed to load!");
             return -1;
         }
 
         try
         {
-            serverLogger.info("服务器命令行启动...");
+            serverLogger.info("Server command line starting...");
             std::thread([](){
                 Input input;
                 std::string command;
@@ -164,7 +164,7 @@ namespace qls
                 }
             }).detach();
             
-            serverLogger.info("服务器监听正在启动，地址：", serverIni["server"]["host"], ":", serverIni["server"]["port"]);
+            serverLogger.info("Server listener starting at address: ", serverIni["server"]["host"], ":", serverIni["server"]["port"]);
             serverNetwork.run(serverIni["server"]["host"], std::stoi(serverIni["server"]["port"]));
             
         }

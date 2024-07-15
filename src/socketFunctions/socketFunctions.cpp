@@ -17,14 +17,14 @@ namespace qls
     asio::awaitable<void> SocketFunction::accecptFunction(asio::ip::tcp::socket& socket)
     {
         serverLogger.info("[", socket.remote_endpoint().address().to_string(),
-            ":", socket.remote_endpoint().port(), "]", "连接至服务器");
+            ":", socket.remote_endpoint().port(), "]", "connected to the server");
         co_return;
     }
 
     asio::awaitable<void> SocketFunction::receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<qls::DataPackage> pack)
     {
-        serverLogger.info("接收到数据：", data);
-        /*业务逻辑*/
+        serverLogger.info("Received data: ", data);
+        /* Business logic */
 
         co_return;
     }
@@ -32,17 +32,12 @@ namespace qls
     asio::awaitable<void> SocketFunction::closeFunction(asio::ip::tcp::socket& socket)
     {
         serverLogger.info("[", socket.remote_endpoint().address().to_string(),
-            ":", socket.remote_endpoint().port(), "]", "从服务器断开连接");
+            ":", socket.remote_endpoint().port(), "]", "disconnected from the server");
         co_return;
     }
 }
+
 // SocketFunction
-
-
-
-
-
-
 
 // SocketService
 namespace qls
@@ -117,7 +112,7 @@ namespace qls
     {
         if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
         {
-            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You have't been logined!")), pack->requestID, 1);
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")), pack->requestID, 1);
             co_return;
         }
 
@@ -130,11 +125,11 @@ namespace qls
             co_return;
         case 2:
             // file stream type
-            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1);// 暂时返回错误
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1); // Temporarily return an error
             co_return;
         case 3:
             // binary stream type
-            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1);// 暂时返回错误
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1); // Temporarily return an error
             co_return;
         default:
             // unknown type
@@ -170,25 +165,25 @@ namespace qls
                 deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
                 auto pack = co_await socketService.async_receive();
 
-                // 判断包是否可用
+                // Determine if the package is available
                 if (pack.get() == nullptr)
                 {
-                    // 数据接收错误
-                    serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
+                    // Data reception error
+                    serverLogger.error("[", addr, "]", "package is nullptr, auto closing connection...");
                     std::error_code ignore_error;
                     socket_ptr->shutdown(ignore_error);
                     co_return;
                 }
                 else if (pack->type == 4)
                 {
-                    // 心跳包
+                    // Heartbeat package
                     heart_beat_times++;
                     if (std::chrono::steady_clock::now() - heart_beat_time_point >= std::chrono::seconds(10))
                     {
                         heart_beat_time_point = std::chrono::steady_clock::now();
                         if (heart_beat_times > 10)
                         {
-                            serverLogger.error("[", addr, "]", "heart beat too much");
+                            serverLogger.error("[", addr, "]", "too many heartbeats");
                             co_return;
                         }
                         heart_beat_times = 0;
@@ -196,7 +191,7 @@ namespace qls
                     continue;
                 }
 
-                // 成功解密成功接收
+                // Successfully decrypted and received
                 co_await socketService.process(socket_ptr, pack->getData(), pack);
                 continue;
             }
@@ -205,7 +200,7 @@ namespace qls
         {
             if (e.code().message() == "End of file")
             {
-                serverLogger.info(std::format("[{}]与服务器断开连接", addr));
+                serverLogger.info(std::format("[{}] disconnected from the server", addr));
             }
             else
             {

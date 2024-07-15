@@ -10,11 +10,11 @@
 #include "manager.h"
 #include "SQLProcess.hpp"
 
-// 服务器log系统
+// server log system
 Log::Logger serverLogger;
-// ini配置
+// ini config
 qini::INIObject serverIni;
-// 服务器网络系统
+// server network system
 qls::Network serverNetwork;
 // manager
 qls::Manager serverManager;

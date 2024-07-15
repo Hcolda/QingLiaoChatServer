@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <format>
 
-#include "networkEndinass.hpp"
+#include "networkEndianness.hpp"
 
 namespace qls
 {
@@ -22,15 +22,15 @@ namespace qls
     {
         using namespace qls;
 
-        // 数据包过小
+        // Data package is too small
         if (data.size() < sizeof(DataPackage)) throw std::logic_error("data is too small!");
 
-        // 数据包length
+        // Data package length
         int size = 0;
         std::memcpy(&size, data.c_str(), sizeof(int));
         size = swapNetworkEndianness(size);
 
-        // 数据包length与实际大小不符、length小于数据包默认大小、length非常大、数据包结尾不为2 * '\0' 报错处理
+        // Error handling if data package length does not match actual size, length is smaller than the default package size, length is very large, or the package ends not with 2 * '\0'
         if (size != data.size() || size < sizeof(DataPackage)) throw std::logic_error("data is invalid!");
         else if (size > INT32_MAX / 2) throw std::logic_error("data is too large!");
         else if (data[size_t(size - 1)] || data[size_t(size - 2)]) throw std::logic_error("data is invalid");
@@ -39,7 +39,7 @@ namespace qls
             deleteDataPackage);
         std::memcpy(package.get(), data.c_str(), size);
 
-        // 端序转换
+        // Endianness conversion
         package->length = swapNetworkEndianness(package->length);
         package->requestID = swapNetworkEndianness(package->requestID);
         package->type = swapNetworkEndianness(package->type);
@@ -60,7 +60,7 @@ namespace qls
 
         size_t localLength = this->length;
 
-        // 端序转换
+        // Endianness conversion
         this->length = swapNetworkEndianness(this->length);
         this->requestID = swapNetworkEndianness(this->requestID);
         this->type = swapNetworkEndianness(this->type);
