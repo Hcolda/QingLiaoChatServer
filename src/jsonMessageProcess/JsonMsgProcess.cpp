@@ -166,13 +166,13 @@ namespace qls
         {
             // check device type
             if (device == "PersonalComputer")
-                user->addSocket(sf.get_socket_ptr(), DeviceType::PersonalComputer);
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::PersonalComputer);
             else if (device == "Phone")
-                user->addSocket(sf.get_socket_ptr(), DeviceType::Phone);
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Phone);
             else if (device == "Web")
-                user->addSocket(sf.get_socket_ptr(), DeviceType::Web);
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Web);
             else
-                user->addSocket(sf.get_socket_ptr(), DeviceType::Unknown);
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Unknown);
 
             auto returnJson = makeSuccessMessage("Successfully logged in!");
             this->m_user_id = user_id;

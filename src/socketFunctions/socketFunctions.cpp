@@ -14,7 +14,7 @@ extern qls::Manager serverManager;
 
 namespace qls
 {
-    asio::awaitable<void> SocketFunction::accecptFunction(asio::ip::tcp::socket& socket)
+    asio::awaitable<void> SocketFunction::acceptFunction(asio::ip::tcp::socket& socket)
     {
         serverLogger.info("[", socket.remote_endpoint().address().to_string(),
             ":", socket.remote_endpoint().port(), "]", "connected to the server");
@@ -144,12 +144,11 @@ namespace qls
         m_impl->m_package.setBuffer(p.readBuffer());
     }
     
-    asio::awaitable<void> SocketService::echo(Socket socket,
+    asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
         std::shared_ptr<Network::SocketDataStructure> sds,
         std::chrono::steady_clock::time_point& deadline)
     {
         if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
-        std::shared_ptr<Socket> socket_ptr = std::make_shared<Socket>(std::move(socket));
 
         SocketService socketService(socket_ptr);
 
@@ -184,6 +183,9 @@ namespace qls
                         if (heart_beat_times > 10)
                         {
                             serverLogger.error("[", addr, "]", "too many heartbeats");
+
+                            // remove socket pointer from manager
+                            serverManager.removeSocket(socket_ptr);
                             co_return;
                         }
                         heart_beat_times = 0;
@@ -206,22 +208,14 @@ namespace qls
             {
                 serverLogger.error("[", addr, "]", e.code().message());
             }
-
-            // remove socket pointer from user
-            long long user_id = socketService.m_impl->m_jsonProcess.getLocalUserID();
-            if (user_id != -1 && serverManager.hasUser(user_id))
-                serverManager.getUser(user_id)->removeSocket(socket_ptr);
         }
         catch (const std::exception& e)
         {
             serverLogger.error(std::string(e.what()));
-
-            // remove socket pointer from user
-            long long user_id = socketService.m_impl->m_jsonProcess.getLocalUserID();
-            if (user_id != -1 && serverManager.hasUser(user_id))
-                serverManager.getUser(user_id)->removeSocket(socket_ptr);
         }
 
+        // remove socket pointer from manager
+        serverManager.removeSocket(socket_ptr);
         co_return;
     }
 }
