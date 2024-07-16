@@ -16,8 +16,6 @@ namespace qls
 
     void Manager::init()
     {
-        m_globalRoom = std::make_shared<BaseRoom>();
-
         // sql 初始化
         // this->m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
         //     serverIni["mysql"]["password"],
@@ -38,22 +36,6 @@ namespace qls
 
         m_dataManager.init();
         m_verificationManager.init();
-    }
-
-    void Manager::addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<Socket>& socket_ptr)
-    {
-        {
-            std::shared_lock<std::shared_mutex> lock(m_user_map_mutex);
-            if (m_user_map.find(user_id) == m_user_map.cend())
-                throw std::logic_error("There is not a user match this id");
-        }
-
-        m_globalRoom->joinRoom(socket_ptr, user_id);
-    }
-
-    std::shared_ptr<BaseRoom> Manager::getGlobalRoom() const
-    {
-        return m_globalRoom;
     }
 
     long long Manager::addPrivateRoom(long long user1_id, long long user2_id)

@@ -96,7 +96,7 @@ namespace qls
 
         auto returnJson = qjson::JWriter::fastWrite(json);
 
-        co_await sendData(returnJson);
+        sendData(returnJson);
         co_return;
     }
 
@@ -145,7 +145,8 @@ namespace qls
         json["data"]["group_id"] = this->m_group_id;
         json["data"]["message"] = message;
 
-        co_return co_await sendData(qjson::JWriter::fastWrite(json));
+        sendData(qjson::JWriter::fastWrite(json));
+        co_return;
     }
 
     asio::awaitable<void> GroupRoom::sendUserTipMessage(long long sender_user_id,
@@ -183,7 +184,8 @@ namespace qls
         json["data"]["group_id"] = this->m_group_id;
         json["data"]["message"] = message;
 
-        co_return co_await sendData(qjson::JWriter::fastWrite(json), receiver_user_id);
+        sendData(qjson::JWriter::fastWrite(json), receiver_user_id);
+        co_return;
     }
 
     asio::awaitable<void> GroupRoom::getMessage(
@@ -227,8 +229,8 @@ namespace qls
         std::unique_lock<std::shared_mutex> sl(m_message_queue_mutex);
         if (m_message_queue.empty())
         {
-            co_return co_await sendData(
-                qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
+            sendData(qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
+            co_return;
         }
 
         std::sort(m_message_queue.begin(), m_message_queue.end(), [](
@@ -273,7 +275,8 @@ namespace qls
             }
         }
 
-        co_return co_await sendData(qjson::JWriter::fastWrite(returnJson));
+        sendData(qjson::JWriter::fastWrite(returnJson));
+        co_return;
     }
 
     bool GroupRoom::hasUser(long long user_id) const

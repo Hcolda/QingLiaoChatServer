@@ -38,19 +38,6 @@ namespace qls
         void init();
 
         /**
-         * @brief Adds a user socket to the global room.
-         * @param user_id User ID.
-         * @param socket_ptr Pointer to the user socket.
-         */
-        void addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<Socket>& socket_ptr);
-
-        /**
-         * @brief Retrieves the global room.
-         * @return Shared pointer to the global room.
-         */
-        std::shared_ptr<BaseRoom> getGlobalRoom() const;
-
-        /**
          * @brief Adds a private room between two users.
          * @param user1_id ID of the first user.
          * @param user2_id ID of the second user.
@@ -160,8 +147,6 @@ namespace qls
     private:
         qls::DataManager                        m_dataManager; ///< Data manager instance.
         qls::VerificationManager                m_verificationManager; ///< Verification manager instance.
-
-        std::shared_ptr<BaseRoom>               m_globalRoom; ///< Global room instance.
 
         // Group room map
         std::unordered_map<long long, std::shared_ptr<qls::GroupRoom>> m_baseRoom_map; ///< Map of group room IDs to group rooms.
