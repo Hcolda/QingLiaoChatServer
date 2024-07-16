@@ -22,9 +22,9 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
     {
         std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
 
-        if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) ==
+        if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
             m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("The same verification has existed!");
+            throw std::invalid_argument("The same verification already exists!");
 
         m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 },
                                                 FriendRoomVerification{ user_id_1, user_id_2 });
@@ -78,7 +78,7 @@ bool VerificationManager::setFriendVerified(long long user_id_1, long long user_
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("The same verification has existed!");
+            throw std::invalid_argument("The same verification doesn't exists!");
 
         auto& ver = itor->second;
         ver.setUserVerified(user_id);
@@ -101,7 +101,7 @@ bool VerificationManager::setFriendVerified(long long user_id_1, long long user_
             // 更新user1的friendList
             {
                 if (!serverManager.hasUser(user_id_1))
-                    throw std::invalid_argument("Wrong argument!");
+                    throw std::invalid_argument("The first user doesn't exist!");
                 auto ptr = serverManager.getUser(user_id_1);
                 auto set = std::move(ptr->getFriendList());
                 set.insert(user_id_2);
@@ -113,7 +113,7 @@ bool VerificationManager::setFriendVerified(long long user_id_1, long long user_
             // 更新user2的friendList
             {
                 if (!serverManager.hasUser(user_id_2))
-                    throw std::invalid_argument("Wrong argument!");
+                    throw std::invalid_argument("The second user doesn't exist!");
                 auto ptr = serverManager.getUser(user_id_2);
                 auto set = std::move(ptr->getFriendList());
                 set.insert(user_id_1);
@@ -126,7 +126,7 @@ bool VerificationManager::setFriendVerified(long long user_id_1, long long user_
             // m_globalRoom->baseSendData()
         }
 
-        if (error) throw std::invalid_argument("Wrong argument!");
+        if (error) throw std::invalid_argument("Private room between these two users already exists!");
     }
 
     return result;
@@ -139,7 +139,7 @@ void VerificationManager::removeFriendRoomVerification(long long user_id_1, long
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.end())
-            throw std::invalid_argument("The same verification has existed!");
+            throw std::invalid_argument("The same verification doesn't exist!");
 
         m_FriendRoomVerification_map.erase(itor);
     }
@@ -153,9 +153,9 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
     {
         std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
 
-        if (m_GroupVerification_map.find({ group_id, user_id }) ==
+        if (m_GroupVerification_map.find({ group_id, user_id }) !=
             m_GroupVerification_map.end())
-            throw std::invalid_argument("The same verification has existed!");
+            throw std::invalid_argument("The same verification already exists!");
 
         m_GroupVerification_map.emplace(GroupVerificationStruct{ group_id, user_id },
                                         GroupRoomVerification{ group_id, user_id });
@@ -205,7 +205,7 @@ bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long lon
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification doesn't exist!");
 
         auto& ver = itor->second;
         ver.setGroupVerified();
@@ -215,12 +215,12 @@ bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long lon
     if (result)
     {
         if (!serverManager.hasGroupRoom(group_id))
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The group room doesn't exist!");
         serverManager.getGroupRoom(group_id)->addMember(user_id);
 
         // 更新user的groupList
         if (!serverManager.hasUser(user_id))
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The user doesn't exist!");
         auto ptr = serverManager.getUser(user_id);
         auto set = std::move(ptr->getGroupList());
         set.insert(group_id);
@@ -240,7 +240,7 @@ bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification doesn't exist!");
 
         auto& ver = itor->second;
         ver.setUserVerified();
@@ -250,12 +250,12 @@ bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long
     if (result)
     {
         if (!serverManager.hasGroupRoom(group_id))
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The group room doesn't exist!");
         serverManager.getGroupRoom(group_id)->addMember(user_id);
 
         // 更新user的friendlist
         if (!serverManager.hasUser(user_id))
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The user doesn't exist!");
 
         {
             auto ptr = serverManager.getUser(user_id);
@@ -279,7 +279,7 @@ void VerificationManager::removeGroupRoomVerification(long long group_id, long l
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.end())
-            throw std::invalid_argument("Wrong argument!");
+            throw std::invalid_argument("The same verification doesn't exist!");
 
         m_GroupVerification_map.erase(itor);
     }

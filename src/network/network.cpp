@@ -8,9 +8,11 @@
 #include "socketFunctions.h"
 #include "definition.hpp"
 #include "socket.h"
+#include "manager.h"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
+extern qls::Manager serverManager;
 extern qls::SocketFunction serverSocketFunction;
 extern qini::INIObject serverIni;
 
@@ -92,28 +94,29 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 {
     auto executor = co_await asio::this_coro::executor;
 
-    // Load SSL
-    Socket socket(
-        std::move(origin_socket), *ssl_context_ptr_);
+    // Load SSL socket pointer
+    std::shared_ptr<Socket> socket_ptr = std::make_shared<Socket>(std::move(origin_socket), *ssl_context_ptr_);
     // Socket encrypted structure
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
     // String address for data processing
-    std::string addr = socket2ip(socket);
+    std::string addr = socket2ip(*socket_ptr);
 
-    std::string error_msg;
+    // register the socket
+    serverManager.registerSocket(socket_ptr);
+
     try
     {
         serverLogger.info(std::format("[{}] connected to the server", addr));
 
         // SSL handshake
-        co_await socket.async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
+        co_await socket_ptr->async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
 
         char data[8192];
         for (;;)
         {
             do
             {
-                std::size_t n = co_await socket.async_read_some(asio::buffer(data), use_awaitable);
+                std::size_t n = co_await socket_ptr->async_read_some(asio::buffer(data), use_awaitable);
                 // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
                 sds->package.write({ data, n });
             } while (!sds->package.canRead());
@@ -137,11 +140,11 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                 {
                     serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
                     std::error_code ignore_error;
-                    socket.shutdown(ignore_error);
+                    socket_ptr->shutdown(ignore_error);
                     co_return;
                 }
 
-                auto execute_function = [addr](Socket socket,
+                auto execute_function = [addr](std::shared_ptr<Socket> socket_ptr,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
                     auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
@@ -159,7 +162,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     std::chrono::steady_clock::time_point deadline;
                     try
                     {
-                        co_await(SocketService::echo(std::move(socket), std::move(sds), deadline) && watchdog(deadline));
+                        co_await (SocketService::echo(socket_ptr, std::move(sds), deadline) && watchdog(deadline));
                     }
                     catch (const std::system_error& e)
                     {
@@ -176,10 +179,11 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     {
                         serverLogger.error(std::string(e.what()));
                     }
+                    serverManager.removeSocket(socket_ptr);
                     co_return;
                     };
 
-                asio::co_spawn(executor, execute_function(std::move(socket), std::move(sds)), asio::detached);
+                asio::co_spawn(executor, execute_function(std::move(socket_ptr), std::move(sds)), asio::detached);
                 co_return;
             }
         }
@@ -199,6 +203,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
+    serverManager.removeSocket(socket_ptr);
     co_return;
 }
 
