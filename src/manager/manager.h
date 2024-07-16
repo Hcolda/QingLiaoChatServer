@@ -13,12 +13,17 @@
 #include "privateRoom.h"
 #include "groupRoom.h"
 #include "user.h"
-#include "friendRoomVerification.h"
-#include "groupRoomVerification.h"
 #include "socket.h"
+#include "structHasher.h"
+#include "verificationManager.h"
+#include "dataManager.h"
 
 namespace qls
 {
+    /**
+     * @class Manager
+     * @brief Manages the core functionalities such as user, private room, and group room management.
+     */
     class Manager
     {
     public:
@@ -27,147 +32,147 @@ namespace qls
         Manager(Manager&) = delete;
         ~Manager();
 
+        /**
+         * @brief Initializes the manager.
+         */
         void init();
 
-        void addUserSocket2GlobalRoom(long long user_id, const std::shared_ptr<Socket>& socket_ptr);
-        std::shared_ptr<BaseRoom> getGlobalRoom() const;
-
+        /**
+         * @brief Adds a private room between two users.
+         * @param user1_id ID of the first user.
+         * @param user2_id ID of the second user.
+         * @return The ID of the created private room.
+         */
         long long addPrivateRoom(long long user1_id, long long user2_id);
+
+        /**
+         * @brief Retrieves the private room ID between two users.
+         * @param user1_id ID of the first user.
+         * @param user2_id ID of the second user.
+         * @return The ID of the private room.
+         */
         long long getPrivateRoomId(long long user1_id, long long user2_id) const;
+
+        /**
+         * @brief Checks if a private room exists.
+         * @param private_room_id The ID of the private room.
+         * @return True if the private room exists, false otherwise.
+         */
         bool hasPrivateRoom(long long private_room_id) const;
+
+        /**
+         * @brief Retrieves a private room.
+         * @param private_room_id The ID of the private room.
+         * @return Shared pointer to the private room.
+         */
         std::shared_ptr<qls::PrivateRoom> getPrivateRoom(long long private_room_id) const;
+
+        /**
+         * @brief Removes a private room.
+         * @param private_room_id The ID of the private room.
+         */
         void removePrivateRoom(long long private_room_id);
 
-        long long addGroupRoom(long long opreator_user_id);
+        /**
+         * @brief Adds a group room.
+         * @param operator_user_id ID of the user creating the group room.
+         * @return The ID of the created group room.
+         */
+        long long addGroupRoom(long long operator_user_id);
+
+        /**
+         * @brief Checks if a group room exists.
+         * @param group_room_id The ID of the group room.
+         * @return True if the group room exists, false otherwise.
+         */
         bool hasGroupRoom(long long group_room_id) const;
+
+        /**
+         * @brief Retrieves a group room.
+         * @param group_room_id The ID of the group room.
+         * @return Shared pointer to the group room.
+         */
         std::shared_ptr<qls::GroupRoom> getGroupRoom(long long group_room_id) const;
+
+        /**
+         * @brief Removes a group room.
+         * @param group_room_id The ID of the group room.
+         */
         void removeGroupRoom(long long group_room_id);
 
+        /**
+         * @brief Adds a new user.
+         * @return Shared pointer to the new user.
+         */
         std::shared_ptr<qls::User> addNewUser();
+
+        /**
+         * @brief Checks if a user exists.
+         * @param user_id The ID of the user.
+         * @return True if the user exists, false otherwise.
+         */
         bool hasUser(long long user_id) const;
+
+        /**
+         * @brief Retrieves a user.
+         * @param user_id The ID of the user.
+         * @return Shared pointer to the user.
+         */
         std::shared_ptr<qls::User> getUser(long long user_id) const;
 
-        void addFriendRoomVerification(long long user_id_1, long long user_id_2);
-        bool hasFriendRoomVerification(long long user_id_1, long long user_id_2) const;
-        bool setFriendVerified(long long user_id_1, long long user_id_2, long long user_id, bool is_verified);
-        void removeFriendRoomVerification(long long user_id_1, long long user_id_2);
+        /**
+         * @brief Retrieves the list of users.
+         * @return Unordered map of user IDs to user shared pointers.
+         */
+        std::unordered_map<long long, std::shared_ptr<qls::User>> getUserList() const;
 
-        void addGroupRoomVerification(long long group_id, long long user_id);
-        bool hasGroupRoomVerification(long long group_id, long long user_id) const;
-        bool setGroupRoomGroupVerified(long long group_id, long long user_id, bool is_verified);
-        bool setGroupRoomUserVerified(long long group_id, long long user_id, bool is_verified);
-        void removeGroupRoomVerification(long long group_id, long long user_id);
-
+        /**
+         * @brief Retrieves the SQL process for the server.
+         * @return Reference to the SQLDBProcess.
+         */
         quqisql::SQLDBProcess& getServerSqlProcess();
 
+        /**
+         * @brief Retrieves the data manager for the server.
+         * @return Reference to the DataManager.
+         */
+        qls::DataManager& getServerDataManager();
+
+        /**
+         * @brief Retrieves the verification manager for the server.
+         * @return Reference to the VerificationManager.
+         */
+        qls::VerificationManager& getServerVerificationManager();
+
     private:
-        struct PrivateRoomIDStruct
-        {
-            long long user_id_1;
-            long long user_id_2;
+        qls::DataManager                        m_dataManager; ///< Data manager instance.
+        qls::VerificationManager                m_verificationManager; ///< Verification manager instance.
 
-            friend bool operator ==(const PrivateRoomIDStruct& a,
-                const PrivateRoomIDStruct& b)
-            {
-                return (a.user_id_1 == b.user_id_1 && a.user_id_2 == b.user_id_2) ||
-                    (a.user_id_2 == b.user_id_1 && a.user_id_1 == b.user_id_2);
-            }
+        // Group room map
+        std::unordered_map<long long, std::shared_ptr<qls::GroupRoom>> m_baseRoom_map; ///< Map of group room IDs to group rooms.
+        mutable std::shared_mutex               m_baseRoom_map_mutex; ///< Mutex for group room map.
 
-            friend bool operator !=(const PrivateRoomIDStruct& a,
-                const PrivateRoomIDStruct& b)
-            {
-                return !(a == b);
-            }
-        };
+        // Private room map
+        std::unordered_map<long long, std::shared_ptr<qls::PrivateRoom>> m_basePrivateRoom_map; ///< Map of private room IDs to private rooms.
+        mutable std::shared_mutex               m_basePrivateRoom_map_mutex; ///< Mutex for private room map.
 
-        class PrivateRoomIDStructHasher
-        {
-        public:
-            PrivateRoomIDStructHasher() = default;
-            ~PrivateRoomIDStructHasher() = default;
+        // Map of user IDs to private room IDs
+        std::unordered_map<PrivateRoomIDStruct, long long, PrivateRoomIDStructHasher> m_userID_to_privateRoomID_map; ///< Map of user ID structs to private room IDs.
+        mutable std::shared_mutex               m_userID_to_privateRoomID_map_mutex; ///< Mutex for user to private room ID map.
 
-            size_t operator()(const PrivateRoomIDStruct& s) const
-            {
-                std::hash<long long> hasher;
-                return hasher(s.user_id_1) * hasher(s.user_id_2);
-            }
-        };
+        // User map
+        std::unordered_map<long long, std::shared_ptr<qls::User>> m_user_map; ///< Map of user IDs to users.
+        mutable std::shared_mutex               m_user_map_mutex; ///< Mutex for user map.
 
-        struct GroupVerificationStruct
-        {
-            long long group_id;
-            long long user_id;
+        // New user ID
+        std::atomic<long long>                  m_newUserId; ///< Atomic counter for new user IDs.
+        // New private room ID
+        std::atomic<long long>                  m_newPrivateRoomId; ///< Atomic counter for new private room IDs.
+        // New group room ID
+        std::atomic<long long>                  m_newGroupRoomId; ///< Atomic counter for new group room IDs.
 
-            friend bool operator ==(const GroupVerificationStruct& a,
-                const GroupVerificationStruct& b)
-            {
-                return a.group_id == b.group_id && a.user_id == b.user_id;
-            }
-
-            friend bool operator !=(const GroupVerificationStruct& a,
-                const GroupVerificationStruct& b)
-            {
-                return !(a == b);
-            }
-        };
-
-        class GroupVerificationStructHasher
-        {
-        public:
-            GroupVerificationStructHasher() = default;
-            ~GroupVerificationStructHasher() = default;
-
-            size_t operator()(const GroupVerificationStruct& g) const
-            {
-                std::hash<long long> hasher;
-                return hasher(g.group_id) * hasher(g.user_id);
-            }
-        };
-
-        std::shared_ptr<BaseRoom>               m_globalRoom;
-
-        // 群聊房间表
-        std::unordered_map<long long,
-            std::shared_ptr<qls::GroupRoom>>    m_baseRoom_map;
-        mutable std::shared_mutex               m_baseRoom_map_mutex;
-
-        // 私聊房间表
-        std::unordered_map<long long,
-            std::shared_ptr<qls::PrivateRoom>>  m_basePrivateRoom_map;
-        mutable std::shared_mutex               m_basePrivateRoom_map_mutex;
-
-        // 私聊用户对应私聊房间号表
-        std::unordered_map<PrivateRoomIDStruct,
-            long long,
-            PrivateRoomIDStructHasher>          m_userID_to_privateRoomID_map;
-        mutable std::shared_mutex               m_userID_to_privateRoomID_map_mutex;
-
-        // 用户表
-        std::unordered_map<long long,
-            std::shared_ptr<qls::User>>         m_user_map;
-        mutable std::shared_mutex               m_user_map_mutex;
-
-        // 用户添加用户申请表
-        std::unordered_map<PrivateRoomIDStruct,
-            qls::FriendRoomVerification,
-            PrivateRoomIDStructHasher>          m_FriendRoomVerification_map;
-        mutable std::shared_mutex               m_FriendRoomVerification_map_mutex;
-
-        // 用户添加群聊申请表
-        std::unordered_map<GroupVerificationStruct,
-            qls::GroupRoomVerification,
-            GroupVerificationStructHasher>      m_GroupVerification_map;
-        mutable std::shared_mutex               m_GroupVerification_map_mutex;
-
-        // 新用户id
-        std::atomic<long long>                  m_newUserId;
-        // 新私聊房间id
-        std::atomic<long long>                  m_newPrivateRoomId;
-        // 新群聊房间id
-        std::atomic<long long>                  m_newGroupRoomId;
-        
-        // sql进程管理
-        quqisql::SQLDBProcess                   m_sqlProcess;
+        // SQL process manager
+        quqisql::SQLDBProcess                   m_sqlProcess; ///< SQL process instance.
     };
 }
 

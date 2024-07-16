@@ -23,26 +23,28 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
+        # c_compiler: [gcc, clang, cl]
+        c_compiler: [cl]
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
+        #   - os: ubuntu-latest
+        #     c_compiler: gcc
+        #     cpp_compiler: g++
+        #   - os: ubuntu-latest
+        #     c_compiler: clang
+        #     cpp_compiler: clang++
+        # exclude:
+        #   - os: windows-latest
+        #     c_compiler: gcc
+        #   - os: windows-latest
+        #     c_compiler: clang
+        #   - os: ubuntu-latest
+        #     c_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
@@ -59,7 +61,7 @@ jobs:
       with:
         vcpkgGitURL: https://github.com/quqiOnfree/vcpkg.git
         runVcpkgInstall: true
-        vcpkgGitCommitId: 4c569f8069f96b0eb89a094e2c9ffc20b9c76fcd
+        vcpkgGitCommitId: 7faa9ad05a0261acd0dea227d68a8e3f9c11fb1a
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

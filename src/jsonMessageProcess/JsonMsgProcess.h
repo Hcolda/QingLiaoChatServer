@@ -7,6 +7,8 @@
 #include <Json.h>
 #include <memory>
 
+#include "socketFunctions.h"
+
 namespace qls
 {
     class JsonMessageProcessImpl;
@@ -17,8 +19,8 @@ namespace qls
         JsonMessageProcess(long long user_id);
         ~JsonMessageProcess() = default;
 
-        asio::awaitable<long long> getLocalUserID() const;
-        asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json);
+        long long getLocalUserID() const;
+        asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
         
     private:
         std::shared_ptr<JsonMessageProcessImpl> m_process;

@@ -12,7 +12,6 @@ project(QingLiaoChatServer)
 
 find_package(OpenSSL REQUIRED)
 find_package(asio CONFIG REQUIRED)
-find_package(kcp CONFIG REQUIRED)
 find_package(unofficial-mariadbcpp CONFIG REQUIRED)
 
 add_executable(QingLiaoChatServer
@@ -20,6 +19,8 @@ add_executable(QingLiaoChatServer
     "src/initialization/init.cpp"
     "src/jsonMessageProcess/JsonMsgProcess.cpp"
     "src/manager/manager.cpp"
+    "src/manager/dataManager.cpp"
+    "src/manager/verificationManager.cpp"
     "src/network/network.cpp"
     "src/network/dataPackage.cpp"
     "src/network/package.cpp"
@@ -33,7 +34,9 @@ add_executable(QingLiaoChatServer
     "src/socketFunctions/socketFunctions.cpp"
     "src/user/user.cpp"
     "src/room/groupRoom/groupPermission.cpp"
-    "src/network/socket.cpp")
+    "src/network/socket.cpp"
+    "src/input/input.cpp"
+    "src/input/inputCommands.cpp")
 
 set_property(TARGET QingLiaoChatServer PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -49,10 +52,10 @@ target_include_directories(QingLiaoChatServer PUBLIC src/room/privateRoom/)
 target_include_directories(QingLiaoChatServer PUBLIC src/room/)
 target_include_directories(QingLiaoChatServer PUBLIC src/socketFunctions/)
 target_include_directories(QingLiaoChatServer PUBLIC src/user/)
+target_include_directories(QingLiaoChatServer PUBLIC src/input/)
 
 target_link_libraries(QingLiaoChatServer PRIVATE
   OpenSSL::SSL
   OpenSSL::Crypto
-  unofficial::mariadbcpp
-  asio::asio
-  kcp::kcp)
+  unofficial::mariadbcpp::mariadbcpp
+  asio::asio)

@@ -19,7 +19,7 @@ qls::Network::Network() :
     thread_num_((12 > int(std::thread::hardware_concurrency())
         ? 12 : int(std::thread::hardware_concurrency())))
     {
-        // 等thread_num初始化之后才能申请threads内存
+        // Only after thread_num is initialized can we allocate memory for threads
         threads_ = std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{});
     }
 
@@ -36,8 +36,11 @@ void qls::Network::set_tls_config(
     std::function<std::shared_ptr<
         asio::ssl::context>()> callback_handle)
 {
-    if (!callback_handle) throw std::logic_error("Tls callback_handle could not be nullptr");
+    if (!callback_handle)
+        throw std::logic_error("TLS callback_handle could not be nullptr");
     ssl_context_ptr_ = callback_handle();
+    if (!ssl_context_ptr_)
+        throw std::logic_error("TLS context is nullptr");
 }
 
 void qls::Network::run(std::string_view host, unsigned short port)
@@ -45,18 +48,21 @@ void qls::Network::run(std::string_view host, unsigned short port)
     host_ = host;
     port_ = port;
 
+    // Check if SSL context ptr is null
+    if (!ssl_context_ptr_)
+        throw std::logic_error("TLS context is nullptr, "
+            "please call Network::set_tls_config() function");
+
     try
     {
-        asio::io_context io_context;
-
-        asio::signal_set signals(io_context, SIGINT, SIGTERM);
-        signals.async_wait([&](auto, auto) { io_context.stop(); });
+        asio::signal_set signals(io_context_, SIGINT, SIGTERM);
+        signals.async_wait([&](auto, auto) { io_context_.stop(); });
 
         for (int i = 0; i < thread_num_; i++)
         {
             threads_[i] = std::thread([&]() {
-                co_spawn(io_context, listener(), detached);
-                io_context.run();
+                co_spawn(io_context_, listener(), detached);
+                io_context_.run();
                 });
         }
 
@@ -72,6 +78,11 @@ void qls::Network::run(std::string_view host, unsigned short port)
     }
 }
 
+void qls::Network::stop()
+{
+    io_context_.stop();
+}
+
 std::string qls::Network::get_password() const
 {
     return (serverIni["ssl"]["password"]);
@@ -81,20 +92,20 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 {
     auto executor = co_await asio::this_coro::executor;
 
-    // 加载ssl
+    // Load SSL
     Socket socket(
         std::move(origin_socket), *ssl_context_ptr_);
-    // socket加密结构体
+    // Socket encrypted structure
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
-    // string地址，以便数据处理
+    // String address for data processing
     std::string addr = socket2ip(socket);
 
     std::string error_msg;
     try
     {
-        serverLogger.info(std::format("[{}]连接至服务器", addr));
+        serverLogger.info(std::format("[{}] connected to the server", addr));
 
-        // ssl握手
+        // SSL handshake
         co_await socket.async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
 
         char data[8192];
@@ -103,18 +114,18 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
             do
             {
                 std::size_t n = co_await socket.async_read_some(asio::buffer(data), use_awaitable);
-                // serverLogger.info((std::format("[{}]收到消息: {}", addr, showBinaryData({data, n}))));
-                sds->package.write({ data,n });
+                // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
+                sds->package.write({ data, n });
             } while (!sds->package.canRead());
 
             while (sds->package.canRead())
             {
                 std::shared_ptr<qls::DataPackage> datapack;
 
-                // 检测数据包是否正常
+                // Check if the data package is normal
                 try
                 {
-                    // 数据包
+                    // Data package
                     datapack = std::shared_ptr<qls::DataPackage>(
                         qls::DataPackage::stringToPackage(
                             sds->package.read()));
@@ -130,10 +141,10 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     co_return;
                 }
 
-                auto execute_function = [](Socket socket,
+                auto execute_function = [addr](Socket socket,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
-                    auto watchdog = [](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
+                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
                     {
                         asio::steady_timer timer(co_await this_coro::executor);
                         auto now = std::chrono::steady_clock::now();
@@ -150,9 +161,20 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     {
                         co_await(SocketService::echo(std::move(socket), std::move(sds), deadline) && watchdog(deadline));
                     }
+                    catch (const std::system_error& e)
+                    {
+                        if (e.code().message() == "End of file")
+                        {
+                            serverLogger.info(std::format("[{}] disconnected from the server", addr));
+                        }
+                        else
+                        {
+                            serverLogger.error(e.code().message());
+                        }
+                    }
                     catch (const std::exception& e)
                     {
-                        serverLogger.error(e.what());
+                        serverLogger.error(std::string(e.what()));
                     }
                     co_return;
                     };
@@ -166,7 +188,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     {
         if (e.code().message() == "End of file")
         {
-            serverLogger.info(std::format("[{}]与服务器断开连接", addr));
+            serverLogger.info(std::format("[{}] disconnected from the server", addr));
         }
         else
         {
@@ -191,13 +213,7 @@ asio::awaitable<void> qls::Network::listener()
     }
 }
 
-std::string qls::socket2ip(const asio::ip::tcp::socket& s)
-{
-    auto ep = s.remote_endpoint();
-    return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
-}
-
-std::string qls::socket2ip(const asio::ssl::stream<tcp::socket>& s)
+std::string qls::socket2ip(const qls::Socket& s)
 {
     auto ep = s.lowest_layer().remote_endpoint();
     return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
@@ -205,7 +221,7 @@ std::string qls::socket2ip(const asio::ssl::stream<tcp::socket>& s)
 
 std::string qls::showBinaryData(const std::string& data)
 {
-    auto isShowableCharactor = [](unsigned char ch) -> bool {
+    auto isShowableCharacter = [](unsigned char ch) -> bool {
         return 32 <= ch && ch <= 126;
         };
 
@@ -213,7 +229,7 @@ std::string qls::showBinaryData(const std::string& data)
 
     for (const auto& i : data)
     {
-        if (isShowableCharactor(static_cast<unsigned char>(i)))
+        if (isShowableCharacter(static_cast<unsigned char>(i)))
         {
             result += i;
         }
@@ -253,7 +269,6 @@ std::string qls::showBinaryData(const std::string& data)
                 locch /= 16;
             }
 
-            //result += "\\x" + (hex.size() == 1 ? "0" + hex : hex);
             if (hex.empty())
             {
                 result += "\\x00";

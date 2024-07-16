@@ -33,14 +33,23 @@ namespace Log
             LogDEBUG
         };
 
+        /**
+         * @brief Default constructor.
+         * Opens the log file and starts the logging thread.
+         * Throws std::runtime_error if the log file cannot be opened.
+         */
         Logger() :
             m_isRunning(true),
             m_thread(std::bind(&Logger::workFunction, this))
         {
             if (!openFile())
-                throw std::runtime_error("Can't no open log file.");
+                throw std::runtime_error("Could not open the log file.");
         }
 
+        /**
+         * @brief Destructor.
+         * Stops the logging thread and closes the log file.
+         */
         ~Logger()
         {
             m_isRunning = false;
@@ -50,6 +59,11 @@ namespace Log
                 m_thread.join();
         }
 
+        /**
+         * @brief Logs an informational message.
+         * @tparam Args Variadic template arguments.
+         * @param args Arguments to be logged.
+         */
         template<typename... Args>
             requires ((StreamType<Args>) && ...)
         constexpr void info(Args&&... args)
@@ -57,6 +71,11 @@ namespace Log
             print(LogMode::LogINFO, std::forward<Args>(args)...);
         }
 
+        /**
+         * @brief Logs a warning message.
+         * @tparam Args Variadic template arguments.
+         * @param args Arguments to be logged.
+         */
         template<typename... Args>
             requires ((StreamType<Args>) && ...)
         constexpr void warning(Args&&... args)
@@ -64,6 +83,11 @@ namespace Log
             print(LogMode::LogWARNING, std::forward<Args>(args)...);
         }
 
+        /**
+         * @brief Logs an error message.
+         * @tparam Args Variadic template arguments.
+         * @param args Arguments to be logged.
+         */
         template<typename... Args>
             requires ((StreamType<Args>) && ...)
         constexpr void error(Args&&... args)
@@ -71,6 +95,11 @@ namespace Log
             print(LogMode::LogERROR, std::forward<Args>(args)...);
         }
 
+        /**
+         * @brief Logs a critical error message.
+         * @tparam Args Variadic template arguments.
+         * @param args Arguments to be logged.
+         */
         template<typename... Args>
             requires ((StreamType<Args>) && ...)
         constexpr void critical(Args&&... args)
@@ -78,6 +107,12 @@ namespace Log
             print(LogMode::LogCRITICAL, std::forward<Args>(args)...);
         }
 
+        /**
+         * @brief Logs a debug message.
+         * Only logs if _DEBUG macro is defined.
+         * @tparam Args Variadic template arguments.
+         * @param args Arguments to be logged.
+         */
         template<typename... Args>
             requires ((StreamType<Args>) && ...)
         constexpr void debug(Args&&... args)
@@ -87,6 +122,12 @@ namespace Log
 #endif // _DEBUG
         }
 
+        /**
+         * @brief Prints a log message to both console and file.
+         * @tparam Args Variadic template arguments.
+         * @param mode Log mode (INFO, WARNING, etc.).
+         * @param args Arguments to be logged.
+         */
         template<typename... Args>
             requires ((StreamType<Args>) && ...)
         void print(LogMode mode, Args... args)
@@ -128,6 +169,10 @@ namespace Log
         }
 
     protected:
+        /**
+         * @brief Generates a formatted log file name based on current date.
+         * @return Formatted log file name.
+         */
         static std::string generateFileName()
         {
             auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -136,6 +181,10 @@ namespace Log
             return ss.str();
         }
 
+        /**
+         * @brief Generates a formatted timestamp string.
+         * @return Formatted timestamp string.
+         */
         static std::string generateTimeFormatString()
         {
             auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -144,6 +193,11 @@ namespace Log
             return ss.str();
         }
 
+        /**
+         * @brief Opens the log file for writing.
+         * Creates the log directory if it doesn't exist.
+         * @return True if file opened successfully, false otherwise.
+         */
         bool openFile()
         {
             std::filesystem::create_directory("./logs");
@@ -151,6 +205,10 @@ namespace Log
             return static_cast<bool>(m_file);
         }
 
+        /**
+         * @brief Background function for logging thread.
+         * Waits for messages in the queue and processes them asynchronously.
+         */
         void workFunction()
         {
             while (m_isRunning)
@@ -168,13 +226,12 @@ namespace Log
         }
 
     private:
-        std::ofstream                       m_file;
-        std::condition_variable             m_cv;
-        std::mutex                          m_mutex;
-        std::atomic<bool>                   m_isRunning;
-        std::queue<std::function<void()>>   m_msgQueue;
-        std::thread                         m_thread;
-
+        std::ofstream                       m_file;         /**< Log file stream */
+        std::condition_variable             m_cv;           /**< Condition variable for thread synchronization */
+        std::mutex                          m_mutex;        /**< Mutex for protecting shared resources */
+        std::atomic<bool>                   m_isRunning;    /**< Atomic flag for controlling thread termination */
+        std::queue<std::function<void()>>   m_msgQueue;     /**< Queue for storing log message functions */
+        std::thread                         m_thread;       /**< Thread for asynchronous logging */
     };
 }
 

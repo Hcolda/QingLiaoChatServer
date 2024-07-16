@@ -27,15 +27,15 @@ qls::FriendRoomVerification::FriendRoomVerification(FriendRoomVerification&& f) 
 {
 }
 
-void qls::FriendRoomVerification::setUserVerified(long long user_id, bool is_verified)
+void qls::FriendRoomVerification::setUserVerified(long long user_id)
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
         throw std::invalid_argument("Wrong user_id!");
 
     if (user_id == m_user_id_1)
-        m_user_1_is_verified = is_verified;
+        m_user_1_is_verified = true;
     else if (user_id == m_user_id_2)
-        m_user_2_is_verified = is_verified;
+        m_user_2_is_verified = true;
 }
 
 bool qls::FriendRoomVerification::getUserVerified(long long user_id) const

@@ -7,6 +7,7 @@
 #include "definition.hpp"
 #include "manager.h"
 #include "returnStateMessage.hpp"
+#include "JsonMsgProcess.h"
 
 extern Log::Logger serverLogger;
 extern qls::Manager serverManager;
@@ -16,14 +17,14 @@ namespace qls
     asio::awaitable<void> SocketFunction::accecptFunction(asio::ip::tcp::socket& socket)
     {
         serverLogger.info("[", socket.remote_endpoint().address().to_string(),
-            ":", socket.remote_endpoint().port(), "]", "连接至服务器");
+            ":", socket.remote_endpoint().port(), "]", "connected to the server");
         co_return;
     }
 
     asio::awaitable<void> SocketFunction::receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<qls::DataPackage> pack)
     {
-        serverLogger.info("接收到数据：", data);
-        /*业务逻辑*/
+        serverLogger.info("Received data: ", data);
+        /* Business logic */
 
         co_return;
     }
@@ -31,27 +32,30 @@ namespace qls
     asio::awaitable<void> SocketFunction::closeFunction(asio::ip::tcp::socket& socket)
     {
         serverLogger.info("[", socket.remote_endpoint().address().to_string(),
-            ":", socket.remote_endpoint().port(), "]", "从服务器断开连接");
+            ":", socket.remote_endpoint().port(), "]", "disconnected from the server");
         co_return;
     }
 }
+
 // SocketFunction
-
-
-
-
-
-
 
 // SocketService
 namespace qls
 {
-    SocketService::SocketService(
-        std::shared_ptr<Socket> socket_ptr) :
-        m_socket_ptr(socket_ptr),
-        m_jsonProcess(-1)
+    struct SocketServiceImpl
     {
-        if (m_socket_ptr.get() == nullptr)
+        // socket ptr
+        std::shared_ptr<Socket> m_socket_ptr;
+        // JsonMsgProcess
+        JsonMessageProcess      m_jsonProcess;
+        // package
+        qls::Package            m_package;
+    };
+
+    SocketService::SocketService(std::shared_ptr<Socket> socket_ptr) :
+        m_impl(std::make_shared<SocketServiceImpl>(socket_ptr, -1))
+    {
+        if (socket_ptr.get() == nullptr)
             throw std::logic_error("socket_ptr is nullptr");
     }
 
@@ -59,29 +63,32 @@ namespace qls
     {
     }
 
+    std::shared_ptr<Socket> SocketService::get_socket_ptr() const
+    {
+        return m_impl->m_socket_ptr;
+    }
+
     asio::awaitable<std::shared_ptr<qls::DataPackage>>
         SocketService::async_receive()
     {
-        std::string addr = socket2ip(*m_socket_ptr);
+        std::string addr = socket2ip(*(m_impl->m_socket_ptr));
         char buffer[8192]{ 0 };
 
         std::shared_ptr<qls::DataPackage> datapack;
-        // 接收数据
-        if (!m_package.canRead())
+        // receive data
+        if (!m_impl->m_package.canRead())
         {
             do
             {
-                size_t size = co_await m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
-                // serverLogger.info((std::format("[{}]收到消息: {}", addr, qls::showBinaryData({ buffer, static_cast<size_t>(size) }))));
-                m_package.write({ buffer, static_cast<size_t>(size) });
-            } while (!m_package.canRead());
+                size_t size = co_await m_impl->m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
+                m_impl->m_package.write({ buffer, static_cast<size_t>(size) });
+            } while (!m_impl->m_package.canRead());
         }
 
-        // 检测数据包是否正常
-        // 数据包
+        // check data package if it is normal
         datapack = std::shared_ptr<qls::DataPackage>(
             qls::DataPackage::stringToPackage(
-                m_package.read()));
+                m_impl->m_package.read()));
 
         co_return datapack;
     }
@@ -93,7 +100,7 @@ namespace qls
         pack->requestID = requestID;
         pack->sequence = sequence;
         pack->type = type;
-        co_return co_await asio::async_write(*m_socket_ptr,
+        co_return co_await asio::async_write(*m_impl->m_socket_ptr,
             asio::buffer(pack->packageToString()),
             asio::use_awaitable);
     }
@@ -103,29 +110,30 @@ namespace qls
         const std::string& data,
         std::shared_ptr<qls::DataPackage> pack)
     {
-        if (co_await this->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
+        if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
         {
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("You have't been logined!")), pack->requestID, 1);
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")), pack->requestID, 1);
             co_return;
         }
 
         switch (pack->type)
         {
         case 1:
-            // json文本类型
-            co_await this->async_send(qjson::JWriter::fastWrite(co_await this->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data))), pack->requestID, 1);
+            // json data type
+            co_await async_send(qjson::JWriter::fastWrite(
+                co_await m_impl->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data), *this)), pack->requestID, 1);
             co_return;
         case 2:
-            // 文件类型
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
+            // file stream type
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1); // Temporarily return an error
             co_return;
         case 3:
-            // 二进制流类型
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);// 暂时返回错误
+            // binary stream type
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1); // Temporarily return an error
             co_return;
         default:
-            // 没有这种类型，返回错误
-            co_await this->async_send(qjson::JWriter::fastWrite(makeErrorMessage("error type")), pack->requestID, 1);
+            // unknown type
+            co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1);
             co_return;
         }
         co_return;
@@ -133,7 +141,7 @@ namespace qls
 
     void SocketService::setPackageBuffer(const qls::Package& p)
     {
-        m_package.setBuffer(p.readBuffer());
+        m_impl->m_package.setBuffer(p.readBuffer());
     }
     
     asio::awaitable<void> SocketService::echo(Socket socket,
@@ -145,7 +153,7 @@ namespace qls
 
         SocketService socketService(socket_ptr);
 
-        // 地址
+        // get address from socket
         std::string addr = socket2ip(*socket_ptr);
 
         try
@@ -157,25 +165,25 @@ namespace qls
                 deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
                 auto pack = co_await socketService.async_receive();
 
-                // 判断包是否可用
+                // Determine if the package is available
                 if (pack.get() == nullptr)
                 {
-                    // 数据接收错误
-                    serverLogger.error("[", addr, "]", "package is nullptr, auto close connection...");
+                    // Data reception error
+                    serverLogger.error("[", addr, "]", "package is nullptr, auto closing connection...");
                     std::error_code ignore_error;
                     socket_ptr->shutdown(ignore_error);
                     co_return;
                 }
                 else if (pack->type == 4)
                 {
-                    // 心跳包
+                    // Heartbeat package
                     heart_beat_times++;
                     if (std::chrono::steady_clock::now() - heart_beat_time_point >= std::chrono::seconds(10))
                     {
                         heart_beat_time_point = std::chrono::steady_clock::now();
                         if (heart_beat_times > 10)
                         {
-                            serverLogger.error("[", addr, "]", "heart beat too much");
+                            serverLogger.error("[", addr, "]", "too many heartbeats");
                             co_return;
                         }
                         heart_beat_times = 0;
@@ -183,7 +191,7 @@ namespace qls
                     continue;
                 }
 
-                // 成功解密成功接收
+                // Successfully decrypted and received
                 co_await socketService.process(socket_ptr, pack->getData(), pack);
                 continue;
             }
@@ -192,16 +200,26 @@ namespace qls
         {
             if (e.code().message() == "End of file")
             {
-                serverLogger.info(std::format("[{}]与服务器断开连接", addr));
+                serverLogger.info(std::format("[{}] disconnected from the server", addr));
             }
             else
             {
-                serverLogger.error(e.code().message());
+                serverLogger.error("[", addr, "]", e.code().message());
             }
+
+            // remove socket pointer from user
+            long long user_id = socketService.m_impl->m_jsonProcess.getLocalUserID();
+            if (user_id != -1 && serverManager.hasUser(user_id))
+                serverManager.getUser(user_id)->removeSocket(socket_ptr);
         }
         catch (const std::exception& e)
         {
             serverLogger.error(std::string(e.what()));
+
+            // remove socket pointer from user
+            long long user_id = socketService.m_impl->m_jsonProcess.getLocalUserID();
+            if (user_id != -1 && serverManager.hasUser(user_id))
+                serverManager.getUser(user_id)->removeSocket(socket_ptr);
         }
 
         co_return;
