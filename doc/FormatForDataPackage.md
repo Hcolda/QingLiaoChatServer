@@ -1,13 +1,13 @@
-﻿# 数据包格式
-## 基本格式
-基本格式是：长度 + requestID + 类型 + 序列 + 消息验证码 + 消息 + 两个'\0'字符  
+﻿# Data package
+## Format
+Format: `length + requestID + data type + sequence + hash + binary data + double '\0'`
 
-| 类型 | 名称 | 值 | 注释 |
+| Type | Name | Value | Comment |
 | :---: | :---: | :---: | :---: |
-| int | length | 数据包长度 |  |
-| long long | requestID | 数据包请求id |  |
-| int | type | 默认为0 | 数据包的类型，1为文本类型，2为二进制文件，3为持续文件流，4为心跳包 |
-| int | sequence | 默认值：-1 | 数据包如果有分段的时候，序列就会用到 |
-| size_t | verifycode | hash | 消息验证码，一般是hash验证 |
-| char | data | 二进制数据 ||
-| char | ___ | 两个'\0'字符 | 数据包结尾 |
+| int | length | Length of data package |  |
+| long long | requestID |  |  |
+| int | type | Default 0 | Type of data package, `1 for text, 2 for binary, 3 for file stream, 4 for heartbeat package` |
+| int | sequence | Default -1 | Valid if data package is splitted |
+| size_t | verifycode | Hash | Hash for verification |
+| char | data | Binary data | |
+| char | ___ | double '\0' | End of data package |
