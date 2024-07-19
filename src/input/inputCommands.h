@@ -27,6 +27,13 @@ namespace qls
         show_user_command() = default;
         virtual bool execute();
     };
+
+    class help_command: public Command
+    {
+    public:
+        help_command() = default;
+        virtual bool execute();
+    };
 }
 
 #endif // !INPUT_COMMANDS_H

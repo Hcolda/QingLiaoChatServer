@@ -42,6 +42,7 @@ public:
 
         SET_A_COMMAND(first_word, stop, arguments);
         SET_A_COMMAND(first_word, show_user, arguments);
+        SET_A_COMMAND(first_word, help, arguments);
 
         serverLogger.warning("没有此指令: ", first_word);
         return true;
