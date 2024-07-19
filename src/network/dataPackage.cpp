@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <format>
+#include <cstring>
 
 #include "networkEndianness.hpp"
 

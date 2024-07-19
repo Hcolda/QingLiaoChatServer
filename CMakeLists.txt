@@ -24,7 +24,7 @@ add_executable(QingLiaoChatServer
     "src/network/network.cpp"
     "src/network/dataPackage.cpp"
     "src/network/package.cpp"
-    "src/parser/ini.cpp"
+    "src/parser/Ini.cpp"
     "src/parser/Json.cpp"
     "src/room/room.cpp"
     "src/room/groupRoom/groupRoom.cpp"

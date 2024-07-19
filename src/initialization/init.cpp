@@ -53,7 +53,9 @@ namespace qls
 
     int init()
     {
+#ifdef WIN32
         std::system("chcp 65001"); // Set the console code page to UTF-8
+#endif
         serverLogger.info("Server log system started successfully!");
 
         if (qls::isBigEndianness())
