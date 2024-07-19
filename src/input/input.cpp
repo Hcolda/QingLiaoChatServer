@@ -15,13 +15,15 @@ static std::string getTargetName(std::string_view data)
     return local;
 }
 
+#define MERGE(x, y) x##y
+
 #define SET_A_COMMAND(variable, name, arguments) \
-    if (variable == getTargetName(#name)) \
-    { \
-        qls::##name##_command c; \
-        c.setArguments(arguments); \
-        return c.execute(); \
-    }
+if (variable == getTargetName(#name)) \
+{ \
+    MERGE(name, _command) c; \
+    c.setArguments(arguments); \
+    return c.execute(); \
+}
 
 class InputImpl
 {
@@ -40,8 +42,8 @@ public:
         if (first_word.empty()) return true;
         std::string arguments(iter, command.cend());
 
-        SET_A_COMMAND(first_word, stop, arguments);
-        SET_A_COMMAND(first_word, show_user, arguments);
+        SET_A_COMMAND(first_word, qls::stop, arguments);
+        SET_A_COMMAND(first_word, qls::show_user, arguments);
 
         serverLogger.warning("没有此指令: ", first_word);
         return true;

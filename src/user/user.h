@@ -10,7 +10,7 @@
 #include <shared_mutex>
 #include <string>
 
-#include "Socket.h"
+#include "socket.h"
 #include "userStructure.h"
 
 namespace qls

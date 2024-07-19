@@ -1,6 +1,8 @@
 ﻿#include "groupPermission.h"
 
 #include <algorithm>
+#include <stdexcept>
+#include <mutex>
 
 namespace qls
 {

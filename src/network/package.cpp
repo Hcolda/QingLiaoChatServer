@@ -1,6 +1,7 @@
 ﻿#include "package.h"
 
 #include <stdexcept>
+#include <cstring>
 
 #include "networkEndianness.hpp"
 
