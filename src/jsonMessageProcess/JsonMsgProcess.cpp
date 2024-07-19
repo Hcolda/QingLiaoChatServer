@@ -317,11 +317,14 @@ namespace qls
         if (!serverManager.getUser(this->m_user_id)->userHasFriend(friend_id))
             co_return makeErrorMessage("You don't have this friend!");
 
+        auto executor = co_await asio::this_coro::executor;
+
         // sending a message
-        serverManager.getPrivateRoom(
-            serverManager.getPrivateRoomId(
-                this->m_user_id, friend_id))->sendMessage(
-                    msg, this->m_user_id);
+        asio::co_spawn(executor, 
+            serverManager.getPrivateRoom(
+                serverManager.getPrivateRoomId(
+                    this->m_user_id, friend_id))->sendMessage(
+                        msg, this->m_user_id), asio::detached);
 
         serverLogger.info("User", static_cast<long long>(this->m_user_id), "sent a message to user", friend_id);
 
@@ -333,7 +336,8 @@ namespace qls
         if (!serverManager.getUser(this->m_user_id)->userHasGroup(group_id))
             co_return makeErrorMessage("You don't have this group!");
 
-        serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg);
+        auto executor = co_await asio::this_coro::executor;
+        asio::co_spawn(executor, serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg), asio::detached);
         serverLogger.info("User", static_cast<long long>(this->m_user_id), "sent a message to group", group_id);
 
         co_return makeSuccessMessage("Successfully sent a message!");

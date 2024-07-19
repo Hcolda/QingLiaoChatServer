@@ -411,7 +411,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
         asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was muted by {}",
             this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
-            asio::use_awaitable);
+            asio::detached);
         sl.unlock();
         io_context.run();
 
@@ -439,7 +439,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
         asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was unmuted by {}",
             this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
-            asio::use_awaitable);
+            asio::detached);
         sl.unlock();
         io_context.run();
 
@@ -466,7 +466,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
         asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was kicked by {}",
             this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
-            asio::use_awaitable);
+            asio::detached);
         sl.unlock();
         io_context.run();
 
@@ -495,7 +495,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
         asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was turned operator by {}",
             this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
-            asio::use_awaitable);
+            asio::detached);
         sl.unlock();
         io_context.run();
 
@@ -524,7 +524,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(this->m_user_id_map_mutex);
         asio::co_spawn(io_context, this->sendTipMessage(executorId, std::format("{} was turned default user by {}",
             this->m_user_id_map[user_id].nickname, this->m_user_id_map[executorId].nickname)),
-            asio::use_awaitable);
+            asio::detached);
         sl.unlock();
         io_context.run();
 
