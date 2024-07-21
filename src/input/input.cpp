@@ -1,6 +1,8 @@
 #include "input.h"
 
-#include <string_view>
+#include <unordered_map>
+#include <string>
+#include <cstring>
 
 #include "inputCommands.h"
 #include "Logger.hpp"
@@ -8,30 +10,44 @@
 // 服务器log系统
 extern Log::Logger serverLogger;
 
-static std::string getTargetName(std::string_view data)
+using namespace qls;
+
+template<size_t N, size_t N2>
+constexpr static void getTargetName(const char(&data)[N], char(&out)[N2])
 {
-    std::string local(data);
-    std::replace(local.begin(), local.end(), '_', ' ');
-    return local;
+    static_assert(N2 <= N);
+    size_t size = std::strlen(data);
+    for (auto i = 0ull; i < size; ++i)
+    {
+        if (data[i] == '_')
+            out[i] = ' ';
+        else
+            out[i] = data[i];
+    }
 }
 
 #define MERGE(x, y) x##y
 
-#define SET_A_COMMAND(variable, name, arguments) \
-if (variable == getTargetName(#name)) \
-{ \
-    MERGE(name, _command) c; \
-    c.setArguments(arguments); \
-    return c.execute(); \
-}
+#define SET_A_COMMAND(name) \
+    { \
+        char local[sizeof(#name)] {0}; \
+        getTargetName(#name, local); \
+        m_command_map.emplace(local , MERGE(name, _command){}); \
+    }
 
 class InputImpl
 {
 public:
-    InputImpl() = default;
+    InputImpl()
+    {
+        SET_A_COMMAND(stop);
+        SET_A_COMMAND(show_user);
+        SET_A_COMMAND(help);
+    }
+
     ~InputImpl() = default;
 
-    static bool input(const std::string &command)
+    bool input(const std::string &command)
     {
         std::string first_word;
         std::string::const_iterator iter = command.cbegin();
@@ -42,9 +58,15 @@ public:
         if (first_word.empty()) return true;
         std::string arguments(iter, command.cend());
 
-        SET_A_COMMAND(first_word, qls::stop, arguments);
-        SET_A_COMMAND(first_word, qls::show_user, arguments);
-        SET_A_COMMAND(first_word, qls::help, arguments);
+        auto map_iter = m_command_map.find(first_word);
+        if (map_iter == m_command_map.cend())
+        {
+            serverLogger.warning("没有此指令: ", first_word);
+            return true;
+        }
+
+        map_iter->second.setArguments(arguments);
+        return map_iter->second.execute();
 
         serverLogger.warning("没有此指令: ", first_word);
         return true;
@@ -62,13 +84,16 @@ private:
         if (first >= last.base()) return {};
         return { first, last.base() };
     }
+
+    std::unordered_map<std::string, qls::Command> m_command_map;
 };
 
-namespace qls
+void Input::init()
 {
-    bool Input::input(const std::string &command)
-    {
-        return InputImpl::input(command);
-    }
+    m_impl = std::make_shared<InputImpl>();
+}
 
-} // namespace qls
+bool Input::input(const std::string &command)
+{
+    return m_impl->input(command);
+}
