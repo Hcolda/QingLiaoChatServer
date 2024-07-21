@@ -6,24 +6,41 @@
 
 namespace qls
 {
+    /**
+     * @brief Creates a JSON object with a state and message.
+     * @param state The state of the message ("error", "success", etc.).
+     * @param msg The message associated with the state.
+     * @return qjson::JObject representing the constructed JSON object.
+     */
     inline qjson::JObject makeMessage(const std::string& state, const std::string& msg)
     {
-        qjson::JObject json;
+        qjson::JObject json; // Create a JSON object
 
+        // Set "state" and "message" fields in the JSON object
         json["state"] = state;
         json["message"] = msg;
 
-        return json;
+        return json; // Return the constructed JSON object
     }
 
+    /**
+     * @brief Creates an error message JSON object.
+     * @param msg The error message.
+     * @return qjson::JObject representing the error message JSON object.
+     */
     inline qjson::JObject makeErrorMessage(const std::string& msg)
     {
-        return makeMessage("error", msg);
+        return makeMessage("error", msg); // Use makeMessage to create an error JSON object
     }
 
+    /**
+     * @brief Creates a success message JSON object.
+     * @param msg The success message.
+     * @return qjson::JObject representing the success message JSON object.
+     */
     inline qjson::JObject makeSuccessMessage(const std::string& msg)
     {
-        return makeMessage("success", msg);
+        return makeMessage("success", msg); // Use makeMessage to create a success JSON object
     }
 }
 

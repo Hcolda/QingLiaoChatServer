@@ -6,6 +6,7 @@
 #include "manager.h"
 #include "regexMatch.hpp"
 #include "returnStateMessage.hpp"
+#include "userStructure.h"
 
 extern qls::Manager serverManager;
 extern Log::Logger serverLogger;
@@ -27,12 +28,12 @@ namespace qls
         static asio::awaitable<qjson::JObject> hasUser(long long user_id);
         static asio::awaitable<qjson::JObject> searchUser(const std::string& user_name);
 
-        asio::awaitable<long long> getLocalUserID() const;
+        long long getLocalUserID() const;
 
-        asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json);
+        asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
-        asio::awaitable<qjson::JObject> login(long long user_id, const std::string& password);
-        asio::awaitable<qjson::JObject> login(const std::string& email, const std::string& password);
+        asio::awaitable<qjson::JObject> login(long long user_id, const std::string& password, const std::string& device, const SocketService& sf);
+        asio::awaitable<qjson::JObject> login(const std::string& email, const std::string& password, const std::string& device);
 
         asio::awaitable<qjson::JObject> registerUser(const std::string& email, const std::string& password);
 
@@ -74,36 +75,36 @@ namespace qls
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::searchUser(const std::string& user_name)
     {
-        co_return makeErrorMessage("This function is imcompleted.");
+        co_return makeErrorMessage("This function is incomplete.");
     }
 
-    asio::awaitable<long long> JsonMessageProcessImpl::getLocalUserID() const
+    long long JsonMessageProcessImpl::getLocalUserID() const
     {
-        co_return static_cast<long long>(this->m_user_id);
+        return static_cast<long long>(this->m_user_id);
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
     {
         try
         {
             std::string function_name = json["function"].getString();
             const qjson::JObject& param = json["parameters"];
 
-            // 判断 userid == -1
+            // Check if userid == -1
             if (m_user_id == -1 &&
                 function_name != "login" &&
                 function_name != "register")
-                co_return makeErrorMessage("You have't been logined!");
+                co_return makeErrorMessage("You haven't logged in!");
             
             auto itor = m_function_map.find(function_name);
             if (itor == m_function_map.cend())
-                co_return makeErrorMessage("There isn't a function match the name!");
+                co_return makeErrorMessage("There isn't a function that matches the name!");
 
             switch (m_function_map.find(function_name)->second)
             {
             case 0:
                 // login
-                co_return co_await login(param["user_id"].getInt(), param["password"].getString());
+                co_return co_await login(param["user_id"].getInt(), param["password"].getString(), param["device"].getString(), sf);
             case 1:
                 // register
                 co_return co_await registerUser(param["email"].getString(), param["password"].getString());
@@ -145,7 +146,7 @@ namespace qls
                 // get group verification list
                 co_return co_await getGroupVerificationList();
             default:
-                co_return makeErrorMessage("There isn't a function match your request.");
+                co_return makeErrorMessage("There isn't a function that matches your request.");
             }
         }
         catch (const std::exception& e)
@@ -154,29 +155,42 @@ namespace qls
         }
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(long long user_id, const std::string& password)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(long long user_id, const std::string& password, const std::string& device, const SocketService& sf)
     {
         if (!serverManager.hasUser(user_id))
-            co_return makeErrorMessage("There isn't a user match the ID of this user!");
-
-        if (serverManager.getUser(user_id)->isUserPassword(password))
+            co_return makeErrorMessage("The user ID or password is wrong!");
+        
+        auto user = serverManager.getUser(user_id);
+        
+        if (user->isUserPassword(password))
         {
-            auto returnJson = makeSuccessMessage("Logining successfully!");
+            // check device type
+            if (device == "PersonalComputer")
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::PersonalComputer);
+            else if (device == "Phone")
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Phone);
+            else if (device == "Web")
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Web);
+            else
+                serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Unknown);
+
+            auto returnJson = makeSuccessMessage("Successfully logged in!");
             this->m_user_id = user_id;
 
-            serverLogger.info("用户", user_id, "登录至服务器");
+            
+            serverLogger.info("User", user_id, "logged into the server");
 
             co_return returnJson;
         }
-        else co_return makeErrorMessage("Password is wrong!");
+        else co_return makeErrorMessage("The user ID or password is wrong!");
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(const std::string& email, const std::string& password)
+    asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(const std::string& email, const std::string& password, const std::string& device)
     {
         if (!qls::RegexMatch::emailMatch(email))
             co_return makeErrorMessage("Email is invalid");
 
-        // 未完善
+        // Not completed
         co_return qjson::JObject();
     }
 
@@ -189,11 +203,11 @@ namespace qls
         ptr->firstUpdateUserPassword(password);
         ptr->updateUserEmail(email);
 
-        qjson::JObject returnJson = makeSuccessMessage("Successfully create a new user!");
+        qjson::JObject returnJson = makeSuccessMessage("Successfully created a new user!");
         long long id = ptr->getUserID();
         returnJson["user_id"] = id;
 
-        serverLogger.info("注册了新用户: ", id);
+        serverLogger.info("Registered new user: ", id);
 
         co_return returnJson;
     }
@@ -202,8 +216,8 @@ namespace qls
     {
         if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
         {
-            serverLogger.info("用户", (long long)this->m_user_id, "向用户", friend_id, "发送好友申请");
-            co_return makeSuccessMessage("Sucessfully sending application!");
+            serverLogger.info("User", (long long)this->m_user_id, "sent a friend request to user", friend_id);
+            co_return makeSuccessMessage("Successfully sent application!");
         }
         else co_return makeErrorMessage("Can't send application");
     }
@@ -211,20 +225,20 @@ namespace qls
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptFriendVerification(long long user_id)
     {
         serverManager.getServerVerificationManager().setFriendVerified(this->m_user_id, user_id, this->m_user_id);
-            co_return makeSuccessMessage("Successfully adding a friend!");
+            co_return makeSuccessMessage("Successfully added a friend!");
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getFriendList());
-        qjson::JObject returnJson = makeSuccessMessage("Sucessfully getting friend list!");
+        qjson::JObject returnJson = makeSuccessMessage("Successfully obtained friend list!");
 
         for (auto i : set)
         {
             returnJson["friend_list"].push_back(i);
         }
 
-        serverLogger.info("用户", (long long)this->m_user_id, "获取朋友列表");
+        serverLogger.info("用户", static_cast<long long>(this->m_user_id), "获取朋友列表");
 
         co_return returnJson;
     }
@@ -243,7 +257,7 @@ namespace qls
             localVector.push_back(std::move(localJson));
         }
 
-        auto returnJson = makeSuccessMessage("Successfully getting the list!");
+        auto returnJson = makeSuccessMessage("Successfully obtained verification list!");
         returnJson["result"] = localVector;
 
         co_return returnJson;
@@ -256,29 +270,29 @@ namespace qls
 
         if (serverManager.getUser(this->m_user_id)->addGroup(group_id))
         {
-            serverLogger.info("用户", (long long)this->m_user_id, "向群聊", group_id, "发送申请");
-            co_return makeSuccessMessage("Sucessfully sending an application!");
+            serverLogger.info("User", static_cast<long long>(this->m_user_id), "sent a group request to group", group_id);
+            co_return makeSuccessMessage("Successfully sent application!");
         }
-        else co_return makeErrorMessage("Can't send an application!");
+        else co_return makeErrorMessage("Can't send application");
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptGroupVerification(long long group_id, long long user_id)
     {
         serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id);
-            co_return makeSuccessMessage("Successfully adding a member into the group!");
+            co_return makeSuccessMessage("Successfully added a group!");
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupList()
     {
         auto set = std::move(serverManager.getUser(this->m_user_id)->getGroupList());
-        qjson::JObject returnJson = makeSuccessMessage("Sucessfully getting group list!");
+        qjson::JObject returnJson = makeSuccessMessage("Successfully obtained group list!");
 
         for (auto i : set)
         {
             returnJson["friend_list"].push_back(i);
         }
 
-        serverLogger.info("用户", (long long)this->m_user_id, "获取群聊列表");
+        serverLogger.info("User", static_cast<long long>(this->m_user_id), "obtained group list");
 
         co_return returnJson;
     }
@@ -286,7 +300,7 @@ namespace qls
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupVerificationList()
     {
         auto map = std::move(serverManager.getUser(this->m_user_id)->getGroupVerificationList());
-        auto returnJson = makeSuccessMessage("Successfully getting a list!");
+        auto returnJson = makeSuccessMessage("Successfully obtained verification list!");
         for (const auto& [group_id, user_struct] : map)
         {
             auto group = std::to_string(group_id);
@@ -301,28 +315,32 @@ namespace qls
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::sendFriendMessage(long long friend_id, const std::string& msg)
     {
         if (!serverManager.getUser(this->m_user_id)->userHasFriend(friend_id))
-            co_return makeErrorMessage("You don't has the friend!");
+            co_return makeErrorMessage("You don't have this friend!");
 
-        // 发送消息
-        serverManager.getPrivateRoom(
-            serverManager.getPrivateRoomId(
-                this->m_user_id, friend_id))->sendMessage(
-                    msg, this->m_user_id);
+        auto executor = co_await asio::this_coro::executor;
 
-        serverLogger.info("用户", (long long)this->m_user_id, "向朋友", friend_id, "发送消息");
+        // sending a message
+        asio::co_spawn(executor, 
+            serverManager.getPrivateRoom(
+                serverManager.getPrivateRoomId(
+                    this->m_user_id, friend_id))->sendMessage(
+                        msg, this->m_user_id), asio::detached);
 
-        co_return makeSuccessMessage("Successfully sending this message!");
+        serverLogger.info("User", static_cast<long long>(this->m_user_id), "sent a message to user", friend_id);
+
+        co_return makeSuccessMessage("Successfully sent a message!");
     }
 
     asio::awaitable<qjson::JObject> JsonMessageProcessImpl::sendGroupMessage(long long group_id, const std::string& msg)
     {
         if (!serverManager.getUser(this->m_user_id)->userHasGroup(group_id))
-            co_return makeErrorMessage("You don't has the group!");
+            co_return makeErrorMessage("You don't have this group!");
 
-        serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg);
-        serverLogger.info("用户", (long long)this->m_user_id, "向群聊", group_id, "发送消息");
+        auto executor = co_await asio::this_coro::executor;
+        asio::co_spawn(executor, serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg), asio::detached);
+        serverLogger.info("User", static_cast<long long>(this->m_user_id), "sent a message to group", group_id);
 
-        co_return makeSuccessMessage("Successfully sending this message!");
+        co_return makeSuccessMessage("Successfully sent a message!");
     }
 
     const std::multimap<std::string, long long> JsonMessageProcessImpl::m_function_map(
@@ -348,13 +366,13 @@ namespace qls
     // json process
     // -----------------------------------------------------------------------------------------------
 
-    asio::awaitable<long long> JsonMessageProcess::getLocalUserID() const
+    long long JsonMessageProcess::getLocalUserID() const
     {
-        return m_process->getLocalUserID();
+        return this->m_process->getLocalUserID();
     }
 
-    asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json)
+    asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
     {
-        return m_process->processJsonMessage(json);
+        co_return co_await this->m_process->processJsonMessage(json, sf);
     }
 }

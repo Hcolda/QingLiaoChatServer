@@ -7,7 +7,6 @@
 #include <atomic>
 #include <memory>
 
-#include "JsonMsgProcess.h"
 #include "dataPackage.h"
 #include "package.h"
 #include "network.h"
@@ -21,7 +20,7 @@ namespace qls
         SocketFunction() = default;
         ~SocketFunction() = default;
 
-        asio::awaitable<void> accecptFunction(asio::ip::tcp::socket& socket);
+        asio::awaitable<void> acceptFunction(asio::ip::tcp::socket& socket);
         asio::awaitable<void> receiveFunction(
             asio::ip::tcp::socket& socket,
             std::string data,
@@ -29,28 +28,34 @@ namespace qls
         asio::awaitable<void> closeFunction(asio::ip::tcp::socket& socket);
     };
 
+    struct SocketServiceImpl;
+
     class SocketService
     {
     public:
         SocketService(std::shared_ptr<Socket> socket_ptr);
         ~SocketService();
 
-        /*
-        * @brief 异步接收数据
+        /// @brief Get the socket pointer
+        /// @return Socket pointer
+        std::shared_ptr<Socket> get_socket_ptr() const;
+
+        /**
+        * @brief Asynchronously receive data
         * @param socket
-        * @return asio协程 std::string, std::shared_ptr<Network::Package::DataPackage>
+        * @return ASIO coroutine returning std::shared_ptr<Network::Package::DataPackage>
         */
         asio::awaitable<std::shared_ptr<qls::DataPackage>>
             async_receive();
 
-        /*
-        * @brief 异步发送消息
+        /**
+        * @brief Asynchronously send a message
         * @param socket
         * @param data
         * @param requestID = 0
         * @param type = 0
         * @param sequence = -1
-        * @return size 实际发送长度
+        * @return size Actual length sent
         */
         asio::awaitable<size_t> async_send(
             std::string_view data,
@@ -58,39 +63,34 @@ namespace qls
             int        type = 0,
             int        sequence = -1);
 
-        /*
-        * @brief 处理函数
+        /**
+        * @brief Process function
         * @param socket
-        * @param data 解密后的数据
-        * @param pack 原始数据包
+        * @param data Decrypted data
+        * @param pack Original data packet
         */
         asio::awaitable<void> process(
             std::shared_ptr<Socket> socket_ptr,
             const std::string& data, std::shared_ptr<qls::DataPackage> pack);
 
-        /*
-        * @brief 设置package
+        /**
+        * @brief Set the package buffer
         * @param package
         */
         void setPackageBuffer(const qls::Package& p);
 
-        /*
-        * @brief 将socket所有权交到SocketService中
-        * @param socket asio::socket类
-        * @param sds Network::SocketDataStructure类
-        * @return asio协程 asio::awaitable<void>
+        /**
+        * @brief Transfer socket ownership to SocketService
+        * @param socket ASIO socket class
+        * @param sds Network::SocketDataStructure class
+        * @return ASIO coroutine asio::awaitable<void>
         */
-        static asio::awaitable<void> echo(Socket socket,
+        static asio::awaitable<void> echo(std::shared_ptr<Socket> socket_ptr,
             std::shared_ptr<Network::SocketDataStructure> sds,
             std::chrono::steady_clock::time_point& deadline);
 
     private:
-        // socket ptr
-        std::shared_ptr<Socket> m_socket_ptr;
-        // JsonMsgProcess
-        JsonMessageProcess      m_jsonProcess;
-        // package
-        qls::Package            m_package;
+        std::shared_ptr<SocketServiceImpl> m_impl;
     };
 }
 

@@ -5,41 +5,63 @@
 
 namespace qls
 {
+    /**
+     * @brief Class representing verification status for a user within a group chat room.
+     */
     class GroupRoomVerification
     {
     public:
+        /**
+         * @brief Constructor to initialize GroupRoomVerification object.
+         * @param group_id ID of the group.
+         * @param user_id ID of the user.
+         */
         GroupRoomVerification(long long group_id, long long user_id);
+
+        /**
+         * @brief Copy constructor.
+         * @param grv Another GroupRoomVerification object to copy from.
+         */
         GroupRoomVerification(const GroupRoomVerification&);
+
+        /**
+         * @brief Move constructor.
+         * @param grv Another GroupRoomVerification object to move from.
+         */
         GroupRoomVerification(GroupRoomVerification&&) noexcept;
+
+        /**
+         * @brief Destructor (defaulted).
+         */
         ~GroupRoomVerification() = default;
 
-        /*
-        * @brief 设置群聊是否验证
-        * @param is_verified 是否验证
-        */
+        /**
+         * @brief Sets the verification status of the group chat room.
+         */
         void setGroupVerified();
 
-        /*
-        * @brief 获取群聊是否验证
-        * @return true 已验证 | false 未验证
-        */
+        /**
+         * @brief Gets the verification status of the group chat room.
+         * @return true if group is verified, false otherwise.
+         */
         bool getGroupVerified() const;
 
-        /*
-        * @brief 设置用户是否验证
-        * @param is_verified 是否验证
-        */
+        /**
+         * @brief Sets the verification status of the user.
+         */
         void setUserVerified();
 
-        /*
-        * @brief 获取用户是否验证
-        * @return true 已验证 | false 未验证
-        */
+        /**
+         * @brief Gets the verification status of the user.
+         * @return true if user is verified, false otherwise.
+         */
         bool getUserVerified() const;
 
     private:
-        const long long m_group_id, m_user_id;
-        std::atomic<bool> m_group_is_verified, m_user_is_verified;
+        const long long m_group_id; ///< ID of the group
+        const long long m_user_id;  ///< ID of the user
+        std::atomic<bool> m_group_is_verified; ///< Atomic flag for group verification status
+        std::atomic<bool> m_user_is_verified;  ///< Atomic flag for user verification status
     };
 }
 

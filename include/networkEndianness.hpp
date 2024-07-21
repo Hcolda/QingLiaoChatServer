@@ -1,5 +1,5 @@
-﻿#ifndef NETWORK_ENDINASS_HPP
-#define NETWORK_ENDINASS_HPP
+﻿#ifndef NETWORK_ENDIANNESS_HPP
+#define NETWORK_ENDIANNESS_HPP
 
 #include <concepts>
 
@@ -49,4 +49,4 @@ namespace qls
     }
 }
 
-#endif // !NETWORK_ENDINASS_HPP
+#endif // !NETWORK_ENDIANNESS_HPP

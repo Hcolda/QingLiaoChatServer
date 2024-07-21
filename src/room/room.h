@@ -1,13 +1,12 @@
 ﻿#ifndef ROOM_H
 #define ROOM_H
 
-#include <asio.hpp>
-#include <asio/ssl.hpp>
 #include <memory>
 #include <functional>
 #include <stdexcept>
+#include <string_view>
 
-#include "socket.h"
+#include "user.h"
 
 namespace qls
 {
@@ -22,18 +21,11 @@ namespace qls
         BaseRoom();
         virtual ~BaseRoom() = default;
 
-        virtual bool joinRoom(
-            const std::shared_ptr<Socket>& socket_ptr,
-            long long user_id);
+        virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
+        virtual bool leaveRoom(long long user_id);
 
-        virtual bool leaveRoom(long long user_id,
-            const std::shared_ptr<Socket>& socket_ptr);
-
-        virtual asio::awaitable<void> sendData(const std::string& data);
-        virtual asio::awaitable<void> sendData(const std::string& data, long long user_id);
-
-        virtual void sendData(const std::string& data, std::function<void(std::error_code, size_t)>);
-        virtual void sendData(const std::string& data, long long user_id, std::function<void(std::error_code, size_t)>);
+        virtual void sendData(std::string_view data);
+        virtual void sendData(std::string_view data, long long user_id);
 
     private:
         std::shared_ptr<BaseRoomImpl> m_impl;

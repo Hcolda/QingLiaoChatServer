@@ -28,21 +28,21 @@ public:
     ~Option() = default;
 
     /*
-    * @brief 添加参数
-    * @param opt_name 参数名称
-    * @param type 参数类型
+    * @brief Add an option
+    * @param opt_name Name of the option
+    * @param type Type of the option
     */
     void add(const std::string& opt_name, OptionType type)
     {
         if (type == OptionType::OPT_UNKNOWN)
-            throw std::logic_error("type cant be \"OPT_UNKNOWN\"");
+            throw std::logic_error("Option type cannot be \"OPT_UNKNOWN\"");
         
         m_opt_map[opt_name] = type;
     }
 
     /*
-    * @brief 删除参数
-    * @param opt_name 参数名称
+    * @brief Remove an option
+    * @param opt_name Name of the option
     */
     void remove(const std::string& opt_name)
     {
@@ -54,9 +54,9 @@ public:
     }
 
     /*
-    * @brief 解析字符串
-    * @param argc 参数个数
-    * @param argv 字符串参数
+    * @brief Parse command-line arguments
+    * @param argc Number of arguments
+    * @param argv Array of C-string arguments
     */
     void parse(int argc, char* const argv[])
     {
@@ -71,8 +71,8 @@ public:
     }
 
     /*
-    * @brief 解析字符串
-    * @param command 需要解析的完整字符串
+    * @brief Parse a command string
+    * @param command Full command string to parse
     */
     void parse(const std::string& command)
     {
@@ -99,8 +99,8 @@ public:
     }
 
     /*
-    * @brief 解析字符串
-    * @param args 字符串参数
+    * @brief Parse a list of string arguments
+    * @param args List of string arguments
     */
     void parse(const std::vector<std::string>& args)
     {
@@ -110,12 +110,12 @@ public:
 
             if (arg.substr(0, 1) != "-")
             {
-                // 忽略普通参数
+                // Ignore regular arguments
                 continue;
             }
             if (arg.substr(0, 2) == "--")
             {
-                // 长参数解析
+                // Long option parsing
 
                 std::string str = arg.substr(2);
                 if (str.empty())
@@ -124,17 +124,17 @@ public:
                 auto pos = str.find('=');
                 if (pos != std::string::npos)
                 {
-                    // 出现等号
+                    // Found '='
                     std::string opt_name = str.substr(0, pos);
                     std::string value = str.substr(pos + 1);
 
                     switch (get_type(opt_name))
                     {
                     case OptionType::OPT_UNKNOWN:
-                        throw std::logic_error("No option: " + opt_name);
+                        throw std::logic_error("No such option: " + opt_name);
 
                     case OptionType::OPT_NO:
-                        throw std::logic_error("No argument option: " + opt_name);
+                        throw std::logic_error("Option does not take an argument: " + opt_name);
 
                     case OptionType::OPT_OPTIONAL:
                     case OptionType::OPT_REQUIRED:
@@ -172,7 +172,7 @@ public:
                             break;
                         }
                         else
-                            throw std::logic_error("Option require argument: " + opt_name);
+                            throw std::logic_error("Option requires an argument: " + opt_name);
 
                     default:
                         break;
@@ -181,13 +181,13 @@ public:
             }
             else
             {
-                // 短参数解析
+                // Short option parsing
 
                 std::string str = arg.substr(1);
                 if (str.empty())
                     continue;
                 if (str.find('=') != std::string::npos)
-                    throw std::logic_error("Invalid argument option: " + str);
+                    throw std::logic_error("Invalid argument for option: " + str);
                 
                 std::string opt_name = str.substr(0, 1);
 
@@ -227,7 +227,7 @@ public:
                         break;
                     }
                     else
-                        throw std::logic_error("Option require argument: " + opt_name);
+                        throw std::logic_error("Option requires an argument: " + opt_name);
                 }
                     break;
 
@@ -238,49 +238,81 @@ public:
         }
     }
 
+    /*
+    * @brief Check if an option exists
+    * @param opt Option name
+    * @return True if the option exists, false otherwise
+    */
     bool has_opt(const std::string& opt) const
     {
         return  m_opt_map.find(opt) != m_opt_map.end() &&
                 m_args_map.find(opt) != m_args_map.end();
     }
 
+    /*
+    * @brief Get the boolean value of an option
+    * @param opt Option name
+    * @return Boolean value of the option
+    * @throw std::logic_error If the option does not exist or is not a boolean
+    */
     bool get_bool(const std::string& opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No option: " + opt);
+            throw std::logic_error("No such option: " + opt);
 
         if (m_args_map.find(opt)->second == "true")
             return true;
         else if (m_args_map.find(opt)->second == "false")
             return false;
         else
-            throw std::logic_error("No bool option: " + opt);
+            throw std::logic_error("Option is not a boolean: " + opt);
     }
 
+    /*
+    * @brief Get the string value of an option
+    * @param opt Option name
+    * @return String value of the option
+    * @throw std::logic_error If the option does not exist
+    */
     std::string get_string(const std::string& opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No option: " + opt);
+            throw std::logic_error("No such option: " + opt);
 
         return m_args_map.find(opt)->second;
     }
 
+    /*
+    * @brief Get the integer value of an option
+    * @param opt Option name
+    * @return Integer value of the option
+    * @throw std::logic_error If the option does not exist or is not an integer
+    */
     long long get_int(const std::string& opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No option: " + opt);
+            throw std::logic_error("No such option: " + opt);
         
         return std::stoll(m_args_map.find(opt)->second);
     }
 
+    /*
+    * @brief Get the double value of an option
+    * @param opt Option name
+    * @return Double value of the option
+    * @throw std::logic_error If the option does not exist or is not a double
+    */
     long double get_double(const std::string& opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No option: " + opt);
+            throw std::logic_error("No such option: " + opt);
         
         return std::stold(m_args_map.find(opt)->second);
     }
 
+    /*
+    * @brief Display the current state of the option maps
+    */
     void show() const
     {
         std::cout << "m_opt_map\n";
@@ -318,8 +350,9 @@ public:
 
 protected:
     /*
-    * @brief 获取参数type
-    * @param opt 参数
+    * @brief Get the type of an option
+    * @param opt Option name
+    * @return Type of the option
     */
     OptionType get_type(const std::string& opt) const
     {
@@ -333,10 +366,10 @@ protected:
     }
 
 private:
-    std::unordered_map<std::string, OptionType>     m_opt_map;
-    std::unordered_map<std::string, std::string>    m_args_map;
+    std::unordered_map<std::string, OptionType>     m_opt_map;   // Map to store option names and their types
+    std::unordered_map<std::string, std::string>    m_args_map;  // Map to store option names and their argument values
 };
 
 NAMESPACE_OPTION_END
 
-#endif
+#endif // OPTION_HPP

@@ -7,18 +7,22 @@
 
 namespace qls
 {
+    /**
+     * @class DataPackage
+     * @brief Represents a data package with metadata and binary data.
+     */
     class DataPackage
     {
     private:
 #pragma pack(1)
-        int                 length = 0;
+        int                 length = 0;           ///< Length of the data package.
     public:
-        long long           requestID = 0;
-        int                 type = 0;
-        int                 sequence = -1;
+        long long           requestID = 0;        ///< Request ID associated with the data package.
+        int                 type = 0;             ///< Type identifier of the data package.
+        int                 sequence = -1;        ///< Sequence number of the data package.
     private:
-        unsigned long long  verifyCode = 0;
-        char                data[2]{ 0 };
+        unsigned long long  verifyCode = 0;       ///< Verification code for the data package.
+        char                data[2]{ 0 };         ///< Data buffer of the data package.
 #pragma pack()
 
     public:
@@ -27,32 +31,48 @@ namespace qls
         DataPackage(const DataPackage&) = delete;
         DataPackage(DataPackage&& dp) = delete;
 
-        /// @brief Make data package
-        /// @param data Original data would be stored in the data package
-        /// @return Shared pointer of data package
+        /**
+         * @brief Creates a data package from the given data.
+         * @param data Original data to be stored in the data package.
+         * @return Shared pointer to the created data package.
+         */
         static std::shared_ptr<DataPackage> makePackage(std::string_view data);
 
-        /// @brief Load data package from binary data
-        /// @param data Binary data
-        /// @return Shared pointer of data package
+        /**
+         * @brief Loads a data package from binary data.
+         * @param data Binary data representing a data package.
+         * @return Shared pointer to the loaded data package.
+         */
         static std::shared_ptr<DataPackage> stringToPackage(const std::string& data);
 
-        /// @brief Generate binary data for this data package
-        /// @return binary data
+        /**
+         * @brief Converts this data package to a binary string.
+         * @return Binary data representing this data package.
+         */
         std::string packageToString() noexcept;
 
-        /// @brief Get the size of this data package
-        /// @return Size of this data package
+        /**
+         * @brief Gets the size of this data package.
+         * @return Size of this data package.
+         */
         size_t getPackageSize() noexcept;
 
-        /// @brief Get the size of the original data in this data package
-        /// @return Size of the original data in this data package
+        /**
+         * @brief Gets the size of the original data in this data package.
+         * @return Size of the original data in this data package.
+         */
         size_t getDataSize() noexcept;
 
-        /// @brief Get the original data in this data package
-        /// @return original data in this data package
+        /**
+         * @brief Gets the original data in this data package.
+         * @return Original data in this data package.
+         */
         std::string getData();
 
+        /**
+         * @brief Deletes a data package.
+         * @param dp Pointer to the data package to be deleted.
+         */
         static void deleteDataPackage(DataPackage* dp);
     };
 }

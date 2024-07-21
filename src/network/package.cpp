@@ -1,8 +1,9 @@
 ﻿#include "package.h"
 
 #include <stdexcept>
+#include <cstring>
 
-#include "networkEndinass.hpp"
+#include "networkEndianness.hpp"
 
 void qls::Package::write(std::string_view data)
 {
@@ -63,10 +64,10 @@ void qls::Package::setBuffer(const std::string& b)
 
 std::string qls::Package::makePackage(std::string_view data)
 {
-    int lenght = static_cast<int>(data.size());
+    int length = static_cast<int>(data.size());
     std::string result;
     result.resize(sizeof(int));
-    std::memcpy(result.data(), result.data(), sizeof(int));
+    std::memcpy(result.data(), &length, sizeof(int));
     result += data;
 
     return result;

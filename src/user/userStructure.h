@@ -9,7 +9,7 @@ namespace qls
 enum class DeviceType
 {
     Unknown = 0,
-    Personal_Computer,
+    PersonalComputer,
     Phone,
     Web
 };

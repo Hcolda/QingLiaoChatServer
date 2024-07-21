@@ -15,6 +15,7 @@
 #include "definition.hpp"
 #include "package.h"
 #include "dataPackage.h"
+#include "socket.h"
 
 namespace qls
 {
@@ -25,23 +26,34 @@ namespace qls
     using asio::use_awaitable;
     namespace this_coro = asio::this_coro;
 
-    /*
-    * @brief 读取socket地址到string
-    * @param socket
-    * @return string socket的地址
-    */
-    inline std::string socket2ip(const asio::ip::tcp::socket& s);
-    inline std::string socket2ip(const asio::ssl::stream<tcp::socket>& s);
+    /**
+     * @brief Converts a socket's address to a string representation.
+     * @param s The socket.
+     * @return The string representation of the socket's address.
+     */
+    inline std::string socket2ip(const qls::Socket& s);
 
+    /**
+     * @brief Displays binary data as a string.
+     * @param data The binary data.
+     * @return The string representation of the binary data.
+     */
     inline std::string showBinaryData(const std::string& data);
 
+    /**
+     * @class Network
+     * @brief Manages network operations including connection handling and data transmission.
+     */
     class Network
     {
     public:
+        /**
+         * @struct SocketDataStructure
+         * @brief Structure to hold data associated with a socket.
+         */
         struct SocketDataStructure
         {
-            // 用于接收数据包
-            qls::Package package;
+            qls::Package package; ///< Package used to receive data.
         };
 
         using acceptFunction = std::function<asio::awaitable<void>(tcp::socket&)>;
@@ -51,34 +63,50 @@ namespace qls
         Network();
         ~Network();
 
-        /*
-        * @brief 设置tls
-        * @param callback_handle 用于设置tls的回调函数
-        */
-        void set_tls_config(std::function<std::shared_ptr<
-            asio::ssl::context>()> callback_handle);
+        /**
+         * @brief Sets the TLS configuration.
+         * @param callback_handle A callback function to configure TLS.
+         */
+        void set_tls_config(std::function<std::shared_ptr<asio::ssl::context>()> callback_handle);
 
-        /*
-        * @brief 运行network
-        * @param host 主机地址
-        * @param port 端口
-        */
+        /**
+         * @brief Runs the network.
+         * @param host The host address.
+         * @param port The port number.
+         */
         void run(std::string_view host, unsigned short port);
 
+        /**
+         * @brief Stops the network operations.
+         */
         void stop();
 
     private:
+        /**
+         * @brief Retrieves the password for the SSL context.
+         * @return The password string.
+         */
         std::string get_password() const;
+
+        /**
+         * @brief Handles echo functionality for a socket.
+         * @param socket The socket.
+         * @return An awaitable task.
+         */
         awaitable<void> echo(tcp::socket socket);
+
+        /**
+         * @brief Listens for incoming connections.
+         * @return An awaitable task.
+         */
         awaitable<void> listener();
 
-        std::string                     host_;
-        unsigned short                  port_;
-        std::unique_ptr<std::thread[]>  threads_;
-        const int                       thread_num_;
-        asio::io_context                io_context_;
-        std::shared_ptr<
-            asio::ssl::context>         ssl_context_ptr_;
+        std::string                         host_; ///< Host address.
+        unsigned short                      port_; ///< Port number.
+        std::unique_ptr<std::thread[]>      threads_; ///< Thread pool for handling connections.
+        const int                           thread_num_; ///< Number of threads.
+        asio::io_context                    io_context_; ///< IO context for ASIO.
+        std::shared_ptr<asio::ssl::context> ssl_context_ptr_; ///< Shared pointer to the SSL context.
     };
 }
 
