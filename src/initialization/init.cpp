@@ -155,6 +155,7 @@ namespace qls
             serverLogger.info("Server command line starting...");
             std::thread([](){
                 Input input;
+                input.init();
                 std::string command;
                 char buffer[1024] {0};
                 while (true)
