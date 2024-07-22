@@ -192,7 +192,6 @@ namespace qls
         json["data"]["message"] = message;
 
         sendData(qjson::JWriter::fastWrite(json), receiver_user_id);
-        return;
     }
 
     void GroupRoom::getMessage(
