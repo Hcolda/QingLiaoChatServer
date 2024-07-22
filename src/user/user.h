@@ -62,8 +62,41 @@ namespace qls
         std::unordered_set<long long> getFriendList() const;
         std::unordered_set<long long> getGroupList() const;
 
-        void updateFriendList(std::unordered_set<long long>);
-        void updateGroupList(std::unordered_set<long long>);
+        /**
+         * @brief Updates the friend list with a new set of friends.
+         * 
+         * @tparam T The type of the container holding the friend list.
+         * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+         * @param set The new friend list to be updated.
+         */
+        template<typename T,
+            typename Y = std::enable_if_t<
+                std::is_same_v<
+                    std::remove_const_t<std::remove_reference_t<T>>,
+                        std::unordered_set<long long>>>>
+        void updateFriendList(T&& set)
+        {
+            std::unique_lock<std::shared_mutex> ul(m_user_friend_map_mutex);
+            this->m_user_friend_map = std::forward<T>(set);
+        }
+
+        /**
+         * @brief Updates the group list with a new set of groups.
+         * 
+         * @tparam T The type of the container holding the group list.
+         * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+         * @param set The new group list to be updated.
+         */
+        template<typename T,
+            typename Y = std::enable_if_t<
+                std::is_same_v<
+                    std::remove_const_t<std::remove_reference_t<T>>,
+                        std::unordered_set<long long>>>>
+        void updateGroupList(T&& set)
+        {
+            std::unique_lock<std::shared_mutex> ul(m_user_group_map_mutex);
+            m_user_group_map = std::forward<T>(set);
+        }
 
         /**
          * @brief Adds a friend to the user's friend list.

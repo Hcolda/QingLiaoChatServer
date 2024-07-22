@@ -205,18 +205,6 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(m_user_group_map_mutex);
         return m_user_group_map;
     }
-
-    void User::updateFriendList(std::unordered_set<long long> set)
-    {
-        std::unique_lock<std::shared_mutex> ul(m_user_friend_map_mutex);
-        this->m_user_friend_map = std::move(set);
-    }
-
-    void User::updateGroupList(std::unordered_set<long long> set)
-    {
-        std::unique_lock<std::shared_mutex> ul(m_user_group_map_mutex);
-        m_user_group_map = std::move(set);
-    }
     
     bool User::addFriend(long long friend_user_id)
     {
