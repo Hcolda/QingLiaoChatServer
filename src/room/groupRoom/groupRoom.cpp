@@ -152,7 +152,6 @@ namespace qls
         json["data"]["message"] = message;
 
         sendData(qjson::JWriter::fastWrite(json));
-        return;
     }
 
     void GroupRoom::sendUserTipMessage(long long sender_user_id,
