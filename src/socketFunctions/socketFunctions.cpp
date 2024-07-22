@@ -1,6 +1,7 @@
 ﻿#include "socketFunctions.h"
 
 #include <asio/experimental/awaitable_operators.hpp>
+#include <system_error>
 #include <Logger.hpp>
 #include <Json.h>
 
@@ -8,6 +9,7 @@
 #include "manager.h"
 #include "returnStateMessage.hpp"
 #include "JsonMsgProcess.h"
+#include "qls_error.h"
 
 extern Log::Logger serverLogger;
 extern qls::Manager serverManager;
@@ -56,7 +58,7 @@ namespace qls
         m_impl(std::make_shared<SocketServiceImpl>(socket_ptr, -1))
     {
         if (socket_ptr.get() == nullptr)
-            throw std::logic_error("socket_ptr is nullptr");
+            throw std::system_error(qls::qls_errc::null_socket_pointer);
     }
 
     SocketService::~SocketService()
@@ -200,13 +202,14 @@ namespace qls
         }
         catch (const std::system_error& e)
         {
-            if (e.code().message() == "End of file")
+            const auto& errc = e.code();
+            if (errc.message() == "End of file")
             {
                 serverLogger.info(std::format("[{}] disconnected from the server", addr));
             }
             else
             {
-                serverLogger.error("[", addr, "]", e.code().message());
+                serverLogger.error('[', addr, ']', '[', errc.category().name(), ']', errc.message());
             }
         }
         catch (const std::exception& e)

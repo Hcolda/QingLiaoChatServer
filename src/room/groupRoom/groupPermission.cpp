@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <stdexcept>
 #include <mutex>
+#include <system_error>
+
+#include "qls_error.h"
 
 namespace qls
 {
@@ -19,7 +22,7 @@ namespace qls
         // 是否有此权限
         auto itor = m_permission_map.find(permissionName);
         if (itor == m_permission_map.end())
-            throw std::invalid_argument("No permission: " + permissionName);
+            throw std::system_error(qls_errc::no_permission, "no permission: " + permissionName);
 
         m_permission_map.erase(itor);
     }
@@ -31,7 +34,7 @@ namespace qls
         // 是否有此权限
         auto itor = m_permission_map.find(permissionName);
         if (itor == m_permission_map.end())
-            throw std::invalid_argument("No permission: " + permissionName);
+            throw std::system_error(qls_errc::no_permission, "no permission: " + permissionName);
 
         return itor->second;
     }
@@ -55,7 +58,7 @@ namespace qls
         // 是否有此user
         auto itor = m_user_permission_map.find(user_id);
         if (itor == m_user_permission_map.end())
-            throw std::invalid_argument("No user: " + std::to_string(user_id));
+            throw std::system_error(qls_errc::user_not_existed, "no user: " + std::to_string(user_id));
 
         m_user_permission_map.erase(itor);
     }
@@ -70,12 +73,12 @@ namespace qls
         // 是否有此user
         auto itor = m_user_permission_map.find(user_id);
         if (itor == m_user_permission_map.end())
-            throw std::invalid_argument("No user: " + std::to_string(user_id));
+            throw std::system_error(qls_errc::user_not_existed, "no user: " + std::to_string(user_id));
 
         // 是否有此权限
         auto itor2 = m_permission_map.find(permissionName);
         if (itor2 == m_permission_map.end())
-            throw std::invalid_argument("No permission: " + permissionName);
+            throw std::system_error(qls_errc::no_permission, "no permission: " + permissionName);
 
         // 返回权限
         return itor->second >= itor2->second;
@@ -88,7 +91,7 @@ namespace qls
         // 是否有此user
         auto itor = m_user_permission_map.find(user_id);
         if (itor == m_user_permission_map.end())
-            throw std::invalid_argument("No user: " + std::to_string(user_id));
+            throw std::system_error(qls_errc::user_not_existed, "no user: " + std::to_string(user_id));
 
         return itor->second;
     }

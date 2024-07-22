@@ -1,6 +1,8 @@
 ﻿#include "friendRoomVerification.h"
 
-#include <stdexcept>
+#include <system_error>
+
+#include "qls_error.h"
 
 qls::FriendRoomVerification::FriendRoomVerification(long long user_id_1, long long user_id_2) :
     m_user_id_1(user_id_1),
@@ -30,7 +32,7 @@ qls::FriendRoomVerification::FriendRoomVerification(FriendRoomVerification&& f) 
 void qls::FriendRoomVerification::setUserVerified(long long user_id)
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
-        throw std::invalid_argument("Wrong user_id!");
+        throw std::system_error(qls_errc::user_not_existed);
 
     if (user_id == m_user_id_1)
         m_user_1_is_verified = true;
@@ -41,7 +43,7 @@ void qls::FriendRoomVerification::setUserVerified(long long user_id)
 bool qls::FriendRoomVerification::getUserVerified(long long user_id) const
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
-        throw std::invalid_argument("Wrong user_id!");
+        throw std::system_error(qls_errc::user_not_existed);
 
     if (user_id == m_user_id_1)
         return m_user_1_is_verified;

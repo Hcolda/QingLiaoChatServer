@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <Json.h>
+#include "qls_error.h"
 
 namespace qls
 {
@@ -23,12 +24,13 @@ namespace qls
         }
     }
 
-    asio::awaitable<void> PrivateRoom::sendMessage(const std::string& message,
+    void PrivateRoom::sendMessage(const std::string& message,
         long long sender_user_id)
     {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        if (!this->m_can_be_used)
+            throw std::system_error(qls_errc::private_room_unable_to_use);
         if (!hasUser(sender_user_id))
-            co_return;
+            return;
 
         // 存储数据
         {
@@ -46,15 +48,15 @@ namespace qls
         json["data"]["message"] = message;
 
         sendData(qjson::JWriter::fastWrite(json));
-        co_return;
     }
 
-    asio::awaitable<void> PrivateRoom::sendTipMessage(const std::string& message,
+    void PrivateRoom::sendTipMessage(const std::string& message,
         long long sender_user_id)
     {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        if (!this->m_can_be_used)
+            throw std::system_error(qls_errc::private_room_unable_to_use);
         if (!hasUser(sender_user_id))
-            co_return;
+            return;
         
         // 存储数据
         {
@@ -72,13 +74,13 @@ namespace qls
         json["data"]["message"] = message;
 
         sendData(qjson::JWriter::fastWrite(json));
-        co_return;
     }
 
-    asio::awaitable<void> PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from, const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
+    void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from, const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
     {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
-        if (from > to) co_return;
+        if (!this->m_can_be_used)
+            throw std::system_error(qls_errc::private_room_unable_to_use);
+        if (from > to) return;
 
         auto searchPoint = [this](
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& p,
@@ -116,7 +118,7 @@ namespace qls
         {
             sendData(
                 qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
-            co_return;
+            return;
         }
 
         std::sort(m_message_queue.begin(), m_message_queue.end(), [](
@@ -160,24 +162,26 @@ namespace qls
         }
 
         sendData(qjson::JWriter::fastWrite(returnJson));
-        co_return;
     }
 
     long long PrivateRoom::getUserID1() const
     {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        if (!this->m_can_be_used)
+            throw std::system_error(qls_errc::private_room_unable_to_use);
         return m_user_id_1;
     }
 
     long long PrivateRoom::getUserID2() const
     {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        if (!this->m_can_be_used)
+            throw std::system_error(qls_errc::private_room_unable_to_use);
         return m_user_id_1;
     }
 
     bool PrivateRoom::hasUser(long long user_id) const
     {
-        if (!this->m_can_be_used) throw std::logic_error("This room can't be used");
+        if (!this->m_can_be_used)
+            throw std::system_error(qls_errc::private_room_unable_to_use);
         return user_id == m_user_id_1 || user_id == m_user_id_2;
     }
 
