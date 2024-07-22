@@ -284,7 +284,6 @@ namespace qls
         }
 
         sendData(qjson::JWriter::fastWrite(returnJson));
-        return;
     }
 
     bool GroupRoom::hasUser(long long user_id) const
