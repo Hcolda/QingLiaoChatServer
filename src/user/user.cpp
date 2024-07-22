@@ -221,6 +221,15 @@ namespace qls
         else return false;
     }
 
+    void User::removeFriendVerification(long long friend_user_id)
+    {
+        std::unique_lock<std::shared_mutex> ul(m_user_friend_verification_map_mutex);
+        auto itor = m_user_friend_verification_map.find(friend_user_id);
+        if (itor == m_user_friend_verification_map.end())
+            throw std::system_error(qls_errc::private_room_verification_not_existed);
+        m_user_friend_verification_map.erase(itor);
+    }
+
     std::unordered_map<long long, UserVerificationStruct> User::getFriendVerificationList() const
     {
         std::shared_lock<std::shared_mutex> sl(m_user_friend_verification_map_mutex);
@@ -240,6 +249,23 @@ namespace qls
             return true;
         }
         else return false;
+    }
+
+    void User::removeGroupVerification(long long group_id, long long user_id)
+    {
+        std::unique_lock<std::shared_mutex> ul(m_user_group_verification_map_mutex);
+        size_t size = m_user_group_verification_map.count(group_id);
+        if (!size) throw std::system_error(qls_errc::group_room_verification_not_existed);
+
+        auto itor = m_user_group_verification_map.find(group_id);
+        for (; itor->first == group_id && itor != m_user_group_verification_map.end(); itor++)
+        {
+            if (itor->second.user_id == user_id)
+            {
+                m_user_group_verification_map.erase(itor);
+                break;
+            }
+        }
     }
 
     std::multimap<long long, UserVerificationStruct> User::getGroupVerificationList() const

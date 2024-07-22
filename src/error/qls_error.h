@@ -34,13 +34,16 @@ namespace qls
         // private room error
         private_room_not_existed,
         private_room_unable_to_use,
+        private_room_verification_not_existed,
 
         // group room error
         group_room_not_existed,
         group_room_unable_to_use,
+        group_room_verification_not_existed,
 
         // permission error
         no_permission,
+        permission_denied
     };
 
     std::error_code make_error_code(qls::qls_errc errc) noexcept;

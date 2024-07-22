@@ -12,6 +12,7 @@
 
 #include "socket.h"
 #include "userStructure.h"
+#include "qls_error.h"
 
 namespace qls
 {
@@ -69,16 +70,11 @@ namespace qls
          * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
          * @param set The new friend list to be updated.
          */
-        template<typename T,
-            typename Y = std::enable_if_t<
-                std::is_same_v<
-                    std::remove_const_t<std::remove_reference_t<T>>,
-                        std::unordered_set<long long>>>>
-        void updateFriendList(T&& set)
-        {
-            std::unique_lock<std::shared_mutex> ul(m_user_friend_map_mutex);
-            this->m_user_friend_map = std::forward<T>(set);
-        }
+        template<class T, class Y =
+            std::enable_if_t<std::is_same_v<
+            std::remove_const_t<std::remove_reference_t<T>>,
+            std::unordered_set<long long>>>>
+        void updateFriendList(T&& set);
 
         /**
          * @brief Updates the group list with a new set of groups.
@@ -87,16 +83,11 @@ namespace qls
          * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
          * @param set The new group list to be updated.
          */
-        template<typename T,
-            typename Y = std::enable_if_t<
-                std::is_same_v<
-                    std::remove_const_t<std::remove_reference_t<T>>,
-                        std::unordered_set<long long>>>>
-        void updateGroupList(T&& set)
-        {
-            std::unique_lock<std::shared_mutex> ul(m_user_group_map_mutex);
-            m_user_group_map = std::forward<T>(set);
-        }
+        template<class T, class Y =
+            std::enable_if_t<std::is_same_v<
+            std::remove_const_t<std::remove_reference_t<T>>,
+            std::unordered_set<long long>>>>
+        void updateGroupList(T&& set);
 
         /**
          * @brief Adds a friend to the user's friend list.
@@ -115,24 +106,13 @@ namespace qls
             std::enable_if_t<std::is_same_v<
             std::remove_const_t<std::remove_reference_t<T>>,
             UserVerificationStruct>>>
-        void addFriendVerification(long long friend_user_id, T&& u)
-        {
-            std::unique_lock<std::shared_mutex> ul(m_user_friend_verification_map_mutex);
-            m_user_friend_verification_map.emplace(friend_user_id, std::forward<T>(u));
-        }
+        void addFriendVerification(long long friend_user_id, T&& u);
 
         /**
          * @brief Removes a friend verification entry.
          * @param friend_user_id The ID of the friend to remove verification for.
          */
-        void removeFriendVerification(long long friend_user_id)
-        {
-            std::unique_lock<std::shared_mutex> ul(m_user_friend_verification_map_mutex);
-            auto itor = m_user_friend_verification_map.find(friend_user_id);
-            if (itor == m_user_friend_verification_map.end())
-                throw std::invalid_argument("There is not any friend verification!");
-            m_user_friend_verification_map.erase(itor);
-        }
+        void removeFriendVerification(long long friend_user_id);
 
         /**
          * @brief Retrieves the list of friend verification entries.
@@ -158,33 +138,14 @@ namespace qls
             std::enable_if_t<std::is_same_v<
             std::remove_const_t<std::remove_reference_t<T>>,
             UserVerificationStruct>>>
-        void addGroupVerification(long long group_id, T&& u)
-        {
-            std::unique_lock<std::shared_mutex> ul(m_user_group_verification_map_mutex);
-            m_user_group_verification_map.insert({ group_id, std::forward<T>(u) });
-        }
+        void addGroupVerification(long long group_id, T&& u);
 
         /**
          * @brief Removes a group verification entry.
          * @param group_id The ID of the group to remove verification for.
          * @param user_id The ID of the user to remove verification for.
          */
-        void removeGroupVerification(long long group_id, long long user_id)
-        {
-            std::unique_lock<std::shared_mutex> ul(m_user_group_verification_map_mutex);
-            size_t size = m_user_group_verification_map.count(group_id);
-            if (!size) throw std::invalid_argument("There is not any group verification!");
-
-            auto itor = m_user_group_verification_map.find(group_id);
-            for (; itor->first == group_id && itor != m_user_group_verification_map.end(); itor++)
-            {
-                if (itor->second.user_id == user_id)
-                {
-                    m_user_group_verification_map.erase(itor);
-                    break;
-                }
-            }
-        }
+        void removeGroupVerification(long long group_id, long long user_id);
 
         /**
          * @brief Retrieves the list of group verification entries.
@@ -266,5 +227,7 @@ namespace qls
         mutable std::shared_mutex       m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
     };
 }
+
+#include "user.tpp"
 
 #endif // !USER_H
