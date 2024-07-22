@@ -37,9 +37,9 @@ namespace qls
 
         ~PrivateRoom() = default;
 
-        asio::awaitable<void> sendMessage(const std::string& message, long long sender_user_id);
-        asio::awaitable<void> sendTipMessage(const std::string& message, long long sender_user_id);
-        asio::awaitable<void> getMessage(
+        void sendMessage(const std::string& message, long long sender_user_id);
+        void sendTipMessage(const std::string& message, long long sender_user_id);
+        void getMessage(
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 

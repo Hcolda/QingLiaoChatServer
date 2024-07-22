@@ -6,6 +6,7 @@
 
 #include "manager.h"
 #include "Logger.hpp"
+#include "qls_error.h"
 
 // 服务器log系统
 extern Log::Logger serverLogger;
@@ -118,7 +119,7 @@ namespace qls
     void User::firstUpdateUserPassword(const std::string& new_password)
     {
         if (!password.empty())
-            throw std::invalid_argument("This user has set password!");
+            throw std::system_error(qls_errc::password_already_set);
 
         std::hash<std::string>  string_hash;
         std::mt19937_64         mt(std::random_device{}());
@@ -150,7 +151,7 @@ namespace qls
     void User::updateUserPassword(const std::string& old_password, const std::string& new_password)
     {
         if (!this->isUserPassword(old_password))
-            throw std::invalid_argument("Wrong old password!");
+            throw std::system_error(qls_errc::password_mismatched, "wrong old password");
 
         std::hash<std::string>  string_hash;
         std::mt19937_64         mt(std::random_device{}());
@@ -263,7 +264,7 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
         if (m_socket_map.find(socket_ptr) == m_socket_map.cend())
-            throw std::logic_error("The same socket pointer has existed!");
+            throw std::system_error(qls_errc::socket_pointer_existed);
 
         m_socket_map.emplace(socket_ptr, type);
     }
@@ -279,7 +280,7 @@ namespace qls
         std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
-            throw std::logic_error("The socket pointer doesn't exist!");
+            throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
 
         iter->second = type;
     }
@@ -289,7 +290,7 @@ namespace qls
         std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
-            throw std::logic_error("The socket pointer doesn't exist!");
+            throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
         
         m_socket_map.erase(iter);
     }
@@ -301,7 +302,7 @@ namespace qls
         {
             asio::async_write(*socket_ptr, asio::buffer(data),
                 [this](std::error_code ec, size_t n){
-                    if (ec) serverLogger.error("Error occured at asio::async_write with: ",
+                    if (ec) serverLogger.error('[', ec.category().name(), ']',
                         ec.message());
                 });
         }
@@ -316,7 +317,7 @@ namespace qls
             {
                 asio::async_write(*socket_ptr, asio::buffer(data),
                     [this](std::error_code ec, size_t n){
-                        if (ec) serverLogger.error("Error occured at asio::async_write with: ",
+                        if (ec) serverLogger.error('[', ec.category().name(), ']',
                             ec.message());
                     });
             }

@@ -2,6 +2,7 @@
 
 #include <asio/experimental/awaitable_operators.hpp>
 #include <Logger.hpp>
+#include <system_error>
 #include <Json.h>
 #include <Ini.h>
 
@@ -9,6 +10,7 @@
 #include "definition.hpp"
 #include "socket.h"
 #include "manager.h"
+#include "qls_error.h"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -39,10 +41,10 @@ void qls::Network::set_tls_config(
         asio::ssl::context>()> callback_handle)
 {
     if (!callback_handle)
-        throw std::logic_error("TLS callback_handle could not be nullptr");
+        throw std::system_error(qls_errc::null_tls_callback_handle);
     ssl_context_ptr_ = callback_handle();
     if (!ssl_context_ptr_)
-        throw std::logic_error("TLS context is nullptr");
+        throw std::system_error(qls_errc::null_tls_context);
 }
 
 void qls::Network::run(std::string_view host, unsigned short port)
@@ -52,8 +54,7 @@ void qls::Network::run(std::string_view host, unsigned short port)
 
     // Check if SSL context ptr is null
     if (!ssl_context_ptr_)
-        throw std::logic_error("TLS context is nullptr, "
-            "please call Network::set_tls_config() function");
+        throw std::system_error(qls_errc::null_tls_context);
 
     try
     {
@@ -134,7 +135,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                             sds->package.read()));
                     if (datapack->type == 4) continue;
                     if (datapack->getData() != "test")
-                        throw std::logic_error("Test error!");
+                        throw std::system_error(qls_errc::connection_test_failed);
                 }
                 catch (const std::exception& e)
                 {
@@ -166,13 +167,14 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     }
                     catch (const std::system_error& e)
                     {
-                        if (e.code().message() == "End of file")
+                        const auto& errc = e.code();
+                        if (errc.message() == "End of file")
                         {
                             serverLogger.info(std::format("[{}] disconnected from the server", addr));
                         }
                         else
                         {
-                            serverLogger.error(e.code().message());
+                            serverLogger.error('[', errc.category().name(), ']', errc.message());
                         }
                     }
                     catch (const std::exception& e)
@@ -190,13 +192,14 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     }
     catch (const std::system_error& e)
     {
-        if (e.code().message() == "End of file")
+        const auto& errc = e.code();
+        if (errc.message() == "End of file")
         {
             serverLogger.info(std::format("[{}] disconnected from the server", addr));
         }
         else
         {
-            serverLogger.error(e.code().message());
+            serverLogger.error('[', errc.category().name(), ']', errc.message());
         }
     }
     catch (const std::exception& e)

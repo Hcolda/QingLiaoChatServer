@@ -36,7 +36,8 @@ add_executable(QingLiaoChatServer
     "src/room/groupRoom/groupPermission.cpp"
     "src/network/socket.cpp"
     "src/input/input.cpp"
-    "src/input/inputCommands.cpp")
+    "src/input/inputCommands.cpp"
+    "src/error/qls_error.cpp")
 
 set_property(TARGET QingLiaoChatServer PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -53,6 +54,7 @@ target_include_directories(QingLiaoChatServer PUBLIC src/room/)
 target_include_directories(QingLiaoChatServer PUBLIC src/socketFunctions/)
 target_include_directories(QingLiaoChatServer PUBLIC src/user/)
 target_include_directories(QingLiaoChatServer PUBLIC src/input/)
+target_include_directories(QingLiaoChatServer PUBLIC src/error/)
 
 target_link_libraries(QingLiaoChatServer PRIVATE
   OpenSSL::SSL

@@ -43,10 +43,10 @@ namespace qls
         bool addMember(long long user_id);
         bool removeMember(long long user_id);
         
-        asio::awaitable<void> sendMessage(long long sender_user_id, const std::string& message);
-        asio::awaitable<void> sendTipMessage(long long sender_user_id, const std::string& message);
-        asio::awaitable<void> sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
-        asio::awaitable<void> getMessage(
+        void sendMessage(long long sender_user_id, const std::string& message);
+        void sendTipMessage(long long sender_user_id, const std::string& message);
+        void sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
+        void getMessage(
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
             const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 

@@ -1,10 +1,11 @@
 ﻿#include "manager.h"
 
-#include <stdexcept>
+#include <system_error>
 #include <Ini.h>
 
 #include "user.h"
 #include "dataPackage.h"
+#include "qls_error.h"
 
 extern qini::INIObject serverIni;
 
@@ -72,7 +73,7 @@ namespace qls
         {
             return m_userID_to_privateRoomID_map.find({ user2_id , user1_id })->second;
         }
-        else throw std::invalid_argument("The private room doesn't exist!");
+        else throw std::system_error(qls_errc::private_room_not_existed);
     }
 
     bool Manager::hasPrivateRoom(long long private_room_id) const
@@ -87,7 +88,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(m_basePrivateRoom_map_mutex);
         auto itor = m_basePrivateRoom_map.find(private_room_id);
         if (itor == m_basePrivateRoom_map.end())
-            throw std::invalid_argument("The private room doesn't exist!");
+            throw std::system_error(qls_errc::private_room_not_existed);
         return itor->second;
     }
 
@@ -99,7 +100,7 @@ namespace qls
 
         auto itor = m_basePrivateRoom_map.find(private_room_id);
         if (itor == m_basePrivateRoom_map.end())
-            throw std::invalid_argument("The private room doesn't exist!");
+            throw std::system_error(qls_errc::private_room_not_existed);
 
         {
             /*
@@ -154,7 +155,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> lock(m_baseRoom_map_mutex);
         auto itor = m_baseRoom_map.find(group_room_id);
         if (itor == m_baseRoom_map.end())
-            throw std::invalid_argument("The group room doesn't exist!");
+            throw std::system_error(qls_errc::group_room_not_existed);
         return itor->second;
     }
 
@@ -163,7 +164,7 @@ namespace qls
         std::unique_lock<std::shared_mutex> lock(m_baseRoom_map_mutex);
         auto itor = m_baseRoom_map.find(group_room_id);
         if (itor == m_baseRoom_map.end())
-            throw std::invalid_argument("The group room doesn't exist!");
+            throw std::system_error(qls_errc::group_room_not_existed);
 
         {
             /*
@@ -200,7 +201,7 @@ namespace qls
 
         auto itor = m_user_map.find(user_id);
         if (itor == m_user_map.end())
-            throw std::invalid_argument("The user doesn't exist!");
+            throw std::system_error(qls_errc::user_not_existed);
         
         return itor->second;
     }
@@ -215,7 +216,7 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
         if (m_socket_map.find(socket_ptr) != m_socket_map.cend())
-            throw std::logic_error("The socket pointer already exists!");
+            throw std::system_error(qls_errc::socket_pointer_existed);
         m_socket_map.emplace(socket_ptr, -1ll);
     }
 
@@ -238,7 +239,7 @@ namespace qls
         std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
-            throw std::logic_error("The socket pointer doesn't exist!");
+            throw std::system_error(qls_errc::socket_pointer_not_existed);
         return iter->second;
     }
 
@@ -249,11 +250,11 @@ namespace qls
         std::lock(ul, sl);
 
         if (m_user_map.find(user_id) == m_user_map.cend())
-            throw std::logic_error("The user doesn't exist!");
+            throw std::system_error(qls_errc::user_not_existed);
 
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
-            throw std::logic_error("The socket pointer doesn't exist!");
+            throw std::system_error(qls_errc::socket_pointer_not_existed);
 
         if (iter->second != -1ll)
             m_user_map.find(iter->second)->second->removeSocket(socket_ptr);
@@ -269,7 +270,7 @@ namespace qls
 
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
-            throw std::logic_error("The socket pointer doesn't exist!");
+            throw std::system_error(qls_errc::socket_pointer_not_existed);
 
         if (iter->second != -1l)
             m_user_map.find(iter->second)->second->removeSocket(socket_ptr);

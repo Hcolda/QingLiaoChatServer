@@ -1,9 +1,10 @@
 ﻿#include "package.h"
 
-#include <stdexcept>
+#include <system_error>
 #include <cstring>
 
 #include "networkEndianness.hpp"
+#include "qls_error.h"
 
 void qls::Package::write(std::string_view data)
 {
@@ -42,9 +43,9 @@ size_t qls::Package::firstMsgLength() const
 std::string qls::Package::read()
 {
     if (!canRead())
-        throw std::logic_error("Can't read data");
+        throw std::system_error(qls_errc::incomplete_package);
     else if (!firstMsgLength())
-        throw std::logic_error("length is empty");
+        throw std::system_error(qls_errc::empty_length);
 
     std::string result = m_buffer.substr(0, firstMsgLength());
     m_buffer = m_buffer.substr(firstMsgLength());
