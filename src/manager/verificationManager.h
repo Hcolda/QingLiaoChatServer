@@ -6,7 +6,7 @@
 
 #include "friendRoomVerification.h"
 #include "groupRoomVerification.h"
-#include "structHasher.h"
+#include "structureHasher.hpp"
 
 namespace qls
 {

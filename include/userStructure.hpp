@@ -30,8 +30,7 @@ struct UserVerificationStruct
     * @brief {Sent:     发出的申请}
     * @brief {Received: 接收的申请}
     */
-    VerificationType verification_type =
-        VerificationType::Unknown;
+    VerificationType verification_type = VerificationType::Unknown;
     bool has_message = false;
     std::string message;
 };

@@ -14,7 +14,7 @@
 #include "groupRoom.h"
 #include "user.h"
 #include "socket.h"
-#include "structHasher.h"
+#include "structureHasher.hpp"
 #include "verificationManager.h"
 #include "dataManager.h"
 

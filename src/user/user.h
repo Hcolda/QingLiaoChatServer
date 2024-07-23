@@ -11,7 +11,7 @@
 #include <string>
 
 #include "socket.h"
-#include "userStructure.h"
+#include "userStructure.hpp"
 #include "qls_error.h"
 
 namespace qls

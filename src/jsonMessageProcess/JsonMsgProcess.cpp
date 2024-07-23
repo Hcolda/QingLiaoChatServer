@@ -6,7 +6,7 @@
 #include "manager.h"
 #include "regexMatch.hpp"
 #include "returnStateMessage.hpp"
-#include "userStructure.h"
+#include "userStructure.hpp"
 
 extern qls::Manager serverManager;
 extern Log::Logger serverLogger;
