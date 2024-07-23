@@ -24,7 +24,7 @@ namespace qls
 
     bool BaseRoom::joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr)
     {
-        std::unique_lock<std::shared_mutex> ul(m_impl->m_userMap_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
         if (!user_ptr->getUserID() != user_id ||
             m_impl->m_userMap.find(user_id) != m_impl->m_userMap.cend())
             return false;
@@ -35,7 +35,7 @@ namespace qls
 
     bool BaseRoom::leaveRoom(long long user_id)
     {
-        std::unique_lock<std::shared_mutex> ul(m_impl->m_userMap_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
         auto iter = m_impl->m_userMap.find(user_id);
         if (iter == m_impl->m_userMap.cend())
             return false;
@@ -46,7 +46,7 @@ namespace qls
 
     void BaseRoom::sendData(std::string_view data)
     {
-        std::shared_lock<std::shared_mutex> sl(m_impl->m_userMap_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userMap_mutex);
 
         for (auto& [user_id, user_ptr]: m_impl->m_userMap)
         {
@@ -56,7 +56,7 @@ namespace qls
 
     void BaseRoom::sendData(std::string_view data, long long user_id)
     {
-        std::shared_lock<std::shared_mutex> sl(m_impl->m_userMap_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userMap_mutex);
 
         m_impl->m_userMap.find(user_id)->second->notifyAll(data);
     }

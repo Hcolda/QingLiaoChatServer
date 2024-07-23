@@ -29,7 +29,7 @@ namespace qls
 
     GroupPermission::PermissionType GroupPermission::getPermissionType(const std::string& permissionName) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);
 
         // 是否有此权限
         auto itor = m_permission_map.find(permissionName);
@@ -41,7 +41,7 @@ namespace qls
 
     std::unordered_map<std::string, GroupPermission::PermissionType> GroupPermission::getPermissionList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);
         return m_permission_map;
     }
 
@@ -65,10 +65,9 @@ namespace qls
 
     bool GroupPermission::userHasPermission(long long user_id, const std::string& permissionName) const
     {
-        std::shared_lock<std::shared_mutex> sl1(m_permission_map_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> sl2(m_user_permission_map_mutex, std::defer_lock);
-        // 同时加锁
-        std::lock(sl1, sl2);
+        std::shared_lock<std::shared_mutex> local_shared_lock1(m_permission_map_mutex, std::defer_lock);
+        std::shared_lock<std::shared_mutex> local_shared_lock2(m_user_permission_map_mutex, std::defer_lock);
+        std::lock(local_shared_lock1, local_shared_lock2);
 
         // 是否有此user
         auto itor = m_user_permission_map.find(user_id);
@@ -86,7 +85,7 @@ namespace qls
 
     GroupPermission::PermissionType GroupPermission::getUserPermissionType(long long user_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
         // 是否有此user
         auto itor = m_user_permission_map.find(user_id);
@@ -97,13 +96,13 @@ namespace qls
     }
     std::unordered_map<long long, GroupPermission::PermissionType> GroupPermission::getUserPermissionList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
         return m_user_permission_map;
     }
 
     std::vector<long long> GroupPermission::getDefaultUserList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
         std::vector<long long> return_vector;
         std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
@@ -116,7 +115,7 @@ namespace qls
 
     std::vector<long long> GroupPermission::getOperatorList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
         std::vector<long long> return_vector;
         std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
@@ -129,7 +128,7 @@ namespace qls
 
     std::vector<long long> GroupPermission::getAdministratorList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_permission_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
         std::vector<long long> return_vector;
         std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),

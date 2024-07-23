@@ -41,9 +41,9 @@ namespace qls
 
     long long Manager::addPrivateRoom(long long user1_id, long long user2_id)
     {
-        std::unique_lock<std::shared_mutex> ul1(m_basePrivateRoom_map_mutex, std::defer_lock),
-            ul2(m_userID_to_privateRoomID_map_mutex, std::defer_lock);
-        std::lock(ul1, ul2);
+        std::unique_lock<std::shared_mutex> local_unique_lock1(m_basePrivateRoom_map_mutex, std::defer_lock),
+            local_unique_lock2(m_userID_to_privateRoomID_map_mutex, std::defer_lock);
+        std::lock(local_unique_lock1, local_unique_lock2);
 
         // 私聊房间id
         long long privateRoom_id = m_newGroupRoomId++;
@@ -62,7 +62,7 @@ namespace qls
 
     long long Manager::getPrivateRoomId(long long user1_id, long long user2_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_userID_to_privateRoomID_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_userID_to_privateRoomID_map_mutex);
         if (m_userID_to_privateRoomID_map.find(
             { user1_id , user2_id }) != m_userID_to_privateRoomID_map.end())
         {
@@ -78,14 +78,14 @@ namespace qls
 
     bool Manager::hasPrivateRoom(long long private_room_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_basePrivateRoom_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_basePrivateRoom_map_mutex);
         return m_basePrivateRoom_map.find(
             private_room_id) != m_basePrivateRoom_map.end();
     }
 
     std::shared_ptr<qls::PrivateRoom> Manager::getPrivateRoom(long long private_room_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_basePrivateRoom_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_basePrivateRoom_map_mutex);
         auto itor = m_basePrivateRoom_map.find(private_room_id);
         if (itor == m_basePrivateRoom_map.end())
             throw std::system_error(qls_errc::private_room_not_existed);
@@ -94,9 +94,9 @@ namespace qls
 
     void Manager::removePrivateRoom(long long private_room_id)
     {
-        std::unique_lock<std::shared_mutex> ul1(m_basePrivateRoom_map_mutex, std::defer_lock),
-            ul2(m_userID_to_privateRoomID_map_mutex, std::defer_lock);
-        std::lock(ul1, ul2);
+        std::unique_lock<std::shared_mutex> local_unique_lock1(m_basePrivateRoom_map_mutex, std::defer_lock),
+            local_unique_lock2(m_userID_to_privateRoomID_map_mutex, std::defer_lock);
+        std::lock(local_unique_lock1, local_unique_lock2);
 
         auto itor = m_basePrivateRoom_map.find(private_room_id);
         if (itor == m_basePrivateRoom_map.end())
@@ -177,7 +177,7 @@ namespace qls
 
     std::shared_ptr<qls::User> Manager::addNewUser()
     {
-        std::unique_lock<std::shared_mutex> ul(m_user_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_user_map_mutex);
 
         long long newUserId = m_newUserId++;
         {
@@ -191,13 +191,13 @@ namespace qls
 
     bool Manager::hasUser(long long user_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_map_mutex);
         return m_user_map.find(user_id) != m_user_map.end();
     }
 
     std::shared_ptr<qls::User> Manager::getUser(long long user_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_map_mutex);
 
         auto itor = m_user_map.find(user_id);
         if (itor == m_user_map.end())
@@ -214,7 +214,7 @@ namespace qls
 
     void Manager::registerSocket(const std::shared_ptr<Socket> &socket_ptr)
     {
-        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_socket_map_mutex);
         if (m_socket_map.find(socket_ptr) != m_socket_map.cend())
             throw std::system_error(qls_errc::socket_pointer_existed);
         m_socket_map.emplace(socket_ptr, -1ll);
@@ -222,13 +222,13 @@ namespace qls
 
     bool Manager::hasSocket(const std::shared_ptr<Socket> &socket_ptr) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_socket_map_mutex);
         return m_socket_map.find(socket_ptr) != m_socket_map.cend();
     }
 
     bool Manager::matchUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, long long user_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend()) return false;
         return iter->second == user_id;
@@ -236,7 +236,7 @@ namespace qls
 
     long long Manager::getUserIDOfSocket(const std::shared_ptr<Socket> &socket_ptr) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
             throw std::system_error(qls_errc::socket_pointer_not_existed);
@@ -245,9 +245,9 @@ namespace qls
 
     void Manager::modifyUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, long long user_id, DeviceType type)
     {
-        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex, std::defer_lock);
-        std::lock(ul, sl);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_socket_map_mutex, std::defer_lock);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_map_mutex, std::defer_lock);
+        std::lock(local_unique_lock, local_shared_lock);
 
         if (m_user_map.find(user_id) == m_user_map.cend())
             throw std::system_error(qls_errc::user_not_existed);
@@ -264,9 +264,9 @@ namespace qls
 
     void qls::Manager::removeSocket(const std::shared_ptr<Socket> &socket_ptr)
     {
-        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> sl(m_user_map_mutex, std::defer_lock);
-        std::lock(ul, sl);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_socket_map_mutex, std::defer_lock);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_map_mutex, std::defer_lock);
+        std::lock(local_unique_lock, local_shared_lock);
 
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())

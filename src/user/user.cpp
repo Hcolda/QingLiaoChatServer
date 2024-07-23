@@ -33,7 +33,7 @@ namespace qls
 
     long long User::getUserID() const
     {
-        std::shared_lock<std::shared_mutex> sl(this->m_data_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(this->m_data_mutex);
         return this->user_id;
     }
 
@@ -75,7 +75,7 @@ namespace qls
     bool User::isUserPassword(const std::string& p) const
     {
         std::hash<std::string> string_hash;
-        std::shared_lock<std::shared_mutex> sl(m_data_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_data_mutex);
         std::string localPassword = p + salt;
 
         for (size_t i = 0; i < 256ull; i++)
@@ -139,7 +139,7 @@ namespace qls
         }
 
         {
-            std::unique_lock<std::shared_mutex> ul(m_data_mutex);
+            std::unique_lock<std::shared_mutex> local_unique_lock(m_data_mutex);
             password = localPassword;
             salt = localSalt;
         }
@@ -171,7 +171,7 @@ namespace qls
         }
 
         {
-            std::unique_lock<std::shared_mutex> ul(m_data_mutex);
+            std::unique_lock<std::shared_mutex> local_unique_lock(m_data_mutex);
             password = localPassword;
             salt = localSalt;
         }
@@ -182,27 +182,27 @@ namespace qls
 
     bool User::userHasFriend(long long friend_user_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(this->m_user_friend_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(this->m_user_friend_map_mutex);
         return this->m_user_friend_map.find(friend_user_id) !=
             this->m_user_friend_map.cend();
     }
 
     bool User::userHasGroup(long long group_id) const
     {
-        std::shared_lock<std::shared_mutex> sl(this->m_user_group_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(this->m_user_group_map_mutex);
         return this->m_user_group_map.find(group_id) !=
             this->m_user_group_map.cend();
     }
 
     std::unordered_set<long long> User::getFriendList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_friend_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_friend_map_mutex);
         return m_user_friend_map;
     }
 
     std::unordered_set<long long> User::getGroupList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_group_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_group_map_mutex);
         return m_user_group_map;
     }
     
@@ -223,7 +223,7 @@ namespace qls
 
     void User::removeFriendVerification(long long friend_user_id)
     {
-        std::unique_lock<std::shared_mutex> ul(m_user_friend_verification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_user_friend_verification_map_mutex);
         auto itor = m_user_friend_verification_map.find(friend_user_id);
         if (itor == m_user_friend_verification_map.end())
             throw std::system_error(qls_errc::private_room_verification_not_existed);
@@ -232,7 +232,7 @@ namespace qls
 
     std::unordered_map<long long, UserVerificationStruct> User::getFriendVerificationList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_friend_verification_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_friend_verification_map_mutex);
         return m_user_friend_verification_map;
     }
 
@@ -253,7 +253,7 @@ namespace qls
 
     void User::removeGroupVerification(long long group_id, long long user_id)
     {
-        std::unique_lock<std::shared_mutex> ul(m_user_group_verification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_user_group_verification_map_mutex);
         size_t size = m_user_group_verification_map.count(group_id);
         if (!size) throw std::system_error(qls_errc::group_room_verification_not_existed);
 
@@ -270,13 +270,13 @@ namespace qls
 
     std::multimap<long long, UserVerificationStruct> User::getGroupVerificationList() const
     {
-        std::shared_lock<std::shared_mutex> sl(m_user_group_verification_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_user_group_verification_map_mutex);
         return m_user_group_verification_map;
     }
 
     void User::addSocket(const std::shared_ptr<qls::Socket> &socket_ptr, DeviceType type)
     {
-        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_socket_map_mutex);
         if (m_socket_map.find(socket_ptr) == m_socket_map.cend())
             throw std::system_error(qls_errc::socket_pointer_existed);
 
@@ -285,13 +285,13 @@ namespace qls
 
     bool User::hasSocket(const std::shared_ptr<qls::Socket> &socket_ptr) const
     {
-        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_socket_map_mutex);
         return m_socket_map.find(socket_ptr) != m_socket_map.cend();
     }
 
     void User::modifySocketType(const std::shared_ptr<qls::Socket> &socket_ptr, DeviceType type)
     {
-        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
             throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
@@ -301,7 +301,7 @@ namespace qls
 
     void User::removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr)
     {
-        std::unique_lock<std::shared_mutex> ul(m_socket_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_socket_map_mutex);
         auto iter = m_socket_map.find(socket_ptr);
         if (iter == m_socket_map.cend())
             throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
@@ -311,7 +311,7 @@ namespace qls
 
     void User::notifyAll(std::string_view data)
     {
-        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_socket_map_mutex);
         for (auto& [socket_ptr, type]: m_socket_map)
         {
             asio::async_write(*socket_ptr, asio::buffer(data),
@@ -324,7 +324,7 @@ namespace qls
     
     void User::notifyWithType(DeviceType type, std::string_view data)
     {
-        std::shared_lock<std::shared_mutex> sl(m_socket_map_mutex);
+        std::shared_lock<std::shared_mutex> local_shared_lock(m_socket_map_mutex);
         for (auto& [socket_ptr, dtype]: m_socket_map)
         {
             if (dtype == type)
