@@ -59,5 +59,5 @@ target_include_directories(QingLiaoChatServer PUBLIC src/error/)
 target_link_libraries(QingLiaoChatServer PRIVATE
   OpenSSL::SSL
   OpenSSL::Crypto
-  unofficial::unofficial-mariadb-connector-cpp::mariadbcpp
+  unofficial::mariadb-connector-cpp::mariadbcpp
   asio::asio)
