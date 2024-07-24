@@ -12,7 +12,7 @@ project(QingLiaoChatServer)
 
 find_package(OpenSSL REQUIRED)
 find_package(asio CONFIG REQUIRED)
-find_package(unofficial-mariadbcpp CONFIG REQUIRED)
+find_package(unofficial-mariadb-connector-cpp CONFIG REQUIRED)
 
 add_executable(QingLiaoChatServer
     "src/main/main.cpp"
@@ -59,5 +59,5 @@ target_include_directories(QingLiaoChatServer PUBLIC src/error/)
 target_link_libraries(QingLiaoChatServer PRIVATE
   OpenSSL::SSL
   OpenSSL::Crypto
-  unofficial::mariadbcpp::mariadbcpp
+  unofficial::unofficial-mariadb-connector-cpp::mariadbcpp
   asio::asio)
