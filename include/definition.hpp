@@ -16,8 +16,8 @@
 #else // !MSC_VER
     #include <format>
     #include <filesystem>
-    #if defined(__cplusplus) && __cplusplus >= 202011L
-        #include <stacktrace>
+    #include <stacktrace>
+    #if defined(__cplusplus) && __cplusplus >= 202011L && defined(__cpp_lib_stacktrace)
         #define ERROR_WITH_STACKTRACE(errmsg) std::format("error: {}\nin file \"{}\" line {}\nstack trace: \n{}\n", \
             errmsg, std::filesystem::path(__FILE__).filename().string(), __LINE__, std::to_string(std::stacktrace::current()))
     #else
