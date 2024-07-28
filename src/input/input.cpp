@@ -15,7 +15,7 @@ using namespace qls;
 template<size_t N, size_t N2>
 constexpr static void getTargetName(const char(&data)[N], char(&out)[N2])
 {
-    static_assert(N2 <= N);
+    static_assert(std::strlen(data) < N2);
     size_t size = std::strlen(data);
     for (auto i = 0ull; i < size; ++i)
     {
@@ -30,7 +30,7 @@ constexpr static void getTargetName(const char(&data)[N], char(&out)[N2])
 
 #define SET_A_COMMAND(name) \
     { \
-        char local[sizeof(#name)] {0}; \
+        char local[sizeof(#name) + 1] {0}; \
         getTargetName(#name, local); \
         m_command_map.emplace(local , MERGE(name, _command){}); \
     }
