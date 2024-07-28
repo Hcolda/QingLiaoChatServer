@@ -41,12 +41,4 @@ namespace qls
         serverLogger.info("用户表: \n", show);
         return true;
     }
-
-    bool help_command::execute()
-    {
-        serverLogger.info("[help]输出帮助文档");
-        serverLogger.info("[stop]关闭服务器");
-        serverLogger.info("[show user]显示用户列表");
-        return true;
-    }
 } // namespace qls
