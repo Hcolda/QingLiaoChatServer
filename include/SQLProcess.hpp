@@ -16,7 +16,7 @@
 #include <utility>
 
 #include <asio.hpp>
-#include <conncpp.hpp>
+#include <mariadb/conncpp.hpp>
 
 namespace quqisql
 {

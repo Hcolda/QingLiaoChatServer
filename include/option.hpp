@@ -2,7 +2,7 @@
 #define OPTION_HPP
 
 // namespace option
-#define NAMESPACE_OPTION_START namespace option {
+#define NAMESPACE_OPTION_START namespace opt {
 #define NAMESPACE_OPTION_END }
 
 #include <unordered_map>
@@ -26,6 +26,32 @@ public:
 
     Option() = default;
     ~Option() = default;
+
+    Option(const Option& optClass):
+        m_opt_map(optClass.m_opt_map),
+        m_args_map(optClass.m_args_map) {}
+
+    Option(Option&& optClass):
+        m_opt_map(std::move(optClass.m_opt_map)),
+        m_args_map(std::move(optClass.m_args_map)) {}
+
+    Option& operator=(const Option& optClass)
+    {
+        if (this == &optClass)
+            return *this;
+        m_opt_map = optClass.m_opt_map;
+        m_args_map = optClass.m_args_map;
+        return *this;
+    }
+
+    Option& operator=(Option&& optClass)
+    {
+        if (this == &optClass)
+            return *this;
+        m_opt_map = std::move(optClass.m_opt_map);
+        m_args_map = std::move(optClass.m_args_map);
+        return *this;
+    }
 
     /*
     * @brief Add an option
@@ -245,8 +271,27 @@ public:
     */
     bool has_opt(const std::string& opt) const
     {
-        return  m_opt_map.find(opt) != m_opt_map.end() &&
-                m_args_map.find(opt) != m_args_map.end();
+        return  m_opt_map.find(opt) != m_opt_map.cend();
+    }
+
+    /*
+    * @brief Check if an option exists and has value
+    * @param opt Option name
+    * @return True if the option exists and has value, false otherwise
+    */
+    bool has_opt_with_value(const std::string& opt) const
+    {
+        return  m_opt_map.find(opt) != m_opt_map.cend() &&
+            m_args_map.find(opt) != m_args_map.cend();
+    }
+
+    /*
+    * @brief Get an option list
+    * @return A list to show all the options
+    */
+    std::unordered_map<std::string, OptionType> get_opt_list() const
+    {
+        return m_opt_map;
     }
 
     /*
