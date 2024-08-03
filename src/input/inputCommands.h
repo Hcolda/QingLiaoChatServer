@@ -3,15 +3,25 @@
 
 #include <string>
 
+#include "option.hpp"
+
 namespace qls
 {
+    class Command;
+    struct CommandInfo
+    {
+        opt::Option option;
+        std::string description;
+    };
+
     class Command
     {
     public:
         Command() = default;
         virtual ~Command() = default;
-        virtual void setArguments(const std::string& arguments) {}
+        virtual void setArguments(const opt::Option& options) {}
         virtual bool execute() { return true; }
+        virtual CommandInfo registerCommand() { return {}; }
     };
 
     class stop_command: public Command
