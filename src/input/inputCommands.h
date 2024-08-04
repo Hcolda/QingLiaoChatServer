@@ -7,7 +7,6 @@
 
 namespace qls
 {
-    class Command;
     struct CommandInfo
     {
         opt::Option option;
@@ -21,7 +20,7 @@ namespace qls
         virtual ~Command() = default;
         virtual void setArguments(const opt::Option& options) {}
         virtual bool execute() { return true; }
-        virtual CommandInfo registerCommand() { return {}; }
+        virtual CommandInfo registerCommand() { return {{}, "empty description"}; }
     };
 
     class stop_command: public Command
@@ -29,6 +28,7 @@ namespace qls
     public:
         stop_command() = default;
         virtual bool execute();
+        virtual CommandInfo registerCommand();
     };
 
     class show_user_command: public Command
@@ -36,6 +36,7 @@ namespace qls
     public:
         show_user_command() = default;
         virtual bool execute();
+        virtual CommandInfo registerCommand();
     };
 }
 

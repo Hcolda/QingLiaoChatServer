@@ -30,9 +30,9 @@ constexpr static void getTargetName(const char(&data)[N], char(&out)[N2])
 
 #define SET_A_COMMAND(name) \
     { \
-        char local[sizeof(#name) + 1] {0}; \
+        char local[sizeof(#name)] {0}; \
         getTargetName(#name, local); \
-        m_command_map.emplace(local , MERGE(name, _command){}); \
+        m_command_map.emplace(local, std::make_unique<MERGE(name, _command)>()); \
     }
 
 class InputImpl
@@ -59,11 +59,19 @@ public:
 
         if (auto words = split(first_word); words[0] == "help")
         {
-            std::string origin_command = strip(first_word.substr(sizeof("help") + 1));
+            if (first_word.size() <= sizeof("help"))
+            {
+                for (auto i = m_command_map.begin(); i != m_command_map.end(); ++i)
+                {
+                    serverLogger.info(i->first, ": ", i->second->registerCommand().description);
+                }
+                return true;
+            }
+            std::string origin_command = strip(first_word.substr(sizeof("help")));
             auto iter = m_command_map.find(origin_command);
             if (iter != m_command_map.end())
             {
-                serverLogger.info(origin_command, ": ", iter->second.registerCommand().description);
+                serverLogger.info(origin_command, ": ", iter->second->registerCommand().description);
                 return true;
             }
             bool has_find = false;
@@ -72,7 +80,7 @@ public:
                 if (i->first.substr(0, origin_command.size()) == origin_command)
                 {
                     has_find = true;
-                    serverLogger.info(i->first, ": ", i->second.registerCommand().description);
+                    serverLogger.info(i->first, ": ", i->second->registerCommand().description);
                 }
             }
             if (!has_find)
@@ -87,16 +95,16 @@ public:
             return true;
         }
 
-        auto opt = map_iter->second.registerCommand().option;
+        auto opt = map_iter->second->registerCommand().option;
         opt.add("help", opt::Option::OptionType::OPT_OPTIONAL);
         opt.parse(split(arguments));
         if (opt.has_opt_with_value("help"))
         {
-            serverLogger.info(map_iter->first, ": ", map_iter->second.registerCommand().description);
+            serverLogger.info(map_iter->first, ": ", map_iter->second->registerCommand().description);
             return true;
         }
-        map_iter->second.setArguments(opt);
-        return map_iter->second.execute();
+        map_iter->second->setArguments(opt);
+        return map_iter->second->execute();
 
         serverLogger.warning("Command not existed: ", first_word);
         return true;
@@ -136,7 +144,7 @@ private:
         return dataList;
     }
 
-    std::unordered_map<std::string, qls::Command> m_command_map;
+    std::unordered_map<std::string, std::unique_ptr<qls::Command>> m_command_map;
 };
 
 void Input::init()
