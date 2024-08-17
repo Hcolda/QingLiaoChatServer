@@ -1,4 +1,4 @@
-﻿#include "room.h"
+#include "room.h"
 
 #include <unordered_map>
 #include <mutex>

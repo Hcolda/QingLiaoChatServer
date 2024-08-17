@@ -1,4 +1,4 @@
-﻿#ifndef GROUP_ROOM_VERIFICATION_H
+#ifndef GROUP_ROOM_VERIFICATION_H
 #define GROUP_ROOM_VERIFICATION_H
 
 #include <atomic>

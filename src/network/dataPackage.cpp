@@ -1,4 +1,4 @@
-﻿#include "dataPackage.h"
+#include "dataPackage.h"
 
 #include <stdexcept>
 #include <format>

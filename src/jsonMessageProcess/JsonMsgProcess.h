@@ -1,4 +1,4 @@
-﻿#ifndef JSON_MESSAGE_PROCESS_H
+#ifndef JSON_MESSAGE_PROCESS_H
 #define JSON_MESSAGE_PROCESS_H
 
 #include <string>

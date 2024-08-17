@@ -1,4 +1,4 @@
-﻿#ifndef FRIEND_ROOM_VERIFICATION_H
+#ifndef FRIEND_ROOM_VERIFICATION_H
 #define FRIEND_ROOM_VERIFICATION_H
 
 #include <atomic>

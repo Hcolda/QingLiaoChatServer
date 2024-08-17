@@ -1,4 +1,4 @@
-﻿#ifndef GROUP_ROOM_H
+#ifndef GROUP_ROOM_H
 #define GROUP_ROOM_H
 
 #include <memory>

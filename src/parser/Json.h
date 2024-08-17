@@ -1,4 +1,4 @@
-﻿#ifndef JSON_HPP
+#ifndef JSON_HPP
 #define JSON_HPP
 
 #include <string>

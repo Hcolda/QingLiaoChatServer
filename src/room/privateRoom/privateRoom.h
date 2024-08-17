@@ -1,4 +1,4 @@
-﻿#ifndef PRIVATE_ROOM_H
+#ifndef PRIVATE_ROOM_H
 #define PRIVATE_ROOM_H
 
 #include <chrono>

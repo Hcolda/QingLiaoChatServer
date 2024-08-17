@@ -1,4 +1,4 @@
-﻿#include "groupPermission.h"
+#include "groupPermission.h"
 
 #include <algorithm>
 #include <stdexcept>

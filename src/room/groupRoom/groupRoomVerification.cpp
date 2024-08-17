@@ -1,4 +1,4 @@
-﻿#include "groupRoomVerification.h"
+#include "groupRoomVerification.h"
 
 namespace qls
 {

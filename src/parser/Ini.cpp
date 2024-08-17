@@ -1,4 +1,4 @@
-﻿#include "Ini.h"
+#include "Ini.h"
 
 #define INI_NAMESPACE_START namespace qini {
 #define INI_NAMESPACE_END }

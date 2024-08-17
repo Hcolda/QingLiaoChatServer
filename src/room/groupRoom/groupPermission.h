@@ -1,4 +1,4 @@
-﻿#ifndef GROUP_PERMISSION_H
+#ifndef GROUP_PERMISSION_H
 #define GROUP_PERMISSION_H
 
 #include <unordered_map>

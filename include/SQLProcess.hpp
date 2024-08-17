@@ -1,4 +1,4 @@
-﻿#ifndef SQL_PROCESS_HPP
+#ifndef SQL_PROCESS_HPP
 #define SQL_PROCESS_HPP
 
 #include <iostream>

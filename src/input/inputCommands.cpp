@@ -30,6 +30,11 @@ bool stop_command::execute()
     return false;
 }
 
+CommandInfo stop_command::registerCommand()
+{
+    return {{}, "stop server"};
+}
+
 bool show_user_command::execute()
 {
     std::string show;
@@ -41,6 +46,11 @@ bool show_user_command::execute()
     }
     serverLogger.info("用户表: \n", show);
     return true;
+}
+
+CommandInfo show_user_command::registerCommand()
+{
+    return {{}, "show user's infomation"};
 }
 
 } // namespace qls

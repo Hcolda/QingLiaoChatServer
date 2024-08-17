@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <Logger.hpp>
 #include <thread>
 #include <chrono>

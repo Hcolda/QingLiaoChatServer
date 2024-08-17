@@ -1,4 +1,4 @@
-﻿#ifndef RETURN_STATE_MESSAGE_HPP
+#ifndef RETURN_STATE_MESSAGE_HPP
 #define RETURN_STATE_MESSAGE_HPP
 
 #include <string>

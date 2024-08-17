@@ -1,4 +1,4 @@
-﻿#ifndef SOCKET_FUNCTIONS_H
+#ifndef SOCKET_FUNCTIONS_H
 #define SOCKET_FUNCTIONS_H
 
 #include <asio.hpp>

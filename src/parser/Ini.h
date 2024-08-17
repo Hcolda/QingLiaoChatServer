@@ -1,4 +1,4 @@
-﻿#ifndef INI_HPP
+#ifndef INI_HPP
 #define INI_HPP
 
 #include <unordered_map>

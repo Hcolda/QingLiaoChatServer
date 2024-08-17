@@ -1,4 +1,4 @@
-﻿#ifndef TIMER_HPP
+#ifndef TIMER_HPP
 #define TIMER_HPP
 
 #include <ctime>

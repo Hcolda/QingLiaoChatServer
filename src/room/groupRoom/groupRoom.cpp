@@ -1,4 +1,4 @@
-﻿#include "groupRoom.h"
+#include "groupRoom.h"
 
 #include <stdexcept>
 #include <algorithm>

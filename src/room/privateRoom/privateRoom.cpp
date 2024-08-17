@@ -1,4 +1,4 @@
-﻿#include "privateRoom.h"
+#include "privateRoom.h"
 
 #include <stdexcept>
 

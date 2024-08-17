@@ -1,4 +1,4 @@
-﻿# Data package
+# Data package
 ## Format
 Format: `length + requestID + data type + sequence + hash + binary data + double '\0'`
 

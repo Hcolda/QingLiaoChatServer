@@ -1,4 +1,4 @@
-﻿#include "friendRoomVerification.h"
+#include "friendRoomVerification.h"
 
 #include <system_error>
 

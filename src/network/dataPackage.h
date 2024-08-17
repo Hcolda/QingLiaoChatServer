@@ -1,4 +1,4 @@
-﻿#ifndef DATA_PACKAGE_H
+#ifndef DATA_PACKAGE_H
 #define DATA_PACKAGE_H
 
 #include <string>

@@ -1,4 +1,4 @@
-﻿#include "socketFunctions.h"
+#include "socketFunctions.h"
 
 #include <asio/experimental/awaitable_operators.hpp>
 #include <system_error>

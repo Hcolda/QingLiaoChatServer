@@ -1,4 +1,4 @@
-﻿#ifndef REGEX_MATCH_HPP
+#ifndef REGEX_MATCH_HPP
 #define REGEX_MATCH_HPP
 
 #include <regex>

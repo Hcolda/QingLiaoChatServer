@@ -1,4 +1,4 @@
-﻿#include "package.h"
+#include "package.h"
 
 #include <system_error>
 #include <cstring>

@@ -1,4 +1,4 @@
-﻿#ifndef NETWORK_ENDIANNESS_HPP
+#ifndef NETWORK_ENDIANNESS_HPP
 #define NETWORK_ENDIANNESS_HPP
 
 #include <concepts>
