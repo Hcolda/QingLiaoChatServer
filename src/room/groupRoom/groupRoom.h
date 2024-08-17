@@ -14,6 +14,8 @@
 namespace qls
 {
 
+struct GroupRoomImpl;
+
 class GroupRoom final : public qls::BaseRoom
 {
 public:
@@ -26,7 +28,7 @@ public:
     GroupRoom(long long group_id, long long administrator, bool is_create);
     GroupRoom(const GroupRoom&) = delete;
     GroupRoom(GroupRoom&&) = delete;
-    ~GroupRoom() = default;
+    ~GroupRoom();
 
     bool addMember(long long user_id);
     bool removeMember(long long user_id);
@@ -61,28 +63,7 @@ public:
     bool canBeUsed() const;
 
 private:
-    const long long                 m_group_id;
-    long long                       m_administrator_user_id;
-    mutable std::shared_mutex       m_administrator_user_id_mutex;
-
-    std::atomic<bool>               m_can_be_used;
-
-    GroupPermission                 m_permission;
-
-    std::unordered_map<long long,
-        UserDataStructure>          m_user_id_map;
-    mutable std::shared_mutex       m_user_id_map_mutex;
-
-    std::unordered_map<long long,
-        std::pair<std::chrono::time_point<std::chrono::system_clock,
-        std::chrono::milliseconds>,
-            std::chrono::minutes>>  m_muted_user_map;
-    mutable std::shared_mutex       m_muted_user_map_mutex;
-
-    std::vector<std::pair<std::chrono::time_point<std::chrono::system_clock,
-        std::chrono::milliseconds>,
-        MessageStructure>>          m_message_queue;
-    mutable std::shared_mutex       m_message_queue_mutex;
+    std::unique_ptr<GroupRoomImpl> m_impl;
 };
 
 } // namespace qls

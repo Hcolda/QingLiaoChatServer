@@ -11,15 +11,15 @@ namespace qls
 class Input final
 {
 public:
-    Input() = default;
-    ~Input() = default;
+    Input();
+    ~Input();
 
     void init();
 
     bool input(const std::string& command);
 
 private:
-    std::shared_ptr<InputImpl> m_impl;
+    std::unique_ptr<InputImpl> m_impl;
 };
 
 } // namespace qls

@@ -38,6 +38,8 @@ struct UserVerificationStructure
     std::string message;
 };
 
+struct UserImpl;
+
 /**
  * @brief Class representing a User.
  */
@@ -53,7 +55,7 @@ public:
 
     User(const User&) = delete; // Copy constructor deleted
     User(User&&) = delete; // Move constructor deleted
-    ~User() = default;
+    ~User();
 
     // Methods to get user information
 
@@ -92,11 +94,16 @@ public:
      * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
      * @param set The new friend list to be updated.
      */
-    template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        std::unordered_set<long long>>>>
-    void updateFriendList(T&& set);
+    void updateFriendList(const std::unordered_set<long long>& set);
+
+    /**
+     * @brief Updates the friend list with a new set of friends.
+     * 
+     * @tparam T The type of the container holding the friend list.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @param set The new friend list to be updated.
+     */
+    void updateFriendList(std::unordered_set<long long>&& set);
 
     /**
      * @brief Updates the group list with a new set of groups.
@@ -105,11 +112,16 @@ public:
      * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
      * @param set The new group list to be updated.
      */
-    template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        std::unordered_set<long long>>>>
-    void updateGroupList(T&& set);
+    void updateGroupList(const std::unordered_set<long long>& set);
+
+    /**
+     * @brief Updates the group list with a new set of groups.
+     * 
+     * @tparam T The type of the container holding the group list.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @param set The new group list to be updated.
+     */
+    void updateGroupList(std::unordered_set<long long>&& set);
 
     /**
      * @brief Adds a friend to the user's friend list.
@@ -124,11 +136,7 @@ public:
      * @param friend_user_id The ID of the friend.
      * @param u UserVerificationStructure to add.
      */
-    template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        UserVerificationStructure>>>
-    void addFriendVerification(long long friend_user_id, T&& u);
+    void addFriendVerification(long long friend_user_id, const UserVerificationStructure& u);
 
     /**
      * @brief Removes a friend verification entry.
@@ -156,11 +164,7 @@ public:
      * @param group_id The ID of the group.
      * @param u UserVerificationStructure to add.
      */
-    template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        UserVerificationStructure>>>
-    void addGroupVerification(long long group_id, T&& u);
+    void addGroupVerification(long long group_id, const UserVerificationStructure& u);
 
     /**
      * @brief Removes a group verification entry.
@@ -217,40 +221,9 @@ public:
     void notifyWithType(DeviceType type, std::string_view data);
 
 private:
-    long long                   user_id; ///< User ID
-    std::string                 user_name; ///< User name
-    long long                   registered_time; ///< Time when user registered
-    int                         age; ///< User's age
-    std::string                 email; ///< User's email
-    std::string                 phone; ///< User's phone number
-    std::string                 profile; ///< User profile
-
-    std::string                 password; ///< User's hashed password
-    std::string                 salt; ///< Salt used in password hashing
-
-    mutable std::shared_mutex   m_data_mutex; ///< Mutex for thread-safe access to user data
-
-    std::unordered_set<long long>   m_user_friend_map; ///< User's friend list
-    mutable std::shared_mutex       m_user_friend_map_mutex; ///< Mutex for thread-safe access to friend list
-
-    std::unordered_map<long long,
-        UserVerificationStructure>     m_user_friend_verification_map; ///< User's friend verification map
-    mutable std::shared_mutex       m_user_friend_verification_map_mutex; ///< Mutex for thread-safe access to friend verification map
-
-    std::unordered_set<long long>   m_user_group_map; ///< User's group list
-    mutable std::shared_mutex       m_user_group_map_mutex; ///< Mutex for thread-safe access to group list
-
-    std::multimap<long long,
-        UserVerificationStructure>     m_user_group_verification_map; ///< User's group verification map
-    mutable std::shared_mutex       m_user_group_verification_map_mutex; ///< Mutex for thread-safe access to group verification map
-
-    std::unordered_map<std::shared_ptr<qls::Socket>, DeviceType>
-                                    m_socket_map; ///< Map of sockets associated with the user
-    mutable std::shared_mutex       m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
+    std::unique_ptr<UserImpl> m_impl;
 };
 
 } // namespace qls
-
-#include "user.tpp"
 
 #endif // !USER_H

@@ -91,7 +91,7 @@ public:
         std::chrono::steady_clock::time_point& deadline);
 
 private:
-    std::shared_ptr<SocketServiceImpl> m_impl;
+    std::unique_ptr<SocketServiceImpl> m_impl;
 };
 
 } // namespace qls

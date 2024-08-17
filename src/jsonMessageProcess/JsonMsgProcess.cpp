@@ -60,7 +60,9 @@ private:
 };
 
 JsonMessageProcess::JsonMessageProcess(long long user_id) :
-    m_process(std::make_shared<JsonMessageProcessImpl>(user_id)) {}
+    m_process(std::make_unique<JsonMessageProcessImpl>(user_id)) {}
+
+JsonMessageProcess::~JsonMessageProcess() = default;
 
 asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getUserPublicInfo(long long user_id)
 {

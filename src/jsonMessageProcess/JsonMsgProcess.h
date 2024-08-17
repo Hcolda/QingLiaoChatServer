@@ -18,13 +18,13 @@ class JsonMessageProcess final
 {
 public:
     JsonMessageProcess(long long user_id);
-    ~JsonMessageProcess() = default;
+    ~JsonMessageProcess();
 
     long long getLocalUserID() const;
     asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
     
 private:
-    std::shared_ptr<JsonMessageProcessImpl> m_process;
+    std::unique_ptr<JsonMessageProcessImpl> m_process;
 };
 
 } // namespace qls

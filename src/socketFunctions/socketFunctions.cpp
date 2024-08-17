@@ -56,9 +56,9 @@ struct SocketServiceImpl
 };
 
 SocketService::SocketService(std::shared_ptr<Socket> socket_ptr) :
-    m_impl(std::make_shared<SocketServiceImpl>(socket_ptr, -1))
+    m_impl(std::make_unique<SocketServiceImpl>(socket_ptr, -1))
 {
-    if (socket_ptr.get() == nullptr)
+    if (!socket_ptr)
         throw std::system_error(qls::qls_errc::null_socket_pointer);
 }
 

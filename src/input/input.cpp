@@ -148,10 +148,14 @@ private:
     std::unordered_map<std::string, std::unique_ptr<qls::Command>> m_command_map;
 };
 
+Input::Input():
+    m_impl(std::make_unique<InputImpl>())
+{}
+
+Input::~Input() = default;
+
 void Input::init()
-{
-    m_impl = std::make_shared<InputImpl>();
-}
+{}
 
 bool Input::input(const std::string &command)
 {
