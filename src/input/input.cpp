@@ -89,8 +89,9 @@ public:
 
         auto opt = map_iter->second.registerCommand().option;
         opt.add("help", opt::Option::OptionType::OPT_OPTIONAL);
+        opt.add("h", opt::Option::OptionType::OPT_OPTIONAL);
         opt.parse(split(arguments));
-        if (opt.has_opt_with_value("help"))
+        if (opt.has_opt_with_value("help") || opt.has_opt_with_value("h"))
         {
             serverLogger.info(map_iter->first, ": ", map_iter->second.registerCommand().description);
             return true;

@@ -12,54 +12,43 @@
 
 namespace qls
 {
-    /*
-    * @brief 私聊房间基类
-    */
-    class PrivateRoom : public qls::BaseRoom
-    {
-    public:
-        struct MessageStruct
-        {
-            enum class MessageType
-            {
-                NOMAL_MESSAGE = 0,
-                TIP_MESSAGE
-            };
+    
+/*
+* @brief 私聊房间基类
+*/
+class PrivateRoom final : public qls::BaseRoom
+{
+public:
+    PrivateRoom(long long user_id_1, long long user_id_2, bool is_create);
+    PrivateRoom(const PrivateRoom&) = delete;
+    PrivateRoom(PrivateRoom&&) = delete;
 
-            long long user_id;
-            std::string message;
-            MessageType type;
-        };
+    ~PrivateRoom() = default;
 
-        PrivateRoom(long long user_id_1, long long user_id_2, bool is_create);
-        PrivateRoom(const PrivateRoom&) = delete;
-        PrivateRoom(PrivateRoom&&) = delete;
+    void sendMessage(const std::string& message, long long sender_user_id);
+    void sendTipMessage(const std::string& message, long long sender_user_id);
+    void getMessage(
+        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
+        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 
-        ~PrivateRoom() = default;
+    long long getUserID1() const;
+    long long getUserID2() const;
+    bool hasUser(long long user_id) const;
 
-        void sendMessage(const std::string& message, long long sender_user_id);
-        void sendTipMessage(const std::string& message, long long sender_user_id);
-        void getMessage(
-            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
-            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
+    void removeThisRoom();
+    bool canBeUsed() const;
 
-        long long getUserID1() const;
-        long long getUserID2() const;
-        bool hasUser(long long user_id) const;
+private:
+    const long long m_user_id_1, m_user_id_2;
 
-        void removeThisRoom();
-        bool canBeUsed() const;
+    std::atomic<bool>               m_can_be_used;
 
-    private:
-        const long long m_user_id_1, m_user_id_2;
+    std::vector<std::pair<std::chrono::time_point<std::chrono::system_clock,
+        std::chrono::milliseconds>,
+        MessageStructure>>          m_message_queue;
+    mutable std::shared_mutex       m_message_queue_mutex;
+};
 
-        std::atomic<bool>               m_can_be_used;
-
-        std::vector<std::pair<std::chrono::time_point<std::chrono::system_clock,
-            std::chrono::milliseconds>,
-            MessageStruct>>             m_message_queue;
-        mutable std::shared_mutex       m_message_queue_mutex;
-    };
-}
+} // namespace qls
 
 #endif // !PRIVATE_ROOM_H

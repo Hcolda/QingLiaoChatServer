@@ -23,22 +23,24 @@ extern qls::Manager serverManager;
 
 namespace qls
 {
-    bool stop_command::execute()
-    {
-        serverNetwork.stop();
-        return false;
-    }
 
-    bool show_user_command::execute()
+bool stop_command::execute()
+{
+    serverNetwork.stop();
+    return false;
+}
+
+bool show_user_command::execute()
+{
+    std::string show;
+    auto list = serverManager.getUserList();
+    for (auto i = list.begin(); i != list.end(); i++)
     {
-        std::string show;
-        auto list = serverManager.getUserList();
-        for (auto i = list.begin(); i != list.end(); i++)
-        {
-            show += std::format("user id: {}, name: {}\n",
-                i->first, i->second->getUserName());
-        }
-        serverLogger.info("用户表: \n", show);
-        return true;
+        show += std::format("user id: {}, name: {}\n",
+            i->first, i->second->getUserName());
     }
+    serverLogger.info("用户表: \n", show);
+    return true;
+}
+
 } // namespace qls

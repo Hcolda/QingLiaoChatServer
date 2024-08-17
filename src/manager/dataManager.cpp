@@ -9,6 +9,7 @@ extern qls::Manager serverManager;
 
 namespace qls
 {
+    
 void DataManager::init()
 {
 }
@@ -25,4 +26,5 @@ bool DataManager::verifyUserPassword(long long user_id, size_t pwd_hash)
 {
     return false;
 }
-}
+
+} // namespace qls

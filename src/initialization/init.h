@@ -10,21 +10,23 @@
 
 namespace qls
 {
-    class Init
-    {
-    public:
-        Init() = default;
-        ~Init() = default;
 
-        /// @brief Create config file
-        static void createConfig();
+class Init final
+{
+public:
+    Init() = default;
+    ~Init() = default;
 
-        /// @brief Read config file
-        /// @return Ini object
-        static qini::INIObject readConfig();
-    };
+    /// @brief Create config file
+    static void createConfig();
 
-    int init();
-}
+    /// @brief Read config file
+    /// @return Ini object
+    static qini::INIObject readConfig();
+};
+
+int init();
+
+} // namespace qls
 
 #endif // !INIT_H

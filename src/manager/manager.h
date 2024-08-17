@@ -14,7 +14,6 @@
 #include "groupRoom.h"
 #include "user.h"
 #include "socket.h"
-#include "structureHasher.hpp"
 #include "verificationManager.h"
 #include "dataManager.h"
 
@@ -24,13 +23,13 @@ namespace qls
      * @class Manager
      * @brief Manages the core functionalities such as user, private room, and group room management.
      */
-    class Manager
+    class Manager final
     {
     public:
         Manager() = default;
         Manager(const Manager&) = delete;
         Manager(Manager&) = delete;
-        ~Manager();
+        ~Manager() = default;
 
         /**
          * @brief Initializes the manager.
@@ -191,7 +190,7 @@ namespace qls
          * @brief Retrieves the SQL process for the server.
          * @return Reference to the SQLDBProcess.
          */
-        quqisql::SQLDBProcess& getServerSqlProcess();
+        qls::SQLDBProcess& getServerSqlProcess();
 
         /**
          * @brief Retrieves the data manager for the server.
@@ -241,7 +240,7 @@ namespace qls
         std::atomic<long long>                  m_newGroupRoomId; ///< Atomic counter for new group room IDs.
 
         // SQL process manager
-        quqisql::SQLDBProcess                   m_sqlProcess; ///< SQL process instance.
+        qls::SQLDBProcess                   m_sqlProcess; ///< SQL process instance.
     };
 }
 

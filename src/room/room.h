@@ -10,26 +10,41 @@
 
 namespace qls
 {
-    struct BaseRoomImpl;
 
-    /*
-    * @brief 基类房间
-    */
-    class BaseRoom
-    {
-    public:
-        BaseRoom();
-        virtual ~BaseRoom() = default;
+enum class MessageType
+{
+    NOMAL_MESSAGE = 0,
+    TIP_MESSAGE
+};
 
-        virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
-        virtual bool leaveRoom(long long user_id);
+struct MessageStructure
+{
+    long long user_id = -1ll;
+    std::string message;
+    MessageType type;
+};
 
-        virtual void sendData(std::string_view data);
-        virtual void sendData(std::string_view data, long long user_id);
+struct BaseRoomImpl;
 
-    private:
-        std::shared_ptr<BaseRoomImpl> m_impl;
-    };
-}
+/*
+* @brief 基类房间
+*/
+class BaseRoom
+{
+public:
+    BaseRoom();
+    virtual ~BaseRoom();
+
+    virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
+    virtual bool leaveRoom(long long user_id);
+
+    virtual void sendData(std::string_view data);
+    virtual void sendData(std::string_view data, long long user_id);
+
+private:
+    std::unique_ptr<BaseRoomImpl> m_impl;
+};
+
+} // namespace qls
 
 #endif // !ROOM_H

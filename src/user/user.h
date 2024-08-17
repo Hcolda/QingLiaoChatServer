@@ -11,222 +11,245 @@
 #include <string>
 
 #include "socket.h"
-#include "userStructure.hpp"
+#include "definition.hpp"
 #include "qls_error.h"
 
 namespace qls
 {
-    /**
-     * @brief Class representing a User.
-     */
-    class User
+
+struct UserVerificationStructure
+{
+    enum class VerificationType
     {
-    public:
-        /**
-         * @brief Constructor to initialize a User object.
-         * @param user_id The ID of the user.
-         * @param is_create Flag indicating if user is being created.
-         */
-        User(long long user_id, bool is_create);
-
-        User(const User&) = delete; // Copy constructor deleted
-        User(User&&) = delete; // Move constructor deleted
-        ~User() = default;
-
-        // Methods to get user information
-
-        long long   getUserID() const;
-        std::string getUserName() const;
-        long long   getRegisteredTime() const;
-        int         getAge() const;
-        std::string getUserEmail() const;
-        std::string getUserPhone() const;
-        std::string getUserProfile() const;
-        bool        isUserPassword(const std::string&) const;
-
-        // Methods to update user information
-
-        void updateUserName(const std::string&);
-        void updateAge(int);
-        void updateUserEmail(const std::string&);
-        void updateUserPhone(const std::string&);
-        void updateUserProfile(const std::string&);
-        void firstUpdateUserPassword(const std::string& new_password);
-        void updateUserPassword(const std::string& old_password,
-            const std::string& new_password);
-
-        // Methods to get user associated information
-
-        bool userHasFriend(long long friend_user_id) const;
-        bool userHasGroup(long long group_id) const;
-
-        std::unordered_set<long long> getFriendList() const;
-        std::unordered_set<long long> getGroupList() const;
-
-        /**
-         * @brief Updates the friend list with a new set of friends.
-         * 
-         * @tparam T The type of the container holding the friend list.
-         * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
-         * @param set The new friend list to be updated.
-         */
-        template<class T, class Y =
-            std::enable_if_t<std::is_same_v<
-            std::remove_const_t<std::remove_reference_t<T>>,
-            std::unordered_set<long long>>>>
-        void updateFriendList(T&& set);
-
-        /**
-         * @brief Updates the group list with a new set of groups.
-         * 
-         * @tparam T The type of the container holding the group list.
-         * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
-         * @param set The new group list to be updated.
-         */
-        template<class T, class Y =
-            std::enable_if_t<std::is_same_v<
-            std::remove_const_t<std::remove_reference_t<T>>,
-            std::unordered_set<long long>>>>
-        void updateGroupList(T&& set);
-
-        /**
-         * @brief Adds a friend to the user's friend list.
-         * @param friend_user_id The ID of the friend to add.
-         * @return true if adding friend was successful, false otherwise.
-         */
-        bool addFriend(long long friend_user_id);
-
-        /**
-         * @brief Adds a friend verification entry.
-         * @tparam T Type of UserVerificationStruct.
-         * @param friend_user_id The ID of the friend.
-         * @param u UserVerificationStruct to add.
-         */
-        template<class T, class Y =
-            std::enable_if_t<std::is_same_v<
-            std::remove_const_t<std::remove_reference_t<T>>,
-            UserVerificationStruct>>>
-        void addFriendVerification(long long friend_user_id, T&& u);
-
-        /**
-         * @brief Removes a friend verification entry.
-         * @param friend_user_id The ID of the friend to remove verification for.
-         */
-        void removeFriendVerification(long long friend_user_id);
-
-        /**
-         * @brief Retrieves the list of friend verification entries.
-         * @return unordered_map containing friend verification entries.
-         */
-        std::unordered_map<long long,
-            UserVerificationStruct> getFriendVerificationList() const;
-
-        /**
-         * @brief Adds a group to the user's group list.
-         * @param group_id The ID of the group to add.
-         * @return true if adding group was successful, false otherwise.
-         */
-        bool addGroup(long long group_id);
-
-        /**
-         * @brief Adds a group verification entry.
-         * @tparam T Type of UserVerificationStruct.
-         * @param group_id The ID of the group.
-         * @param u UserVerificationStruct to add.
-         */
-        template<class T, class Y =
-            std::enable_if_t<std::is_same_v<
-            std::remove_const_t<std::remove_reference_t<T>>,
-            UserVerificationStruct>>>
-        void addGroupVerification(long long group_id, T&& u);
-
-        /**
-         * @brief Removes a group verification entry.
-         * @param group_id The ID of the group to remove verification for.
-         * @param user_id The ID of the user to remove verification for.
-         */
-        void removeGroupVerification(long long group_id, long long user_id);
-
-        /**
-         * @brief Retrieves the list of group verification entries.
-         * @return multimap containing group verification entries.
-         */
-        std::multimap<long long,
-            UserVerificationStruct> getGroupVerificationList() const;
-
-        /**
-         * @brief Adds a socket to the user's socket map.
-         * @param socket_ptr Pointer to the socket to add.
-         * @param type DeviceType associated with the socket.
-         */
-        void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
-
-        /**
-         * @brief Checks if the user has a specific socket.
-         * @param socket_ptr Pointer to the socket to check.
-         * @return true if user has the socket, false otherwise.
-         */
-        bool hasSocket(const std::shared_ptr<qls::Socket>& socket_ptr) const;
-
-        /**
-         * @brief Modifies the type of a socket in the user's socket map.
-         * @param socket_ptr Pointer to the socket to modify.
-         * @param type New DeviceType associated with the socket.
-         */
-        void modifySocketType(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
-
-        /**
-         * @brief Removes a socket from the user's socket map.
-         * @param socket_ptr Pointer to the socket to remove.
-         */
-        void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
-
-        /**
-         * @brief Notifies all sockets associated with the user.
-         * @param data Data to send in the notification.
-         */
-        void notifyAll(std::string_view data);
-
-        /**
-         * @brief Notifies sockets of a specific DeviceType associated with the user.
-         * @param type DeviceType of sockets to notify.
-         * @param data Data to send in the notification.
-         */
-        void notifyWithType(DeviceType type, std::string_view data);
-
-    private:
-        long long                   user_id; ///< User ID
-        std::string                 user_name; ///< User name
-        long long                   registered_time; ///< Time when user registered
-        int                         age; ///< User's age
-        std::string                 email; ///< User's email
-        std::string                 phone; ///< User's phone number
-        std::string                 profile; ///< User profile
-
-        std::string                 password; ///< User's hashed password
-        std::string                 salt; ///< Salt used in password hashing
-
-        mutable std::shared_mutex   m_data_mutex; ///< Mutex for thread-safe access to user data
-
-        std::unordered_set<long long>   m_user_friend_map; ///< User's friend list
-        mutable std::shared_mutex       m_user_friend_map_mutex; ///< Mutex for thread-safe access to friend list
-
-        std::unordered_map<long long,
-            UserVerificationStruct>     m_user_friend_verification_map; ///< User's friend verification map
-        mutable std::shared_mutex       m_user_friend_verification_map_mutex; ///< Mutex for thread-safe access to friend verification map
-
-        std::unordered_set<long long>   m_user_group_map; ///< User's group list
-        mutable std::shared_mutex       m_user_group_map_mutex; ///< Mutex for thread-safe access to group list
-
-        std::multimap<long long,
-            UserVerificationStruct>     m_user_group_verification_map; ///< User's group verification map
-        mutable std::shared_mutex       m_user_group_verification_map_mutex; ///< Mutex for thread-safe access to group verification map
-
-        std::unordered_map<std::shared_ptr<qls::Socket>, DeviceType>
-                                        m_socket_map; ///< Map of sockets associated with the user
-        mutable std::shared_mutex       m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
+        Unknown = 0,
+        Sent,
+        Received
     };
-}
+
+    long long user_id = 0;
+    /*
+    * @brief 验证类型:
+    * @brief {Unknown:  无状态}
+    * @brief {Sent:     发出的申请}
+    * @brief {Received: 接收的申请}
+    */
+    VerificationType verification_type = VerificationType::Unknown;
+    bool has_message = false;
+    std::string message;
+};
+
+/**
+ * @brief Class representing a User.
+ */
+class User final
+{
+public:
+    /**
+     * @brief Constructor to initialize a User object.
+     * @param user_id The ID of the user.
+     * @param is_create Flag indicating if user is being created.
+     */
+    User(long long user_id, bool is_create);
+
+    User(const User&) = delete; // Copy constructor deleted
+    User(User&&) = delete; // Move constructor deleted
+    ~User() = default;
+
+    // Methods to get user information
+
+    long long   getUserID() const;
+    std::string getUserName() const;
+    long long   getRegisteredTime() const;
+    int         getAge() const;
+    std::string getUserEmail() const;
+    std::string getUserPhone() const;
+    std::string getUserProfile() const;
+    bool        isUserPassword(const std::string&) const;
+
+    // Methods to update user information
+
+    void updateUserName(const std::string&);
+    void updateAge(int);
+    void updateUserEmail(const std::string&);
+    void updateUserPhone(const std::string&);
+    void updateUserProfile(const std::string&);
+    void firstUpdateUserPassword(const std::string& new_password);
+    void updateUserPassword(const std::string& old_password,
+        const std::string& new_password);
+
+    // Methods to get user associated information
+
+    bool userHasFriend(long long friend_user_id) const;
+    bool userHasGroup(long long group_id) const;
+
+    std::unordered_set<long long> getFriendList() const;
+    std::unordered_set<long long> getGroupList() const;
+
+    /**
+     * @brief Updates the friend list with a new set of friends.
+     * 
+     * @tparam T The type of the container holding the friend list.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @param set The new friend list to be updated.
+     */
+    template<class T, class Y =
+        std::enable_if_t<std::is_same_v<
+        std::remove_const_t<std::remove_reference_t<T>>,
+        std::unordered_set<long long>>>>
+    void updateFriendList(T&& set);
+
+    /**
+     * @brief Updates the group list with a new set of groups.
+     * 
+     * @tparam T The type of the container holding the group list.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @param set The new group list to be updated.
+     */
+    template<class T, class Y =
+        std::enable_if_t<std::is_same_v<
+        std::remove_const_t<std::remove_reference_t<T>>,
+        std::unordered_set<long long>>>>
+    void updateGroupList(T&& set);
+
+    /**
+     * @brief Adds a friend to the user's friend list.
+     * @param friend_user_id The ID of the friend to add.
+     * @return true if adding friend was successful, false otherwise.
+     */
+    bool addFriend(long long friend_user_id);
+
+    /**
+     * @brief Adds a friend verification entry.
+     * @tparam T Type of UserVerificationStructure.
+     * @param friend_user_id The ID of the friend.
+     * @param u UserVerificationStructure to add.
+     */
+    template<class T, class Y =
+        std::enable_if_t<std::is_same_v<
+        std::remove_const_t<std::remove_reference_t<T>>,
+        UserVerificationStructure>>>
+    void addFriendVerification(long long friend_user_id, T&& u);
+
+    /**
+     * @brief Removes a friend verification entry.
+     * @param friend_user_id The ID of the friend to remove verification for.
+     */
+    void removeFriendVerification(long long friend_user_id);
+
+    /**
+     * @brief Retrieves the list of friend verification entries.
+     * @return unordered_map containing friend verification entries.
+     */
+    std::unordered_map<long long,
+        UserVerificationStructure> getFriendVerificationList() const;
+
+    /**
+     * @brief Adds a group to the user's group list.
+     * @param group_id The ID of the group to add.
+     * @return true if adding group was successful, false otherwise.
+     */
+    bool addGroup(long long group_id);
+
+    /**
+     * @brief Adds a group verification entry.
+     * @tparam T Type of UserVerificationStructure.
+     * @param group_id The ID of the group.
+     * @param u UserVerificationStructure to add.
+     */
+    template<class T, class Y =
+        std::enable_if_t<std::is_same_v<
+        std::remove_const_t<std::remove_reference_t<T>>,
+        UserVerificationStructure>>>
+    void addGroupVerification(long long group_id, T&& u);
+
+    /**
+     * @brief Removes a group verification entry.
+     * @param group_id The ID of the group to remove verification for.
+     * @param user_id The ID of the user to remove verification for.
+     */
+    void removeGroupVerification(long long group_id, long long user_id);
+
+    /**
+     * @brief Retrieves the list of group verification entries.
+     * @return multimap containing group verification entries.
+     */
+    std::multimap<long long,
+        UserVerificationStructure> getGroupVerificationList() const;
+
+    /**
+     * @brief Adds a socket to the user's socket map.
+     * @param socket_ptr Pointer to the socket to add.
+     * @param type DeviceType associated with the socket.
+     */
+    void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
+
+    /**
+     * @brief Checks if the user has a specific socket.
+     * @param socket_ptr Pointer to the socket to check.
+     * @return true if user has the socket, false otherwise.
+     */
+    bool hasSocket(const std::shared_ptr<qls::Socket>& socket_ptr) const;
+
+    /**
+     * @brief Modifies the type of a socket in the user's socket map.
+     * @param socket_ptr Pointer to the socket to modify.
+     * @param type New DeviceType associated with the socket.
+     */
+    void modifySocketType(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
+
+    /**
+     * @brief Removes a socket from the user's socket map.
+     * @param socket_ptr Pointer to the socket to remove.
+     */
+    void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
+
+    /**
+     * @brief Notifies all sockets associated with the user.
+     * @param data Data to send in the notification.
+     */
+    void notifyAll(std::string_view data);
+
+    /**
+     * @brief Notifies sockets of a specific DeviceType associated with the user.
+     * @param type DeviceType of sockets to notify.
+     * @param data Data to send in the notification.
+     */
+    void notifyWithType(DeviceType type, std::string_view data);
+
+private:
+    long long                   user_id; ///< User ID
+    std::string                 user_name; ///< User name
+    long long                   registered_time; ///< Time when user registered
+    int                         age; ///< User's age
+    std::string                 email; ///< User's email
+    std::string                 phone; ///< User's phone number
+    std::string                 profile; ///< User profile
+
+    std::string                 password; ///< User's hashed password
+    std::string                 salt; ///< Salt used in password hashing
+
+    mutable std::shared_mutex   m_data_mutex; ///< Mutex for thread-safe access to user data
+
+    std::unordered_set<long long>   m_user_friend_map; ///< User's friend list
+    mutable std::shared_mutex       m_user_friend_map_mutex; ///< Mutex for thread-safe access to friend list
+
+    std::unordered_map<long long,
+        UserVerificationStructure>     m_user_friend_verification_map; ///< User's friend verification map
+    mutable std::shared_mutex       m_user_friend_verification_map_mutex; ///< Mutex for thread-safe access to friend verification map
+
+    std::unordered_set<long long>   m_user_group_map; ///< User's group list
+    mutable std::shared_mutex       m_user_group_map_mutex; ///< Mutex for thread-safe access to group list
+
+    std::multimap<long long,
+        UserVerificationStructure>     m_user_group_verification_map; ///< User's group verification map
+    mutable std::shared_mutex       m_user_group_verification_map_mutex; ///< Mutex for thread-safe access to group verification map
+
+    std::unordered_map<std::shared_ptr<qls::Socket>, DeviceType>
+                                    m_socket_map; ///< Map of sockets associated with the user
+    mutable std::shared_mutex       m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
+};
+
+} // namespace qls
 
 #include "user.tpp"
 

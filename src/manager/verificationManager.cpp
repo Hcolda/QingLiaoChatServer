@@ -32,11 +32,11 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
     
     // user1
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = user_id_2;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Sent;
+            qls::UserVerificationStructure::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id_1);
         ptr->addFriendVerification(user_id_2, std::move(uv));
@@ -47,11 +47,11 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
 
     // user2
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = user_id_1;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Received;
+            qls::UserVerificationStructure::VerificationType::Received;
 
         auto ptr = serverManager.getUser(user_id_2);
         ptr->addFriendVerification(user_id_1, std::move(uv));
@@ -163,11 +163,11 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
     // 用户发送请求
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = group_id;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Sent;
+            qls::UserVerificationStructure::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id);
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -175,11 +175,11 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
     // 群聊拥有者接收请求
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = user_id;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Received;
+            qls::UserVerificationStructure::VerificationType::Received;
 
         auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
         ptr->addGroupVerification(group_id, std::move(uv));
