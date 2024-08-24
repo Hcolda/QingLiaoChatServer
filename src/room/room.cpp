@@ -5,7 +5,7 @@
 #include <shared_mutex>
 #include <memory>
 
-#include <Json.h>
+#include "Json.h"
 #include "dataPackage.h"
 
 namespace qls
@@ -17,6 +17,12 @@ struct BaseRoomImpl
                             m_userMap;
     std::shared_mutex       m_userMap_mutex;
 };
+
+/*
+* ------------------------------------------------------------------------
+* class BaseRoom
+* ------------------------------------------------------------------------
+*/
 
 BaseRoom::BaseRoom():
     m_impl(std::make_unique<BaseRoomImpl>())
@@ -33,6 +39,12 @@ bool BaseRoom::joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr
 
     m_impl->m_userMap.emplace(user_id, user_ptr);
     return true;
+}
+
+bool BaseRoom::hasMember(long long user_id) const
+{
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
+    return m_impl->m_userMap.find(user_id) != m_impl->m_userMap.cend();
 }
 
 bool BaseRoom::leaveRoom(long long user_id)
@@ -61,6 +73,26 @@ void BaseRoom::sendData(std::string_view data, long long user_id)
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userMap_mutex);
 
     m_impl->m_userMap.find(user_id)->second->notifyAll(data);
+}
+
+/*
+* ------------------------------------------------------------------------
+* class ChattingRoom
+* ------------------------------------------------------------------------
+*/
+
+void ChattingRoom::sendData(std::string_view data)
+{
+    auto package = DataPackage::makePackage(data);
+    package->type = 1;
+    BaseRoom::sendData(package->packageToString());
+}
+
+void ChattingRoom::sendData(std::string_view data, long long user_id)
+{
+    auto package = DataPackage::makePackage(data);
+    package->type = 1;
+    BaseRoom::sendData(package->packageToString(), user_id);
 }
 
 } // namespace qls

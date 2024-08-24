@@ -56,6 +56,7 @@ namespace qjson
         JObject(float value);
         JObject(const char* data);
         JObject(const std::string& data);
+        JObject(std::string_view data);
         JObject(std::string&& data);
         ~JObject();
 

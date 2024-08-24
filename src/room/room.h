@@ -26,9 +26,6 @@ struct MessageStructure
 
 struct BaseRoomImpl;
 
-/*
-* @brief 基类房间
-*/
 class BaseRoom
 {
 public:
@@ -36,6 +33,7 @@ public:
     virtual ~BaseRoom();
 
     virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
+    virtual bool hasMember(long long user_id) const;
     virtual bool leaveRoom(long long user_id);
 
     virtual void sendData(std::string_view data);
@@ -43,6 +41,17 @@ public:
 
 private:
     std::unique_ptr<BaseRoomImpl> m_impl;
+};
+
+class ChattingRoom: public BaseRoom
+{
+public:
+    ChattingRoom() = default;
+    virtual ~ChattingRoom() = default;
+
+protected:
+    virtual void sendData(std::string_view data);
+    virtual void sendData(std::string_view data, long long user_id);
 };
 
 } // namespace qls

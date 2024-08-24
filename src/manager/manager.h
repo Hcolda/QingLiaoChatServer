@@ -31,8 +31,11 @@ class Manager final
 public:
     Manager();
     Manager(const Manager&) = delete;
-    Manager(Manager&) = delete;
+    Manager(Manager&&) = delete;
     ~Manager();
+
+    Manager& operator=(const Manager&) = delete;
+    Manager& operator=(Manager&&) = delete;
 
     /**
      * @brief Initializes the manager.

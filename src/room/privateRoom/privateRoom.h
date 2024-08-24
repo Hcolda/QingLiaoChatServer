@@ -7,6 +7,7 @@
 #include <vector>
 #include <shared_mutex>
 #include <unordered_map>
+#include <string_view>
 
 #include "room.h"
 
@@ -16,7 +17,7 @@ namespace qls
 /*
 * @brief 私聊房间基类
 */
-class PrivateRoom final : public qls::BaseRoom
+class PrivateRoom final : public ChattingRoom
 {
 public:
     PrivateRoom(long long user_id_1, long long user_id_2, bool is_create);
@@ -25,8 +26,8 @@ public:
 
     ~PrivateRoom() = default;
 
-    void sendMessage(const std::string& message, long long sender_user_id);
-    void sendTipMessage(const std::string& message, long long sender_user_id);
+    void sendMessage(std::string_view message, long long sender_user_id);
+    void sendTipMessage(std::string_view message, long long sender_user_id);
     void getMessage(
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);

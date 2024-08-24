@@ -37,8 +37,10 @@ public:
     SocketService(std::shared_ptr<Socket> socket_ptr);
     ~SocketService();
 
-    /// @brief Get the socket pointer
-    /// @return Socket pointer
+    /**
+    * @brief Get the socket pointer
+    * @return Socket pointer
+    */
     std::shared_ptr<Socket> get_socket_ptr() const;
 
     /**

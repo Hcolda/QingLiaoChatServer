@@ -62,6 +62,8 @@ public:
     using closeFunction = std::function<asio::awaitable<void>(tcp::socket&)>;
 
     Network();
+    Network(const Network&) = delete;
+    Network(Network&&) = delete;
     ~Network();
 
     /**

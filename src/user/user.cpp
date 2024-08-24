@@ -387,12 +387,13 @@ void User::removeSocket(const std::shared_ptr<Socket>& socket_ptr)
 void User::notifyAll(std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
+    std::shared_ptr<std::string> buffer_ptr(std::make_shared<std::string>(data));
     for (auto& [socket_ptr, type]: m_impl->m_socket_map)
     {
-        asio::async_write(*socket_ptr, asio::buffer(data),
-            [this](std::error_code ec, size_t n){
-                if (ec) serverLogger.error('[', ec.category().name(), ']',
-                    ec.message());
+        asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
+            [this, buffer_ptr](std::error_code ec, size_t n){
+                if (ec)
+                    serverLogger.error('[', ec.category().name(), ']', ec.message());
             });
     }
 }
@@ -400,14 +401,15 @@ void User::notifyAll(std::string_view data)
 void User::notifyWithType(DeviceType type, std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
+    std::shared_ptr<std::string> buffer_ptr(std::make_shared<std::string>(data));
     for (auto& [socket_ptr, dtype]: m_impl->m_socket_map)
     {
         if (dtype == type)
         {
-            asio::async_write(*socket_ptr, asio::buffer(data),
-                [this](std::error_code ec, size_t n){
-                    if (ec) serverLogger.error('[', ec.category().name(), ']',
-                        ec.message());
+            asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
+                [this, buffer_ptr](std::error_code ec, size_t n){
+                    if (ec)
+                        serverLogger.error('[', ec.category().name(), ']', ec.message());
                 });
         }
     }

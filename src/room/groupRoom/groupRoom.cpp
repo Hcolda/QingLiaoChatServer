@@ -10,6 +10,7 @@
 
 #include "manager.h"
 #include "qls_error.h"
+#include "returnStateMessage.hpp"
 
 extern qls::Manager serverManager;
 
@@ -85,7 +86,7 @@ bool GroupRoom::removeMember(long long user_id)
     return true;
 }
 
-void GroupRoom::sendMessage(long long sender_user_id, const std::string& message)
+void GroupRoom::sendMessage(long long sender_user_id, std::string_view message)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -120,7 +121,7 @@ void GroupRoom::sendMessage(long long sender_user_id, const std::string& message
         m_impl->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
-                {sender_user_id, message,
+                {sender_user_id, std::string(message),
                 MessageType::NOMAL_MESSAGE} });
     }
 
@@ -136,7 +137,7 @@ void GroupRoom::sendMessage(long long sender_user_id, const std::string& message
 }
 
 void GroupRoom::sendTipMessage(long long sender_user_id,
-    const std::string& message)
+    std::string_view message)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -171,7 +172,7 @@ void GroupRoom::sendTipMessage(long long sender_user_id,
         m_impl->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
-                {sender_user_id, message,
+                {sender_user_id, std::string(message),
                 MessageType::TIP_MESSAGE} });
     }
 
@@ -185,7 +186,7 @@ void GroupRoom::sendTipMessage(long long sender_user_id,
 }
 
 void GroupRoom::sendUserTipMessage(long long sender_user_id,
-    const std::string& message, long long receiver_user_id)
+    std::string_view message, long long receiver_user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -229,7 +230,11 @@ void GroupRoom::getMessage(
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (from > to) return;
+    if (from > to)
+    {
+        sendData(qjson::JWriter::fastWrite(makeErrorMessage("Illegal time point")));
+        return;
+    }
 
     auto searchPoint = [this](
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& p,

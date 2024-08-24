@@ -19,7 +19,12 @@ class VerificationManager final
 {
 public:
     VerificationManager() = default;
+    VerificationManager(const VerificationManager&) = delete;
+    VerificationManager(VerificationManager&&) = delete;
     ~VerificationManager() = default;
+
+    VerificationManager& operator=(const VerificationManager&) = delete;
+    VerificationManager& operator=(VerificationManager&&) = delete;
 
     /**
      * @brief Initializes the verification manager.

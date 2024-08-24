@@ -25,8 +25,7 @@ PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2, bool is_creat
     }
 }
 
-void PrivateRoom::sendMessage(const std::string& message,
-    long long sender_user_id)
+void PrivateRoom::sendMessage(std::string_view message, long long sender_user_id)
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);
@@ -39,7 +38,7 @@ void PrivateRoom::sendMessage(const std::string& message,
         this->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
-                {sender_user_id, message,
+                {sender_user_id, std::string(message),
                 MessageType::TIP_MESSAGE} });
     }
 
@@ -51,8 +50,7 @@ void PrivateRoom::sendMessage(const std::string& message,
     sendData(qjson::JWriter::fastWrite(json));
 }
 
-void PrivateRoom::sendTipMessage(const std::string& message,
-    long long sender_user_id)
+void PrivateRoom::sendTipMessage(std::string_view message, long long sender_user_id)
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);
@@ -65,7 +63,7 @@ void PrivateRoom::sendTipMessage(const std::string& message,
         this->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
-                {sender_user_id, message,
+                {sender_user_id, std::string(message),
                 MessageType::TIP_MESSAGE} });
     }
     

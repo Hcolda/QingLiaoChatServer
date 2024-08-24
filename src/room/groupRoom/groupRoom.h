@@ -16,7 +16,7 @@ namespace qls
 
 struct GroupRoomImpl;
 
-class GroupRoom final : public qls::BaseRoom
+class GroupRoom final : public ChattingRoom
 {
 public:
     struct UserDataStructure
@@ -33,9 +33,9 @@ public:
     bool addMember(long long user_id);
     bool removeMember(long long user_id);
     
-    void sendMessage(long long sender_user_id, const std::string& message);
-    void sendTipMessage(long long sender_user_id, const std::string& message);
-    void sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
+    void sendMessage(long long sender_user_id, std::string_view message);
+    void sendTipMessage(long long sender_user_id, std::string_view message);
+    void sendUserTipMessage(long long sender_user_id, std::string_view, long long receiver_user_id);
     void getMessage(
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);

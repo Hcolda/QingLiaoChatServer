@@ -30,7 +30,10 @@ public:
     DataPackage() = delete;
     ~DataPackage() = default;
     DataPackage(const DataPackage&) = delete;
-    DataPackage(DataPackage&& dp) = delete;
+    DataPackage(DataPackage&&) = delete;
+
+    DataPackage& operator=(const DataPackage&) = delete;
+    DataPackage& operator=(DataPackage&&) = delete;
 
     /**
      * @brief Creates a data package from the given data.
