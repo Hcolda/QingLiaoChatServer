@@ -1,4 +1,4 @@
-﻿# QingLiao Chat Server
+# QingLiao Chat Server
 This is a lightweight chat server.  
 If you want the client, see [QingLiaoChatClient](https://github.com/Hcolda/QingLiaoChatClient)
 

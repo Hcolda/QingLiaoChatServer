@@ -1,101 +1,74 @@
-﻿#ifndef GROUP_ROOM_H
+#ifndef GROUP_ROOM_H
 #define GROUP_ROOM_H
 
+#include <memory>
 #include <chrono>
 #include <vector>
 #include <shared_mutex>
 #include <unordered_map>
 #include <asio.hpp>
 
+#include "userid.hpp"
+#include "groupid.hpp"
 #include "room.h"
 #include "groupPermission.h"
 
 namespace qls
 {
-    class GroupRoom : public qls::BaseRoom
+
+struct GroupRoomImpl;
+
+class GroupRoom final : public ChattingRoom
+{
+public:
+    struct UserDataStructure
     {
-    public:
-
-        struct UserDataStruct
-        {
-            std::string nickname;
-            long long groupLevel = 1;
-        };
-
-        struct MessageStruct
-        {
-            enum class MessageType
-            {
-                NOMAL_MESSAGE = 0,
-                TIP_MESSAGE
-            };
-
-            long long user_id;
-            std::string message;
-            MessageType type;
-        };
-
-        GroupRoom(long long group_id, long long administrator, bool is_create);
-        GroupRoom(const GroupRoom&) = delete;
-        GroupRoom(GroupRoom&&) = delete;
-        ~GroupRoom() = default;
-
-        bool addMember(long long user_id);
-        bool removeMember(long long user_id);
-        
-        void sendMessage(long long sender_user_id, const std::string& message);
-        void sendTipMessage(long long sender_user_id, const std::string& message);
-        void sendUserTipMessage(long long sender_user_id, const std::string& message, long long receiver_user_id);
-        void getMessage(
-            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
-            const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
-
-        bool                                    hasUser(long long user_id) const;
-        std::unordered_map<long long,
-            UserDataStruct>                     getUserList() const;
-        std::string                             getUserNickname(long long user_id) const;
-        long long                               getUserGroupLevel(long long user_id) const;
-        std::unordered_map<long long,
-            GroupPermission::PermissionType>    getUserPermissionList() const;
-        long long                               getAdministrator() const;
-        long long                               getGroupID() const;
-        std::vector<long long>                  getDefaultUserList() const;
-        std::vector<long long>                  getOperatorList() const;
-        
-        bool muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins);
-        bool unmuteUser(long long executorId, long long user_id);
-        bool kickUser(long long executorId, long long user_id);
-        bool addOperator(long long executorId, long long user_id);
-        bool removeOperator(long long executorId, long long user_id);
-        void setAdministrator(long long user_id);
-
-        void removeThisRoom();
-        bool canBeUsed() const;
-
-    private:
-        const long long                 m_group_id;
-        long long                       m_administrator_user_id;
-        mutable std::shared_mutex       m_administrator_user_id_mutex;
-
-        std::atomic<bool>               m_can_be_used;
-
-        GroupPermission                 m_permission;
-
-        std::unordered_map<long long,
-            UserDataStruct>             m_user_id_map;
-        mutable std::shared_mutex       m_user_id_map_mutex;
-
-        std::unordered_map<long long,
-            std::pair<std::chrono::time_point<std::chrono::system_clock,
-            std::chrono::milliseconds>,
-                std::chrono::minutes>>  m_muted_user_map;
-        mutable std::shared_mutex       m_muted_user_map_mutex;
-
-        std::vector<std::pair<std::chrono::time_point<std::chrono::system_clock,
-            std::chrono::milliseconds>,
-            MessageStruct>>             m_message_queue;
-        mutable std::shared_mutex       m_message_queue_mutex;
+        std::string nickname;
+        long long groupLevel = 1;
     };
-}
+
+    GroupRoom(GroupID group_id, UserID administrator, bool is_create);
+    GroupRoom(const GroupRoom&) = delete;
+    GroupRoom(GroupRoom&&) = delete;
+    ~GroupRoom();
+
+    bool addMember(UserID user_id);
+    bool hasMember(UserID user_id) const;
+    bool removeMember(UserID user_id);
+    
+    void sendMessage(UserID sender_user_id, std::string_view message);
+    void sendTipMessage(UserID sender_user_id, std::string_view message);
+    void sendUserTipMessage(UserID sender_user_id, std::string_view, UserID receiver_user_id);
+    void getMessage(
+        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
+        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
+
+    bool                                    hasUser(UserID user_id) const;
+    std::unordered_map<UserID,
+        UserDataStructure>                  getUserList() const;
+    std::string                             getUserNickname(UserID user_id) const;
+    long long                               getUserGroupLevel(UserID user_id) const;
+    std::unordered_map<UserID,
+        PermissionType>                     getUserPermissionList() const;
+    UserID                                  getAdministrator() const;
+    GroupID                                 getGroupID() const;
+    std::vector<UserID>                     getDefaultUserList() const;
+    std::vector<UserID>                     getOperatorList() const;
+    
+    bool muteUser(UserID executorId, UserID user_id, const std::chrono::minutes& mins);
+    bool unmuteUser(UserID executorId, UserID user_id);
+    bool kickUser(UserID executorId, UserID user_id);
+    bool addOperator(UserID executorId, UserID user_id);
+    bool removeOperator(UserID executorId, UserID user_id);
+    void setAdministrator(UserID user_id);
+
+    void removeThisRoom();
+    bool canBeUsed() const;
+
+private:
+    std::unique_ptr<GroupRoomImpl> m_impl;
+};
+
+} // namespace qls
 
 #endif // !GROUP_ROOM_H

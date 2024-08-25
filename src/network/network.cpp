@@ -1,4 +1,4 @@
-﻿#include "network.h"
+#include "network.h"
 
 #include <asio/experimental/awaitable_operators.hpp>
 #include <Logger.hpp>

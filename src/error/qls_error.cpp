@@ -57,16 +57,22 @@ std::string qls_error_category::message(int Errval) const
         return "private room doesn't exist";
     case qls_errc::private_room_unable_to_use:
         return "room can't be used";
+    case qls_errc::private_room_verification_not_existed:
+        return "friend verification doesn't exist";
 
     // group room error
     case qls_errc::group_room_not_existed:
         return "group room doesn't exist";
     case qls_errc::group_room_unable_to_use:
         return "room can't be used";
+    case qls_errc::group_room_verification_not_existed:
+        return "group verification doesn't exist";
 
     // permission error
     case qls_errc::no_permission:
         return "no permission";
+    case qls_errc::permission_denied:
+        return "permission denied";
         
     default:
         break;

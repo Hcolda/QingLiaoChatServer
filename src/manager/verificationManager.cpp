@@ -17,10 +17,10 @@ void VerificationManager::init()
     // sql init
 }
 
-void VerificationManager::addFriendRoomVerification(long long user_id_1, long long user_id_2)
+void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID user_id_2)
 {
     {
-        std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
         if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
             m_FriendRoomVerification_map.end())
@@ -32,11 +32,11 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
     
     // user1
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = user_id_2;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Sent;
+            qls::UserVerificationStructure::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id_1);
         ptr->addFriendVerification(user_id_2, std::move(uv));
@@ -47,11 +47,11 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
 
     // user2
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = user_id_1;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Received;
+            qls::UserVerificationStructure::VerificationType::Received;
 
         auto ptr = serverManager.getUser(user_id_2);
         ptr->addFriendVerification(user_id_1, std::move(uv));
@@ -61,20 +61,20 @@ void VerificationManager::addFriendRoomVerification(long long user_id_1, long lo
     }
 }
 
-bool VerificationManager::hasFriendRoomVerification(long long user_id_1, long long user_id_2) const
+bool VerificationManager::hasFriendRoomVerification(UserID user_id_1, UserID user_id_2) const
 {
-    std::shared_lock<std::shared_mutex> sl(m_FriendRoomVerification_map_mutex);
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_FriendRoomVerification_map_mutex);
     
     return m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
         m_FriendRoomVerification_map.end();
 }
 
-bool VerificationManager::setFriendVerified(long long user_id_1, long long user_id_2,
-                                long long user_id)
+bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
+                                            UserID user_id)
 {
     bool result = false;
     {
-        std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.end())
@@ -132,10 +132,10 @@ bool VerificationManager::setFriendVerified(long long user_id_1, long long user_
     return result;
 }
 
-void VerificationManager::removeFriendRoomVerification(long long user_id_1, long long user_id_2)
+void VerificationManager::removeFriendRoomVerification(UserID user_id_1, UserID user_id_2)
 {
     {
-        std::unique_lock<std::shared_mutex> ul(m_FriendRoomVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.end())
@@ -148,10 +148,10 @@ void VerificationManager::removeFriendRoomVerification(long long user_id_1, long
     serverManager.getUser(user_id_2)->removeFriendVerification(user_id_1);
 }
 
-void VerificationManager::addGroupRoomVerification(long long group_id, long long user_id)
+void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user_id)
 {
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
 
         if (m_GroupVerification_map.find({ group_id, user_id }) !=
             m_GroupVerification_map.end())
@@ -163,11 +163,11 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
     // 用户发送请求
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = group_id;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Sent;
+            qls::UserVerificationStructure::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id);
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -175,11 +175,11 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
 
     // 群聊拥有者接收请求
     {
-        qls::UserVerificationStruct uv;
+        qls::UserVerificationStructure uv;
 
         uv.user_id = user_id;
         uv.verification_type =
-            qls::UserVerificationStruct::VerificationType::Received;
+            qls::UserVerificationStructure::VerificationType::Received;
 
         auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -189,19 +189,19 @@ void VerificationManager::addGroupRoomVerification(long long group_id, long long
     // m_globalRoom->baseSendData()
 }
 
-bool VerificationManager::hasGroupRoomVerification(long long group_id, long long user_id) const
+bool VerificationManager::hasGroupRoomVerification(GroupID group_id, UserID user_id) const
 {
-    std::shared_lock<std::shared_mutex> sl(m_GroupVerification_map_mutex);
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_GroupVerification_map_mutex);
 
     return m_GroupVerification_map.find({ group_id, user_id }) !=
         m_GroupVerification_map.end();
 }
 
-bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long long user_id)
+bool VerificationManager::setGroupRoomGroupVerified(GroupID group_id, UserID user_id)
 {
     bool result = false;
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.end())
@@ -232,11 +232,11 @@ bool VerificationManager::setGroupRoomGroupVerified(long long group_id, long lon
     return result;
 }
 
-bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long user_id)
+bool VerificationManager::setGroupRoomUserVerified(GroupID group_id, UserID user_id)
 {
     bool result = false;
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.end())
@@ -272,10 +272,10 @@ bool VerificationManager::setGroupRoomUserVerified(long long group_id, long long
     return result;
 }
 
-void VerificationManager::removeGroupRoomVerification(long long group_id, long long user_id)
+void VerificationManager::removeGroupRoomVerification(GroupID group_id, UserID user_id)
 {
     {
-        std::unique_lock<std::shared_mutex> ul(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.end())

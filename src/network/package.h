@@ -1,4 +1,4 @@
-﻿#ifndef PACKAGE_H
+#ifndef PACKAGE_H
 #define PACKAGE_H
 
 #include <string>
@@ -6,67 +6,69 @@
 
 namespace qls
 {
+    
+/**
+ * @brief A class to handle data packages.
+ */
+class Package final
+{
+public:
+    Package() = default;
+    ~Package() = default;
+
+    Package(const Package&) = delete;
+    Package(Package&&) = delete;
+
+    Package& operator=(const Package&) = delete;
+    Package& operator=(Package&&) = delete;
+
     /**
-     * @brief A class to handle data packages.
+     * @brief Writes data into the class.
+     * @param data The binary data to write.
      */
-    class Package
-    {
-    public:
-        Package() = default;
-        ~Package() = default;
+    void write(std::string_view data);
 
-        Package(const Package&) = delete;
-        Package(Package&&) = delete;
+    /**
+     * @brief Checks if data can be read from the package.
+     * @return true if data can be read, false otherwise.
+     */
+    bool canRead() const;
 
-        Package& operator=(const Package&) = delete;
-        Package& operator=(Package&&) = delete;
+    /**
+     * @brief Gets the length of the first message in the package.
+     * @return The length of the first message.
+     */
+    size_t firstMsgLength() const;
 
-        /**
-         * @brief Writes data into the class.
-         * @param data The binary data to write.
-         */
-        void write(std::string_view data);
+    /**
+     * @brief Reads a data package.
+     * @return The data package.
+     */
+    std::string read();
 
-        /**
-         * @brief Checks if data can be read from the package.
-         * @return true if data can be read, false otherwise.
-         */
-        bool canRead() const;
+    /**
+     * @brief Reads the buffer data in the package.
+     * @return The buffer as a string.
+     */
+    const std::string& readBuffer() const;
 
-        /**
-         * @brief Gets the length of the first message in the package.
-         * @return The length of the first message.
-         */
-        size_t firstMsgLength() const;
+    /**
+     * @brief Sets the buffer with the given data.
+     * @param buffer The data to set in the buffer.
+     */
+    void setBuffer(const std::string& buffer);
 
-        /**
-         * @brief Reads a data package.
-         * @return The data package.
-         */
-        std::string read();
+    /**
+     * @brief Creates a data package from binary data.
+     * @param data The binary data.
+     * @return The binary data wrapped in a data package.
+     */
+    static std::string makePackage(std::string_view data);
 
-        /**
-         * @brief Reads the buffer data in the package.
-         * @return The buffer as a string.
-         */
-        const std::string& readBuffer() const;
+private:
+    std::string m_buffer; ///< The buffer to store the data.
+};
 
-        /**
-         * @brief Sets the buffer with the given data.
-         * @param buffer The data to set in the buffer.
-         */
-        void setBuffer(const std::string& buffer);
-
-        /**
-         * @brief Creates a data package from binary data.
-         * @param data The binary data.
-         * @return The binary data wrapped in a data package.
-         */
-        static std::string makePackage(std::string_view data);
-
-    private:
-        std::string m_buffer; ///< The buffer to store the data.
-    };
-}
+} // namespace qls
 
 #endif // !PACKAGE_H

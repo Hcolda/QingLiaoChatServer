@@ -7,19 +7,21 @@
 class InputImpl;
 namespace qls
 {
-    class Input
-    {
-    public:
-        Input() = default;
-        ~Input() = default;
 
-        void init();
+class Input final
+{
+public:
+    Input();
+    ~Input();
 
-        bool input(const std::string& command);
+    void init();
 
-    private:
-        std::shared_ptr<InputImpl> m_impl;
-    };
-}
+    bool input(const std::string& command);
+
+private:
+    std::unique_ptr<InputImpl> m_impl;
+};
+
+} // namespace qls
 
 #endif // !INPUT_H

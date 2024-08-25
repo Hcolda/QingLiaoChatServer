@@ -1,4 +1,4 @@
-﻿#include "Json.h"
+#include "Json.h"
 
 #include <cmath>
 
@@ -142,6 +142,13 @@ JObject::JObject(const std::string& data)
     m_value(new value_t)
 {
     *m_value = data;
+}
+
+qjson::JObject::JObject(std::string_view data)
+    :m_type(JValueType::JString),
+    m_value(new value_t)
+{
+    *m_value = std::string(data);
 }
 
 JObject::JObject(std::string&& data)

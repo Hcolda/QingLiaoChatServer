@@ -1,10 +1,13 @@
-﻿#include "friendRoomVerification.h"
+#include "friendRoomVerification.h"
 
 #include <system_error>
 
 #include "qls_error.h"
 
-qls::FriendRoomVerification::FriendRoomVerification(long long user_id_1, long long user_id_2) :
+namespace qls
+{
+
+FriendRoomVerification::FriendRoomVerification(UserID user_id_1, UserID user_id_2) :
     m_user_id_1(user_id_1),
     m_user_id_2(user_id_2),
     m_user_1_is_verified(false),
@@ -12,7 +15,7 @@ qls::FriendRoomVerification::FriendRoomVerification(long long user_id_1, long lo
 {
 }
 
-qls::FriendRoomVerification::FriendRoomVerification(const FriendRoomVerification& f) :
+FriendRoomVerification::FriendRoomVerification(const FriendRoomVerification& f) :
     m_user_id_1(f.m_user_id_1),
     m_user_id_2(f.m_user_id_2),
     m_user_1_is_verified(static_cast<bool>(f.m_user_1_is_verified)),
@@ -21,7 +24,7 @@ qls::FriendRoomVerification::FriendRoomVerification(const FriendRoomVerification
 {
 }
 
-qls::FriendRoomVerification::FriendRoomVerification(FriendRoomVerification&& f) noexcept :
+FriendRoomVerification::FriendRoomVerification(FriendRoomVerification&& f) noexcept :
     m_user_id_1(f.m_user_id_1),
     m_user_id_2(f.m_user_id_2),
     m_user_1_is_verified(static_cast<bool>(f.m_user_1_is_verified)),
@@ -29,7 +32,7 @@ qls::FriendRoomVerification::FriendRoomVerification(FriendRoomVerification&& f) 
 {
 }
 
-void qls::FriendRoomVerification::setUserVerified(long long user_id)
+void FriendRoomVerification::setUserVerified(UserID user_id)
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
         throw std::system_error(qls_errc::user_not_existed);
@@ -40,7 +43,7 @@ void qls::FriendRoomVerification::setUserVerified(long long user_id)
         m_user_2_is_verified = true;
 }
 
-bool qls::FriendRoomVerification::getUserVerified(long long user_id) const
+bool FriendRoomVerification::getUserVerified(UserID user_id) const
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
         throw std::system_error(qls_errc::user_not_existed);
@@ -50,3 +53,5 @@ bool qls::FriendRoomVerification::getUserVerified(long long user_id) const
     else
         return m_user_2_is_verified;
 }
+
+} // namespace qls

@@ -1,4 +1,4 @@
-﻿#ifndef ROOM_H
+#ifndef ROOM_H
 #define ROOM_H
 
 #include <memory>
@@ -6,30 +6,55 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "userid.hpp"
 #include "user.h"
 
 namespace qls
 {
-    struct BaseRoomImpl;
 
-    /*
-    * @brief 基类房间
-    */
-    class BaseRoom
-    {
-    public:
-        BaseRoom();
-        virtual ~BaseRoom() = default;
+enum class MessageType
+{
+    NOMAL_MESSAGE = 0,
+    TIP_MESSAGE
+};
 
-        virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
-        virtual bool leaveRoom(long long user_id);
+struct MessageStructure
+{
+    UserID user_id = UserID(-1ll);
+    std::string message;
+    MessageType type;
+};
 
-        virtual void sendData(std::string_view data);
-        virtual void sendData(std::string_view data, long long user_id);
+struct BaseRoomImpl;
 
-    private:
-        std::shared_ptr<BaseRoomImpl> m_impl;
-    };
-}
+class BaseRoom
+{
+public:
+    BaseRoom();
+    virtual ~BaseRoom();
+
+    virtual bool joinRoom(UserID user_id, const std::shared_ptr<User>& user_ptr);
+    virtual bool hasUser(UserID user_id) const;
+    virtual bool leaveRoom(UserID user_id);
+
+    virtual void sendData(std::string_view data);
+    virtual void sendData(std::string_view data, UserID user_id);
+
+private:
+    std::unique_ptr<BaseRoomImpl> m_impl;
+};
+
+class ChattingRoom: public BaseRoom
+{
+public:
+    ChattingRoom() = default;
+    virtual ~ChattingRoom() = default;
+
+protected:
+    virtual void sendData(std::string_view data);
+    virtual void sendData(std::string_view data, UserID user_id);
+};
+
+} // namespace qls
 
 #endif // !ROOM_H
