@@ -13,7 +13,7 @@ namespace qls
     
 struct BaseRoomImpl
 {
-    std::unordered_map<long long, std::shared_ptr<User>>
+    std::unordered_map<UserID, std::shared_ptr<User>>
                             m_userMap;
     std::shared_mutex       m_userMap_mutex;
 };
@@ -30,7 +30,7 @@ BaseRoom::BaseRoom():
 
 BaseRoom::~BaseRoom() = default;
 
-bool BaseRoom::joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr)
+bool BaseRoom::joinRoom(UserID user_id, const std::shared_ptr<User>& user_ptr)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
     if (!user_ptr->getUserID() != user_id ||
@@ -41,13 +41,13 @@ bool BaseRoom::joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr
     return true;
 }
 
-bool BaseRoom::hasUser(long long user_id) const
+bool BaseRoom::hasUser(UserID user_id) const
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
     return m_impl->m_userMap.find(user_id) != m_impl->m_userMap.cend();
 }
 
-bool BaseRoom::leaveRoom(long long user_id)
+bool BaseRoom::leaveRoom(UserID user_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
     auto iter = m_impl->m_userMap.find(user_id);
@@ -68,7 +68,7 @@ void BaseRoom::sendData(std::string_view data)
     }
 }
 
-void BaseRoom::sendData(std::string_view data, long long user_id)
+void BaseRoom::sendData(std::string_view data, UserID user_id)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userMap_mutex);
 
@@ -88,7 +88,7 @@ void ChattingRoom::sendData(std::string_view data)
     BaseRoom::sendData(package->packageToString());
 }
 
-void ChattingRoom::sendData(std::string_view data, long long user_id)
+void ChattingRoom::sendData(std::string_view data, UserID user_id)
 {
     auto package = DataPackage::makePackage(data);
     package->type = 1;

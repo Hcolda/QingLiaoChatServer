@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "userid.hpp"
 #include "user.h"
 
 namespace qls
@@ -19,7 +20,7 @@ enum class MessageType
 
 struct MessageStructure
 {
-    long long user_id = -1ll;
+    UserID user_id = UserID(-1ll);
     std::string message;
     MessageType type;
 };
@@ -32,12 +33,12 @@ public:
     BaseRoom();
     virtual ~BaseRoom();
 
-    virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
-    virtual bool hasUser(long long user_id) const;
-    virtual bool leaveRoom(long long user_id);
+    virtual bool joinRoom(UserID user_id, const std::shared_ptr<User>& user_ptr);
+    virtual bool hasUser(UserID user_id) const;
+    virtual bool leaveRoom(UserID user_id);
 
     virtual void sendData(std::string_view data);
-    virtual void sendData(std::string_view data, long long user_id);
+    virtual void sendData(std::string_view data, UserID user_id);
 
 private:
     std::unique_ptr<BaseRoomImpl> m_impl;
@@ -51,7 +52,7 @@ public:
 
 protected:
     virtual void sendData(std::string_view data);
-    virtual void sendData(std::string_view data, long long user_id);
+    virtual void sendData(std::string_view data, UserID user_id);
 };
 
 } // namespace qls

@@ -7,7 +7,7 @@
 namespace qls
 {
 
-FriendRoomVerification::FriendRoomVerification(long long user_id_1, long long user_id_2) :
+FriendRoomVerification::FriendRoomVerification(UserID user_id_1, UserID user_id_2) :
     m_user_id_1(user_id_1),
     m_user_id_2(user_id_2),
     m_user_1_is_verified(false),
@@ -32,7 +32,7 @@ FriendRoomVerification::FriendRoomVerification(FriendRoomVerification&& f) noexc
 {
 }
 
-void FriendRoomVerification::setUserVerified(long long user_id)
+void FriendRoomVerification::setUserVerified(UserID user_id)
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
         throw std::system_error(qls_errc::user_not_existed);
@@ -43,7 +43,7 @@ void FriendRoomVerification::setUserVerified(long long user_id)
         m_user_2_is_verified = true;
 }
 
-bool FriendRoomVerification::getUserVerified(long long user_id) const
+bool FriendRoomVerification::getUserVerified(UserID user_id) const
 {
     if (user_id != m_user_id_1 && user_id != m_user_id_2)
         throw std::system_error(qls_errc::user_not_existed);

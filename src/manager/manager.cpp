@@ -18,12 +18,12 @@ struct ManagerImpl
     VerificationManager     m_verificationManager; ///< Verification manager instance.
 
     // Group room map
-    std::unordered_map<long long, std::shared_ptr<GroupRoom>>
+    std::unordered_map<GroupID, std::shared_ptr<GroupRoom>>
                             m_baseRoom_map; ///< Map of group room IDs to group rooms.
     std::shared_mutex       m_baseRoom_map_mutex; ///< Mutex for group room map.
 
     // Private room map
-    std::unordered_map<long long, std::shared_ptr<PrivateRoom>>
+    std::unordered_map<GroupID, std::shared_ptr<PrivateRoom>>
                             m_basePrivateRoom_map; ///< Map of private room IDs to private rooms.
     std::shared_mutex       m_basePrivateRoom_map_mutex; ///< Mutex for private room map.
 
@@ -33,11 +33,11 @@ struct ManagerImpl
     std::shared_mutex       m_userID_to_privateRoomID_map_mutex; ///< Mutex for user to private room ID map.
 
     // User map
-    std::unordered_map<long long, std::shared_ptr<User>>
+    std::unordered_map<UserID, std::shared_ptr<User>>
                             m_user_map; ///< Map of user IDs to users.
     std::shared_mutex       m_user_map_mutex; ///< Mutex for user map.
 
-    std::unordered_map<std::shared_ptr<Socket>, long long>
+    std::unordered_map<std::shared_ptr<Socket>, UserID>
                             m_socket_map; ///< Map of socket pointers to user IDs.
     std::shared_mutex       m_socket_map_mutex; ///< Mutex for socket map.
 
@@ -82,14 +82,14 @@ void Manager::init()
     m_impl->m_verificationManager.init();
 }
 
-long long Manager::addPrivateRoom(long long user1_id, long long user2_id)
+GroupID Manager::addPrivateRoom(UserID user1_id, UserID user2_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock1(m_impl->m_basePrivateRoom_map_mutex, std::defer_lock),
         local_unique_lock2(m_impl->m_userID_to_privateRoomID_map_mutex, std::defer_lock);
     std::lock(local_unique_lock1, local_unique_lock2);
 
     // 私聊房间id
-    long long privateRoom_id = m_impl->m_newGroupRoomId++;
+    GroupID privateRoom_id(m_impl->m_newGroupRoomId++);
     {
         /*
         * 这里有申请sql 创建私聊房间等命令
@@ -103,30 +103,30 @@ long long Manager::addPrivateRoom(long long user1_id, long long user2_id)
     return privateRoom_id;
 }
 
-long long Manager::getPrivateRoomId(long long user1_id, long long user2_id) const
+GroupID Manager::getPrivateRoomId(UserID user1_id, UserID user2_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userID_to_privateRoomID_map_mutex);
     if (m_impl->m_userID_to_privateRoomID_map.find(
         { user1_id , user2_id }) != m_impl->m_userID_to_privateRoomID_map.end())
     {
-        return m_impl->m_userID_to_privateRoomID_map.find({ user1_id , user2_id })->second;
+        return GroupID(m_impl->m_userID_to_privateRoomID_map.find({ user1_id , user2_id })->second);
     }
     else if (m_impl->m_userID_to_privateRoomID_map.find(
         { user2_id , user1_id }) != m_impl->m_userID_to_privateRoomID_map.end())
     {
-        return m_impl->m_userID_to_privateRoomID_map.find({ user2_id , user1_id })->second;
+        return GroupID(m_impl->m_userID_to_privateRoomID_map.find({ user2_id , user1_id })->second);
     }
     else throw std::system_error(qls_errc::private_room_not_existed);
 }
 
-bool Manager::hasPrivateRoom(long long private_room_id) const
+bool Manager::hasPrivateRoom(GroupID private_room_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_basePrivateRoom_map_mutex);
     return m_impl->m_basePrivateRoom_map.find(
         private_room_id) != m_impl->m_basePrivateRoom_map.end();
 }
 
-std::shared_ptr<PrivateRoom> Manager::getPrivateRoom(long long private_room_id) const
+std::shared_ptr<PrivateRoom> Manager::getPrivateRoom(GroupID private_room_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_basePrivateRoom_map_mutex);
     auto itor = m_impl->m_basePrivateRoom_map.find(private_room_id);
@@ -135,7 +135,7 @@ std::shared_ptr<PrivateRoom> Manager::getPrivateRoom(long long private_room_id) 
     return itor->second;
 }
 
-void Manager::removePrivateRoom(long long private_room_id)
+void Manager::removePrivateRoom(GroupID private_room_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock1(m_impl->m_basePrivateRoom_map_mutex, std::defer_lock),
         local_unique_lock2(m_impl->m_userID_to_privateRoomID_map_mutex, std::defer_lock);
@@ -150,9 +150,9 @@ void Manager::removePrivateRoom(long long private_room_id)
         * 这里有申请sql 删除私聊房间等命令
         */
     }
-
-    long long user1_id = itor->second->getUserID1();
-    long long user2_id = itor->second->getUserID2();
+    auto [origin_user1_id, origin_user2_id] = itor->second->getUserID();
+    UserID user1_id(origin_user1_id);
+    UserID user2_id(origin_user2_id);
 
     if (m_impl->m_userID_to_privateRoomID_map.find(
         { user1_id , user2_id }) != m_impl->m_userID_to_privateRoomID_map.end())
@@ -168,12 +168,12 @@ void Manager::removePrivateRoom(long long private_room_id)
     m_impl->m_basePrivateRoom_map.erase(itor);
 }
 
-long long Manager::addGroupRoom(long long opreator_user_id)
+GroupID Manager::addGroupRoom(UserID opreator_user_id)
 {
     std::unique_lock<std::shared_mutex> lock(m_impl->m_baseRoom_map_mutex);
 
     // 新群聊id
-    long long group_room_id = m_impl->m_newPrivateRoomId++;
+    GroupID group_room_id(m_impl->m_newPrivateRoomId++);
     {
         /*
         * sql 创建群聊获取群聊id
@@ -186,14 +186,14 @@ long long Manager::addGroupRoom(long long opreator_user_id)
     return group_room_id;
 }
 
-bool Manager::hasGroupRoom(long long group_room_id) const
+bool Manager::hasGroupRoom(GroupID group_room_id) const
 {
     std::shared_lock<std::shared_mutex> lock(m_impl->m_baseRoom_map_mutex);
     return m_impl->m_baseRoom_map.find(group_room_id) !=
         m_impl->m_baseRoom_map.end();
 }
 
-std::shared_ptr<GroupRoom> Manager::getGroupRoom(long long group_room_id) const
+std::shared_ptr<GroupRoom> Manager::getGroupRoom(GroupID group_room_id) const
 {
     std::shared_lock<std::shared_mutex> lock(m_impl->m_baseRoom_map_mutex);
     auto itor = m_impl->m_baseRoom_map.find(group_room_id);
@@ -202,7 +202,7 @@ std::shared_ptr<GroupRoom> Manager::getGroupRoom(long long group_room_id) const
     return itor->second;
 }
 
-void Manager::removeGroupRoom(long long group_room_id)
+void Manager::removeGroupRoom(GroupID group_room_id)
 {
     std::unique_lock<std::shared_mutex> lock(m_impl->m_baseRoom_map_mutex);
     auto itor = m_impl->m_baseRoom_map.find(group_room_id);
@@ -222,7 +222,7 @@ std::shared_ptr<User> Manager::addNewUser()
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_map_mutex);
 
-    long long newUserId = m_impl->m_newUserId++;
+    UserID newUserId(m_impl->m_newUserId++);
     {
         // sql处理数据
     }
@@ -232,13 +232,13 @@ std::shared_ptr<User> Manager::addNewUser()
     return m_impl->m_user_map[newUserId];
 }
 
-bool Manager::hasUser(long long user_id) const
+bool Manager::hasUser(UserID user_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex);
     return m_impl->m_user_map.find(user_id) != m_impl->m_user_map.end();
 }
 
-std::shared_ptr<User> Manager::getUser(long long user_id) const
+std::shared_ptr<User> Manager::getUser(UserID user_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex);
 
@@ -249,7 +249,7 @@ std::shared_ptr<User> Manager::getUser(long long user_id) const
     return itor->second;
 }
 
-std::unordered_map<long long, std::shared_ptr<User>> Manager::getUserList() const
+std::unordered_map<UserID, std::shared_ptr<User>> Manager::getUserList() const
 {
     std::shared_lock lock(m_impl->m_user_map_mutex);
     return m_impl->m_user_map;
@@ -269,7 +269,7 @@ bool Manager::hasSocket(const std::shared_ptr<Socket> &socket_ptr) const
     return m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend();
 }
 
-bool Manager::matchUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, long long user_id) const
+bool Manager::matchUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, UserID user_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
     auto iter = m_impl->m_socket_map.find(socket_ptr);
@@ -277,7 +277,7 @@ bool Manager::matchUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, long 
     return iter->second == user_id;
 }
 
-long long Manager::getUserIDOfSocket(const std::shared_ptr<Socket> &socket_ptr) const
+UserID Manager::getUserIDOfSocket(const std::shared_ptr<Socket> &socket_ptr) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
     auto iter = m_impl->m_socket_map.find(socket_ptr);
@@ -286,7 +286,7 @@ long long Manager::getUserIDOfSocket(const std::shared_ptr<Socket> &socket_ptr) 
     return iter->second;
 }
 
-void Manager::modifyUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, long long user_id, DeviceType type)
+void Manager::modifyUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, UserID user_id, DeviceType type)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex, std::defer_lock);
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex, std::defer_lock);

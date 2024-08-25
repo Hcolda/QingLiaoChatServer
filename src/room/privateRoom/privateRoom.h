@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <string_view>
 
+#include "userid.hpp"
 #include "room.h"
 
 namespace qls
@@ -20,27 +21,26 @@ namespace qls
 class PrivateRoom final : public ChattingRoom
 {
 public:
-    PrivateRoom(long long user_id_1, long long user_id_2, bool is_create);
+    PrivateRoom(UserID user_id_1, UserID user_id_2, bool is_create);
     PrivateRoom(const PrivateRoom&) = delete;
     PrivateRoom(PrivateRoom&&) = delete;
 
     ~PrivateRoom() = default;
 
-    void sendMessage(std::string_view message, long long sender_user_id);
-    void sendTipMessage(std::string_view message, long long sender_user_id);
+    void sendMessage(std::string_view message, UserID sender_user_id);
+    void sendTipMessage(std::string_view message, UserID sender_user_id);
     void getMessage(
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
-
-    long long getUserID1() const;
-    long long getUserID2() const;
-    bool hasUser(long long user_id) const;
+        
+    std::pair<UserID, UserID> getUserID() const;
+    bool hasMember(UserID user_id) const;
 
     void removeThisRoom();
     bool canBeUsed() const;
 
 private:
-    const long long m_user_id_1, m_user_id_2;
+    const UserID m_user_id_1, m_user_id_2;
 
     std::atomic<bool>               m_can_be_used;
 

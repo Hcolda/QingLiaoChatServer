@@ -19,19 +19,19 @@ namespace qls
 
 struct GroupRoomImpl
 {
-    long long               m_group_id;
-    long long               m_administrator_user_id;
+    GroupID                 m_group_id;
+    UserID                  m_administrator_user_id;
     std::shared_mutex       m_administrator_user_id_mutex;
 
     std::atomic<bool>       m_can_be_used;
 
     GroupPermission         m_permission;
 
-    std::unordered_map<long long, GroupRoom::UserDataStructure>
+    std::unordered_map<UserID, GroupRoom::UserDataStructure>
                             m_user_id_map;
     std::shared_mutex       m_user_id_map_mutex;
 
-    std::unordered_map<long long,
+    std::unordered_map<UserID,
         std::pair<std::chrono::time_point<std::chrono::system_clock,
         std::chrono::milliseconds>, std::chrono::minutes>>
                             m_muted_user_map;
@@ -44,7 +44,7 @@ struct GroupRoomImpl
 };
 
 // GroupRoom
-GroupRoom::GroupRoom(long long group_id, long long administrator, bool is_create):
+GroupRoom::GroupRoom(GroupID group_id, UserID administrator, bool is_create):
     m_impl(std::make_unique<GroupRoomImpl>())
 {
     m_impl->m_group_id = group_id;
@@ -64,10 +64,10 @@ GroupRoom::GroupRoom(long long group_id, long long administrator, bool is_create
 
 GroupRoom::~GroupRoom() = default;
 
-bool GroupRoom::addMember(long long user_id)
+bool GroupRoom::addMember(UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-            throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(qls_errc::group_room_unable_to_use);
     std::lock_guard<std::shared_mutex> lg(m_impl->m_user_id_map_mutex);
     if (m_impl->m_user_id_map.find(user_id) == m_impl->m_user_id_map.end())
         m_impl->m_user_id_map[user_id] = UserDataStructure{ serverManager.getUser(user_id)->getUserName(), 1 };
@@ -75,7 +75,15 @@ bool GroupRoom::addMember(long long user_id)
     return true;
 }
 
-bool GroupRoom::removeMember(long long user_id)
+bool GroupRoom::hasMember(UserID user_id) const
+{
+    if (!m_impl->m_can_be_used)
+        throw std::system_error(qls_errc::group_room_unable_to_use);
+    std::lock_guard<std::shared_mutex> lg(m_impl->m_user_id_map_mutex);
+    return m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.cend();
+}
+
+bool GroupRoom::removeMember(UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -86,7 +94,7 @@ bool GroupRoom::removeMember(long long user_id)
     return true;
 }
 
-void GroupRoom::sendMessage(long long sender_user_id, std::string_view message)
+void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -127,8 +135,8 @@ void GroupRoom::sendMessage(long long sender_user_id, std::string_view message)
 
     qjson::JObject json;
     json["type"] = "group_message";
-    json["data"]["user_id"] = sender_user_id;
-    json["data"]["group_id"] = m_impl->m_group_id;
+    json["data"]["user_id"] = sender_user_id.getOriginValue();
+    json["data"]["group_id"] = m_impl->m_group_id.getOriginValue();
     json["data"]["message"] = message;
 
     auto returnJson = qjson::JWriter::fastWrite(json);
@@ -136,7 +144,7 @@ void GroupRoom::sendMessage(long long sender_user_id, std::string_view message)
     sendData(returnJson);
 }
 
-void GroupRoom::sendTipMessage(long long sender_user_id,
+void GroupRoom::sendTipMessage(UserID sender_user_id,
     std::string_view message)
 {
     if (!m_impl->m_can_be_used)
@@ -178,15 +186,15 @@ void GroupRoom::sendTipMessage(long long sender_user_id,
 
     qjson::JObject json;
     json["type"] = "group_tip_message";
-    json["data"]["user_id"] = sender_user_id;
-    json["data"]["group_id"] = m_impl->m_group_id;
+    json["data"]["user_id"] = sender_user_id.getOriginValue();
+    json["data"]["group_id"] = m_impl->m_group_id.getOriginValue();
     json["data"]["message"] = message;
 
     sendData(qjson::JWriter::fastWrite(json));
 }
 
-void GroupRoom::sendUserTipMessage(long long sender_user_id,
-    std::string_view message, long long receiver_user_id)
+void GroupRoom::sendUserTipMessage(UserID sender_user_id,
+    std::string_view message, UserID receiver_user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -217,8 +225,8 @@ void GroupRoom::sendUserTipMessage(long long sender_user_id,
 
     qjson::JObject json;
     json["type"] = "group_tip_message";
-    json["data"]["user_id"] = sender_user_id;
-    json["data"]["group_id"] = m_impl->m_group_id;
+    json["data"]["user_id"] = sender_user_id.getOriginValue();
+    json["data"]["group_id"] = m_impl->m_group_id.getOriginValue();
     json["data"]["message"] = message;
 
     sendData(qjson::JWriter::fastWrite(json), receiver_user_id);
@@ -292,8 +300,8 @@ void GroupRoom::getMessage(
             const auto& MessageStructure = m_impl->m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "group_message";
-            localjson["data"]["user_id"] = MessageStructure.user_id;
-            localjson["data"]["group_id"] = m_impl->m_group_id;
+            localjson["data"]["user_id"] = MessageStructure.user_id.getOriginValue();
+            localjson["data"]["group_id"] = m_impl->m_group_id.getOriginValue();
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_impl->m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
@@ -304,8 +312,8 @@ void GroupRoom::getMessage(
             const auto& MessageStructure = m_impl->m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "group_tip_message";
-            localjson["data"]["user_id"] = MessageStructure.user_id;
-            localjson["data"]["group_id"] = m_impl->m_group_id;
+            localjson["data"]["user_id"] = MessageStructure.user_id.getOriginValue();
+            localjson["data"]["group_id"] = m_impl->m_group_id.getOriginValue();
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_impl->m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
@@ -319,7 +327,7 @@ void GroupRoom::getMessage(
     sendData(qjson::JWriter::fastWrite(returnJson));
 }
 
-bool GroupRoom::hasUser(long long user_id) const
+bool GroupRoom::hasUser(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -328,7 +336,7 @@ bool GroupRoom::hasUser(long long user_id) const
     return m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.end();
 }
 
-std::unordered_map<long long, GroupRoom::UserDataStructure> GroupRoom::getUserList() const
+std::unordered_map<UserID, GroupRoom::UserDataStructure> GroupRoom::getUserList() const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -337,7 +345,7 @@ std::unordered_map<long long, GroupRoom::UserDataStructure> GroupRoom::getUserLi
     return m_impl->m_user_id_map;
 }
 
-std::string GroupRoom::getUserNickname(long long user_id) const
+std::string GroupRoom::getUserNickname(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -350,7 +358,7 @@ std::string GroupRoom::getUserNickname(long long user_id) const
     return itor->second.nickname;
 }
 
-long long GroupRoom::getUserGroupLevel(long long user_id) const
+long long GroupRoom::getUserGroupLevel(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -363,7 +371,7 @@ long long GroupRoom::getUserGroupLevel(long long user_id) const
     return itor->second.groupLevel;
 }
 
-std::unordered_map<long long,
+std::unordered_map<UserID,
     PermissionType> GroupRoom::getUserPermissionList() const
 {
     if (!m_impl->m_can_be_used)
@@ -372,7 +380,7 @@ std::unordered_map<long long,
     return std::move(m_impl->m_permission.getUserPermissionList());
 }
 
-long long GroupRoom::getAdministrator() const
+UserID GroupRoom::getAdministrator() const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -381,7 +389,7 @@ long long GroupRoom::getAdministrator() const
     return m_impl->m_administrator_user_id;
 }
 
-void GroupRoom::setAdministrator(long long user_id)
+void GroupRoom::setAdministrator(UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -416,26 +424,26 @@ void GroupRoom::setAdministrator(long long user_id)
     }
 }
 
-long long GroupRoom::getGroupID() const
+GroupID GroupRoom::getGroupID() const
 {
     return m_impl->m_group_id;
 }
 
-std::vector<long long> GroupRoom::getDefaultUserList() const
+std::vector<UserID> GroupRoom::getDefaultUserList() const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
     return std::move(m_impl->m_permission.getDefaultUserList());
 }
 
-std::vector<long long> GroupRoom::getOperatorList() const
+std::vector<UserID> GroupRoom::getOperatorList() const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
     return std::move(m_impl->m_permission.getOperatorList());
 }
 
-bool GroupRoom::muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins)
+bool GroupRoom::muteUser(UserID executorId, UserID user_id, const std::chrono::minutes& mins)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -462,7 +470,7 @@ bool GroupRoom::muteUser(long long executorId, long long user_id, const std::chr
     return true;
 }
 
-bool GroupRoom::unmuteUser(long long executorId, long long user_id)
+bool GroupRoom::unmuteUser(UserID executorId, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -485,7 +493,7 @@ bool GroupRoom::unmuteUser(long long executorId, long long user_id)
     return true;
 }
 
-bool GroupRoom::kickUser(long long executorId, long long user_id)
+bool GroupRoom::kickUser(UserID executorId, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -507,7 +515,7 @@ bool GroupRoom::kickUser(long long executorId, long long user_id)
     return true;
 }
 
-bool GroupRoom::addOperator(long long executorId, long long user_id)
+bool GroupRoom::addOperator(UserID executorId, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
@@ -531,7 +539,7 @@ bool GroupRoom::addOperator(long long executorId, long long user_id)
     return true;
 }
 
-bool GroupRoom::removeOperator(long long executorId, long long user_id)
+bool GroupRoom::removeOperator(UserID executorId, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);

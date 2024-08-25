@@ -28,6 +28,9 @@
 
 #include <unordered_map>
 
+#include "groupid.hpp"
+#include "userid.hpp"
+
 namespace qls
 {
 
@@ -41,8 +44,8 @@ enum class DeviceType
 
 struct PrivateRoomIDStruct
 {
-    long long user_id_1;
-    long long user_id_2;
+    UserID user_id_1;
+    UserID user_id_2;
     
     friend bool operator==(const PrivateRoomIDStruct& a, const PrivateRoomIDStruct& b)
     {
@@ -69,14 +72,14 @@ public:
     size_t operator()(T&& s) const
     {
         std::hash<long long> hasher;
-        return hasher(s.user_id_1) * hasher(s.user_id_2);
+        return hasher(s.user_id_1.getOriginValue()) * hasher(s.user_id_2.getOriginValue());
     }
 };
 
 struct GroupVerificationStruct
 {
-    long long group_id;
-    long long user_id;
+    GroupID group_id;
+    UserID user_id;
 
     friend bool operator==(const GroupVerificationStruct& a, const GroupVerificationStruct& b)
     {
@@ -102,7 +105,7 @@ public:
     size_t operator()(T&& g) const
     {
         std::hash<long long> hasher;
-        return hasher(g.group_id) * hasher(g.user_id);
+        return hasher(g.group_id.getOriginValue()) * hasher(g.user_id.getOriginValue());
     }
 };
 

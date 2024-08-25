@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <asio.hpp>
 
+#include "userid.hpp"
+#include "groupid.hpp"
 #include "room.h"
 #include "groupPermission.h"
 
@@ -25,39 +27,40 @@ public:
         long long groupLevel = 1;
     };
 
-    GroupRoom(long long group_id, long long administrator, bool is_create);
+    GroupRoom(GroupID group_id, UserID administrator, bool is_create);
     GroupRoom(const GroupRoom&) = delete;
     GroupRoom(GroupRoom&&) = delete;
     ~GroupRoom();
 
-    bool addMember(long long user_id);
-    bool removeMember(long long user_id);
+    bool addMember(UserID user_id);
+    bool hasMember(UserID user_id) const;
+    bool removeMember(UserID user_id);
     
-    void sendMessage(long long sender_user_id, std::string_view message);
-    void sendTipMessage(long long sender_user_id, std::string_view message);
-    void sendUserTipMessage(long long sender_user_id, std::string_view, long long receiver_user_id);
+    void sendMessage(UserID sender_user_id, std::string_view message);
+    void sendTipMessage(UserID sender_user_id, std::string_view message);
+    void sendUserTipMessage(UserID sender_user_id, std::string_view, UserID receiver_user_id);
     void getMessage(
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
         const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
 
-    bool                                    hasUser(long long user_id) const;
-    std::unordered_map<long long,
+    bool                                    hasUser(UserID user_id) const;
+    std::unordered_map<UserID,
         UserDataStructure>                  getUserList() const;
-    std::string                             getUserNickname(long long user_id) const;
-    long long                               getUserGroupLevel(long long user_id) const;
-    std::unordered_map<long long,
-        PermissionType>    getUserPermissionList() const;
-    long long                               getAdministrator() const;
-    long long                               getGroupID() const;
-    std::vector<long long>                  getDefaultUserList() const;
-    std::vector<long long>                  getOperatorList() const;
+    std::string                             getUserNickname(UserID user_id) const;
+    long long                               getUserGroupLevel(UserID user_id) const;
+    std::unordered_map<UserID,
+        PermissionType>                     getUserPermissionList() const;
+    UserID                                  getAdministrator() const;
+    GroupID                                 getGroupID() const;
+    std::vector<UserID>                     getDefaultUserList() const;
+    std::vector<UserID>                     getOperatorList() const;
     
-    bool muteUser(long long executorId, long long user_id, const std::chrono::minutes& mins);
-    bool unmuteUser(long long executorId, long long user_id);
-    bool kickUser(long long executorId, long long user_id);
-    bool addOperator(long long executorId, long long user_id);
-    bool removeOperator(long long executorId, long long user_id);
-    void setAdministrator(long long user_id);
+    bool muteUser(UserID executorId, UserID user_id, const std::chrono::minutes& mins);
+    bool unmuteUser(UserID executorId, UserID user_id);
+    bool kickUser(UserID executorId, UserID user_id);
+    bool addOperator(UserID executorId, UserID user_id);
+    bool removeOperator(UserID executorId, UserID user_id);
+    void setAdministrator(UserID user_id);
 
     void removeThisRoom();
     bool canBeUsed() const;

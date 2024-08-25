@@ -18,7 +18,7 @@ namespace qls
 
 struct UserImpl
 {
-    long long   user_id; ///< User ID
+    UserID      user_id; ///< User ID
     std::string user_name; ///< User name
     long long   registered_time; ///< Time when user registered
     int         age; ///< User's age
@@ -31,17 +31,17 @@ struct UserImpl
 
     std::shared_mutex   m_data_mutex; ///< Mutex for thread-safe access to user data
 
-    std::unordered_set<long long>   m_user_friend_map; ///< User's friend list
+    std::unordered_set<UserID>      m_user_friend_map; ///< User's friend list
     std::shared_mutex               m_user_friend_map_mutex; ///< Mutex for thread-safe access to friend list
 
-    std::unordered_map<long long,
+    std::unordered_map<UserID,
         UserVerificationStructure>  m_user_friend_verification_map; ///< User's friend verification map
     std::shared_mutex               m_user_friend_verification_map_mutex; ///< Mutex for thread-safe access to friend verification map
 
-    std::unordered_set<long long>   m_user_group_map; ///< User's group list
+    std::unordered_set<GroupID>     m_user_group_map; ///< User's group list
     std::shared_mutex               m_user_group_map_mutex; ///< Mutex for thread-safe access to group list
 
-    std::multimap<long long,
+    std::multimap<GroupID,
         UserVerificationStructure>  m_user_group_verification_map; ///< User's group verification map
     std::shared_mutex               m_user_group_verification_map_mutex; ///< Mutex for thread-safe access to group verification map
 
@@ -50,7 +50,7 @@ struct UserImpl
     std::shared_mutex               m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
 };
 
-User::User(long long user_id, bool is_create):
+User::User(UserID user_id, bool is_create):
     m_impl(std::make_unique<UserImpl>())
 {
     m_impl->user_id = user_id;
@@ -70,7 +70,7 @@ User::User(long long user_id, bool is_create):
 
 User::~User() = default;
 
-long long User::getUserID() const
+UserID User::getUserID() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
     return m_impl->user_id;
@@ -219,33 +219,33 @@ void User::updateUserPassword(const std::string& old_password, const std::string
     }
 }
 
-bool User::userHasFriend(long long friend_user_id) const
+bool User::userHasFriend(UserID friend_user_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_friend_map_mutex);
     return m_impl->m_user_friend_map.find(friend_user_id) !=
         m_impl->m_user_friend_map.cend();
 }
 
-bool User::userHasGroup(long long group_id) const
+bool User::userHasGroup(GroupID group_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_map_mutex);
     return m_impl->m_user_group_map.find(group_id) !=
         m_impl->m_user_group_map.cend();
 }
 
-std::unordered_set<long long> User::getFriendList() const
+std::unordered_set<UserID> User::getFriendList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_friend_map_mutex);
     return m_impl->m_user_friend_map;
 }
 
-std::unordered_set<long long> User::getGroupList() const
+std::unordered_set<GroupID> User::getGroupList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_map_mutex);
     return m_impl->m_user_group_map;
 }
 
-bool User::addFriend(long long friend_user_id)
+bool User::addFriend(UserID friend_user_id)
 {
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasFriendRoomVerification(m_impl->user_id,
@@ -260,43 +260,43 @@ bool User::addFriend(long long friend_user_id)
     else return false;
 }
 
-void User::updateFriendList(const std::unordered_set<long long>& set)
+void User::updateFriendList(const std::unordered_set<UserID>& set)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_map_mutex);
     m_impl->m_user_friend_map = set;
 }
 
-void User::updateFriendList(std::unordered_set<long long>&& set)
+void User::updateFriendList(std::unordered_set<UserID>&& set)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_map_mutex);
     m_impl->m_user_friend_map = std::move(set);
 }
 
-void User::updateGroupList(const std::unordered_set<long long>& set)
+void User::updateGroupList(const std::unordered_set<GroupID>& set)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_map_mutex);
     m_impl->m_user_group_map = set;
 }
 
-void User::updateGroupList(std::unordered_set<long long>&& set)
+void User::updateGroupList(std::unordered_set<GroupID>&& set)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_map_mutex);
     m_impl->m_user_group_map = std::move(set);
 }
 
-void User::addFriendVerification(long long friend_user_id, const UserVerificationStructure& u)
+void User::addFriendVerification(UserID friend_user_id, const UserVerificationStructure& u)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
     m_impl->m_user_friend_verification_map.emplace(friend_user_id, u);
 }
 
-void User::addGroupVerification(long long group_id, const UserVerificationStructure& u)
+void User::addGroupVerification(GroupID group_id, const UserVerificationStructure& u)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
     m_impl->m_user_group_verification_map.insert({ group_id, u });
 }
 
-void User::removeFriendVerification(long long friend_user_id)
+void User::removeFriendVerification(UserID friend_user_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
     auto itor = m_impl->m_user_friend_verification_map.find(friend_user_id);
@@ -305,13 +305,13 @@ void User::removeFriendVerification(long long friend_user_id)
     m_impl->m_user_friend_verification_map.erase(itor);
 }
 
-std::unordered_map<long long, UserVerificationStructure> User::getFriendVerificationList() const
+std::unordered_map<UserID, UserVerificationStructure> User::getFriendVerificationList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_friend_verification_map_mutex);
     return m_impl->m_user_friend_verification_map;
 }
 
-bool User::addGroup(long long group_id)
+bool User::addGroup(GroupID group_id)
 {
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasGroupRoomVerification(group_id,
@@ -326,7 +326,7 @@ bool User::addGroup(long long group_id)
     else return false;
 }
 
-void User::removeGroupVerification(long long group_id, long long user_id)
+void User::removeGroupVerification(GroupID group_id, UserID user_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
     size_t size = m_impl->m_user_group_verification_map.count(group_id);
@@ -343,7 +343,7 @@ void User::removeGroupVerification(long long group_id, long long user_id)
     }
 }
 
-std::multimap<long long, UserVerificationStructure> User::getGroupVerificationList() const
+std::multimap<GroupID, UserVerificationStructure> User::getGroupVerificationList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_verification_map_mutex);
     return m_impl->m_user_group_verification_map;

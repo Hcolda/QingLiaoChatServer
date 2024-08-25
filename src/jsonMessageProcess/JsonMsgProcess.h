@@ -17,10 +17,10 @@ class JsonMessageProcessImpl;
 class JsonMessageProcess final
 {
 public:
-    JsonMessageProcess(long long user_id);
+    JsonMessageProcess(UserID user_id);
     ~JsonMessageProcess();
 
-    long long getLocalUserID() const;
+    UserID getLocalUserID() const;
     asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
     
 private:

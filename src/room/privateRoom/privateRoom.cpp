@@ -9,7 +9,7 @@ namespace qls
 {
 
 // PrivateRoom
-PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2, bool is_create) :
+PrivateRoom::PrivateRoom(UserID user_id_1, UserID user_id_2, bool is_create) :
     m_user_id_1(user_id_1),
     m_user_id_2(user_id_2)
 {
@@ -25,7 +25,7 @@ PrivateRoom::PrivateRoom(long long user_id_1, long long user_id_2, bool is_creat
     }
 }
 
-void PrivateRoom::sendMessage(std::string_view message, long long sender_user_id)
+void PrivateRoom::sendMessage(std::string_view message, UserID sender_user_id)
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);
@@ -44,13 +44,13 @@ void PrivateRoom::sendMessage(std::string_view message, long long sender_user_id
 
     qjson::JObject json;
     json["type"] = "private_message";
-    json["data"]["user_id"] = sender_user_id;
+    json["data"]["user_id"] = sender_user_id.getOriginValue();
     json["data"]["message"] = message;
 
     sendData(qjson::JWriter::fastWrite(json));
 }
 
-void PrivateRoom::sendTipMessage(std::string_view message, long long sender_user_id)
+void PrivateRoom::sendTipMessage(std::string_view message, UserID sender_user_id)
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);
@@ -69,13 +69,14 @@ void PrivateRoom::sendTipMessage(std::string_view message, long long sender_user
     
     qjson::JObject json;
     json["type"] = "private_tip_message";
-    json["data"]["user_id"] = sender_user_id;
+    json["data"]["user_id"] = sender_user_id.getOriginValue();
     json["data"]["message"] = message;
 
     sendData(qjson::JWriter::fastWrite(json));
 }
 
-void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from, const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
+void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
+    const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);
@@ -138,7 +139,7 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
             const auto& MessageStructure = m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "private_message";
-            localjson["data"]["user_id"] = MessageStructure.user_id;
+            localjson["data"]["user_id"] = MessageStructure.user_id.getOriginValue();
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
@@ -149,7 +150,7 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
             const auto& MessageStructure = m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "private_tip_message";
-            localjson["data"]["user_id"] = MessageStructure.user_id;
+            localjson["data"]["user_id"] = MessageStructure.user_id.getOriginValue();
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
@@ -163,21 +164,14 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
     sendData(qjson::JWriter::fastWrite(returnJson));
 }
 
-long long PrivateRoom::getUserID1() const
+std::pair<UserID, UserID> PrivateRoom::getUserID() const
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);
-    return m_user_id_1;
+    return {m_user_id_1, m_user_id_2};
 }
 
-long long PrivateRoom::getUserID2() const
-{
-    if (!this->m_can_be_used)
-        throw std::system_error(qls_errc::private_room_unable_to_use);
-    return m_user_id_1;
-}
-
-bool PrivateRoom::hasUser(long long user_id) const
+bool PrivateRoom::hasMember(UserID user_id) const
 {
     if (!this->m_can_be_used)
         throw std::system_error(qls_errc::private_room_unable_to_use);

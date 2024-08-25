@@ -3,6 +3,8 @@
 
 #include <atomic>
 
+#include "userid.hpp"
+
 namespace qls
 {
 
@@ -17,7 +19,7 @@ public:
      * @param user_id_1 ID of the first user.
      * @param user_id_2 ID of the second user.
      */
-    FriendRoomVerification(long long user_id_1, long long user_id_2);
+    FriendRoomVerification(UserID user_id_1, UserID user_id_2);
 
     /**
      * @brief Copy constructor.
@@ -40,20 +42,20 @@ public:
      * @brief Sets the verification status of a user.
      * @param user_id ID of the user.
      */
-    void setUserVerified(long long user_id);
+    void setUserVerified(UserID user_id);
 
     /**
      * @brief Gets the verification status of a user.
      * @param user_id ID of the user.
      * @return true if user is verified, false otherwise.
      */
-    bool getUserVerified(long long user_id) const;
+    bool getUserVerified(UserID user_id) const;
 
 private:
-    const long long m_user_id_1; ///< ID of the first user
-    const long long m_user_id_2; ///< ID of the second user
-    std::atomic<bool> m_user_1_is_verified; ///< Atomic flag for verification status of the first user
-    std::atomic<bool> m_user_2_is_verified; ///< Atomic flag for verification status of the second user
+    const UserID        m_user_id_1; ///< ID of the first user
+    const UserID        m_user_id_2; ///< ID of the second user
+    std::atomic<bool>   m_user_1_is_verified; ///< Atomic flag for verification status of the first user
+    std::atomic<bool>   m_user_2_is_verified; ///< Atomic flag for verification status of the second user
 };
 
 } // namespace qls

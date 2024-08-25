@@ -10,6 +10,8 @@
 #include <shared_mutex>
 #include <string>
 
+#include "groupid.hpp"
+#include "userid.hpp"
 #include "socket.h"
 #include "definition.hpp"
 #include "qls_error.h"
@@ -26,7 +28,7 @@ struct UserVerificationStructure
         Received
     };
 
-    long long user_id = 0;
+    UserID user_id = UserID(0ll);
     /*
     * @brief 验证类型:
     * @brief {Unknown:  无状态}
@@ -51,7 +53,7 @@ public:
      * @param user_id The ID of the user.
      * @param is_create Flag indicating if user is being created.
      */
-    User(long long user_id, bool is_create);
+    User(UserID user_id, bool is_create);
 
     User(const User&) = delete; // Copy constructor deleted
     User(User&&) = delete; // Move constructor deleted
@@ -59,7 +61,7 @@ public:
 
     // Methods to get user information
 
-    long long   getUserID() const;
+    UserID      getUserID() const;
     std::string getUserName() const;
     long long   getRegisteredTime() const;
     int         getAge() const;
@@ -81,54 +83,54 @@ public:
 
     // Methods to get user associated information
 
-    bool userHasFriend(long long friend_user_id) const;
-    bool userHasGroup(long long group_id) const;
+    bool userHasFriend(UserID friend_user_id) const;
+    bool userHasGroup(GroupID group_id) const;
 
-    std::unordered_set<long long> getFriendList() const;
-    std::unordered_set<long long> getGroupList() const;
-
-    /**
-     * @brief Updates the friend list with a new set of friends.
-     * 
-     * @tparam T The type of the container holding the friend list.
-     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
-     * @param set The new friend list to be updated.
-     */
-    void updateFriendList(const std::unordered_set<long long>& set);
+    std::unordered_set<UserID> getFriendList() const;
+    std::unordered_set<GroupID> getGroupList() const;
 
     /**
      * @brief Updates the friend list with a new set of friends.
      * 
      * @tparam T The type of the container holding the friend list.
-     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of UserID.
      * @param set The new friend list to be updated.
      */
-    void updateFriendList(std::unordered_set<long long>&& set);
+    void updateFriendList(const std::unordered_set<UserID>& set);
+
+    /**
+     * @brief Updates the friend list with a new set of friends.
+     * 
+     * @tparam T The type of the container holding the friend list.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of UserID.
+     * @param set The new friend list to be updated.
+     */
+    void updateFriendList(std::unordered_set<UserID>&& set);
 
     /**
      * @brief Updates the group list with a new set of groups.
      * 
      * @tparam T The type of the container holding the group list.
-     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of GroupID.
      * @param set The new group list to be updated.
      */
-    void updateGroupList(const std::unordered_set<long long>& set);
+    void updateGroupList(const std::unordered_set<GroupID>& set);
 
     /**
      * @brief Updates the group list with a new set of groups.
      * 
      * @tparam T The type of the container holding the group list.
-     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of long long.
+     * @tparam Y SFINAE parameter to ensure the type T is an unordered_set of GroupID.
      * @param set The new group list to be updated.
      */
-    void updateGroupList(std::unordered_set<long long>&& set);
+    void updateGroupList(std::unordered_set<GroupID>&& set);
 
     /**
      * @brief Adds a friend to the user's friend list.
      * @param friend_user_id The ID of the friend to add.
      * @return true if adding friend was successful, false otherwise.
      */
-    bool addFriend(long long friend_user_id);
+    bool addFriend(UserID friend_user_id);
 
     /**
      * @brief Adds a friend verification entry.
@@ -136,19 +138,19 @@ public:
      * @param friend_user_id The ID of the friend.
      * @param u UserVerificationStructure to add.
      */
-    void addFriendVerification(long long friend_user_id, const UserVerificationStructure& u);
+    void addFriendVerification(UserID friend_user_id, const UserVerificationStructure& u);
 
     /**
      * @brief Removes a friend verification entry.
      * @param friend_user_id The ID of the friend to remove verification for.
      */
-    void removeFriendVerification(long long friend_user_id);
+    void removeFriendVerification(UserID friend_user_id);
 
     /**
      * @brief Retrieves the list of friend verification entries.
      * @return unordered_map containing friend verification entries.
      */
-    std::unordered_map<long long,
+    std::unordered_map<UserID,
         UserVerificationStructure> getFriendVerificationList() const;
 
     /**
@@ -156,7 +158,7 @@ public:
      * @param group_id The ID of the group to add.
      * @return true if adding group was successful, false otherwise.
      */
-    bool addGroup(long long group_id);
+    bool addGroup(GroupID group_id);
 
     /**
      * @brief Adds a group verification entry.
@@ -164,20 +166,20 @@ public:
      * @param group_id The ID of the group.
      * @param u UserVerificationStructure to add.
      */
-    void addGroupVerification(long long group_id, const UserVerificationStructure& u);
+    void addGroupVerification(GroupID group_id, const UserVerificationStructure& u);
 
     /**
      * @brief Removes a group verification entry.
      * @param group_id The ID of the group to remove verification for.
      * @param user_id The ID of the user to remove verification for.
      */
-    void removeGroupVerification(long long group_id, long long user_id);
+    void removeGroupVerification(GroupID group_id, UserID user_id);
 
     /**
      * @brief Retrieves the list of group verification entries.
      * @return multimap containing group verification entries.
      */
-    std::multimap<long long,
+    std::multimap<GroupID,
         UserVerificationStructure> getGroupVerificationList() const;
 
     /**

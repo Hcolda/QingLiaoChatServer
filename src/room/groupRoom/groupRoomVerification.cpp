@@ -3,7 +3,7 @@
 namespace qls
 {
 
-GroupRoomVerification::GroupRoomVerification(long long group_id, long long user_id) :
+GroupRoomVerification::GroupRoomVerification(GroupID group_id, UserID user_id) :
     m_group_id(group_id),
     m_user_id(user_id),
     m_group_is_verified(false),

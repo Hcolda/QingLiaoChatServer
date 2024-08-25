@@ -42,7 +42,7 @@ bool show_user_command::execute()
     for (auto i = list.begin(); i != list.end(); i++)
     {
         show += std::format("user id: {}, name: {}\n",
-            i->first, i->second->getUserName());
+            i->first.getOriginValue(), i->second->getUserName());
     }
     serverLogger.info("User data list: \n", show);
     return true;

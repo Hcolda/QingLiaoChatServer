@@ -46,13 +46,13 @@ std::unordered_map<std::string, PermissionType> GroupPermission::getPermissionLi
     return m_permission_map;
 }
 
-void GroupPermission::modifyUserPermission(long long user_id, PermissionType type)
+void GroupPermission::modifyUserPermission(UserID user_id, PermissionType type)
 {
     std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
     m_user_permission_map[user_id] = type;
 }
 
-void GroupPermission::removeUser(long long user_id)
+void GroupPermission::removeUser(UserID user_id)
 {
     std::lock_guard<std::shared_mutex> lg(m_user_permission_map_mutex);
 
@@ -64,7 +64,7 @@ void GroupPermission::removeUser(long long user_id)
     m_user_permission_map.erase(itor);
 }
 
-bool GroupPermission::userHasPermission(long long user_id, const std::string& permissionName) const
+bool GroupPermission::userHasPermission(UserID user_id, const std::string& permissionName) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock1(m_permission_map_mutex, std::defer_lock);
     std::shared_lock<std::shared_mutex> local_shared_lock2(m_user_permission_map_mutex, std::defer_lock);
@@ -84,7 +84,7 @@ bool GroupPermission::userHasPermission(long long user_id, const std::string& pe
     return itor->second >= itor2->second;
 }
 
-PermissionType GroupPermission::getUserPermissionType(long long user_id) const
+PermissionType GroupPermission::getUserPermissionType(UserID user_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
@@ -95,45 +95,45 @@ PermissionType GroupPermission::getUserPermissionType(long long user_id) const
 
     return itor->second;
 }
-std::unordered_map<long long, PermissionType> GroupPermission::getUserPermissionList() const
+std::unordered_map<UserID, PermissionType> GroupPermission::getUserPermissionList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
     return m_user_permission_map;
 }
 
-std::vector<long long> GroupPermission::getDefaultUserList() const
+std::vector<UserID> GroupPermission::getDefaultUserList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
-    std::vector<long long> return_vector;
+    std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
-        [&return_vector](const std::pair<long long, PermissionType>& p) {
+        [&return_vector](const std::pair<UserID, PermissionType>& p) {
         if (p.second == PermissionType::Default) return_vector.push_back(p.first);
         });
 
     return return_vector;
 }
 
-std::vector<long long> GroupPermission::getOperatorList() const
+std::vector<UserID> GroupPermission::getOperatorList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
-    std::vector<long long> return_vector;
+    std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
-        [&return_vector](const std::pair<long long, PermissionType>& p) {
+        [&return_vector](const std::pair<UserID, PermissionType>& p) {
             if (p.second == PermissionType::Operator) return_vector.push_back(p.first);
         });
 
     return return_vector;
 }
 
-std::vector<long long> GroupPermission::getAdministratorList() const
+std::vector<UserID> GroupPermission::getAdministratorList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
 
-    std::vector<long long> return_vector;
+    std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
-        [&return_vector](const std::pair<long long, PermissionType>& p) {
+        [&return_vector](const std::pair<UserID, PermissionType>& p) {
             if (p.second == PermissionType::Administrator) return_vector.push_back(p.first);
         });
 

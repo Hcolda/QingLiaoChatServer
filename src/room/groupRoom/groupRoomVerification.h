@@ -3,6 +3,9 @@
 
 #include <atomic>
 
+#include "groupid.hpp"
+#include "userid.hpp"
+
 namespace qls
 {
 
@@ -17,7 +20,7 @@ public:
      * @param group_id ID of the group.
      * @param user_id ID of the user.
      */
-    GroupRoomVerification(long long group_id, long long user_id);
+    GroupRoomVerification(GroupID group_id, UserID user_id);
 
     /**
      * @brief Copy constructor.
@@ -59,10 +62,10 @@ public:
     bool getUserVerified() const;
 
 private:
-    const long long m_group_id; ///< ID of the group
-    const long long m_user_id;  ///< ID of the user
-    std::atomic<bool> m_group_is_verified; ///< Atomic flag for group verification status
-    std::atomic<bool> m_user_is_verified;  ///< Atomic flag for user verification status
+    const GroupID       m_group_id; ///< ID of the group
+    const UserID        m_user_id;  ///< ID of the user
+    std::atomic<bool>   m_group_is_verified; ///< Atomic flag for group verification status
+    std::atomic<bool>   m_user_is_verified;  ///< Atomic flag for user verification status
 };
 
 } // namespace qls

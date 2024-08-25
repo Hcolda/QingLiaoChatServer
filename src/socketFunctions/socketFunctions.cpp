@@ -5,6 +5,7 @@
 #include <Logger.hpp>
 #include <Json.h>
 
+#include "userid.hpp"
 #include "definition.hpp"
 #include "manager.h"
 #include "returnStateMessage.hpp"
@@ -56,7 +57,7 @@ struct SocketServiceImpl
 };
 
 SocketService::SocketService(std::shared_ptr<Socket> socket_ptr) :
-    m_impl(std::make_unique<SocketServiceImpl>(socket_ptr, -1))
+    m_impl(std::make_unique<SocketServiceImpl>(socket_ptr, UserID(-1)))
 {
     if (!socket_ptr)
         throw std::system_error(qls::qls_errc::null_socket_pointer);
