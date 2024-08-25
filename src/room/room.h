@@ -33,7 +33,7 @@ public:
     virtual ~BaseRoom();
 
     virtual bool joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr);
-    virtual bool hasMember(long long user_id) const;
+    virtual bool hasUser(long long user_id) const;
     virtual bool leaveRoom(long long user_id);
 
     virtual void sendData(std::string_view data);

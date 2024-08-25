@@ -41,7 +41,7 @@ bool BaseRoom::joinRoom(long long user_id, const std::shared_ptr<User>& user_ptr
     return true;
 }
 
-bool BaseRoom::hasMember(long long user_id) const
+bool BaseRoom::hasUser(long long user_id) const
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_userMap_mutex);
     return m_impl->m_userMap.find(user_id) != m_impl->m_userMap.cend();

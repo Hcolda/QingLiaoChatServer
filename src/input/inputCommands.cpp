@@ -44,7 +44,7 @@ bool show_user_command::execute()
         show += std::format("user id: {}, name: {}\n",
             i->first, i->second->getUserName());
     }
-    serverLogger.info("用户表: \n", show);
+    serverLogger.info("User data list: \n", show);
     return true;
 }
 
