@@ -1,6 +1,7 @@
 #ifndef GROUP_ROOM_H
 #define GROUP_ROOM_H
 
+#include <atomic>
 #include <memory>
 #include <chrono>
 #include <vector>
@@ -8,10 +9,12 @@
 #include <unordered_map>
 #include <asio.hpp>
 
+#include "qls_error.h"
 #include "userid.hpp"
 #include "groupid.hpp"
 #include "room.h"
 #include "groupPermission.h"
+#include "groupUserLevel.hpp"
 
 namespace qls
 {
@@ -24,7 +27,7 @@ public:
     struct UserDataStructure
     {
         std::string nickname;
-        long long groupLevel = 1;
+        UserLevel<1, 100> level;
     };
 
     GroupRoom(GroupID group_id, UserID administrator, bool is_create);

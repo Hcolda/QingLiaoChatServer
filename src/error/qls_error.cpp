@@ -67,6 +67,8 @@ std::string qls_error_category::message(int Errval) const
         return "room can't be used";
     case qls_errc::group_room_verification_not_existed:
         return "group verification doesn't exist";
+    case qls_errc::group_room_user_level_invalid:
+        return "level of user(s) in group room is invalid";
 
     // permission error
     case qls_errc::no_permission:

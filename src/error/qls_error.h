@@ -41,6 +41,7 @@ enum class qls_errc
     group_room_not_existed,
     group_room_unable_to_use,
     group_room_verification_not_existed,
+    group_room_user_level_invalid,
 
     // permission error
     no_permission,
