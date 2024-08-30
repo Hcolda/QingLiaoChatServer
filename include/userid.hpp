@@ -1,8 +1,6 @@
 #ifndef USER_IDENTIFICATION
 #define USER_IDENTIFICATION
 
-#include <type_traits>
-#include <atomic>
 #include <unordered_map>
 
 namespace qls

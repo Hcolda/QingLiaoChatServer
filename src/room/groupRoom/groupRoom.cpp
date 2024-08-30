@@ -70,7 +70,7 @@ bool GroupRoom::addMember(UserID user_id)
         throw std::system_error(qls_errc::group_room_unable_to_use);
     std::lock_guard<std::shared_mutex> lg(m_impl->m_user_id_map_mutex);
     if (m_impl->m_user_id_map.find(user_id) == m_impl->m_user_id_map.end())
-        m_impl->m_user_id_map[user_id] = UserDataStructure{ serverManager.getUser(user_id)->getUserName(), 1 };
+        m_impl->m_user_id_map.emplace(user_id, serverManager.getUser(user_id)->getUserName());
 
     return true;
 }
@@ -368,7 +368,7 @@ long long GroupRoom::getUserGroupLevel(UserID user_id) const
     if (itor == m_impl->m_user_id_map.end())
         throw std::system_error(qls_errc::user_not_existed, "user isn't in the room");
 
-    return itor->second.groupLevel;
+    return itor->second.level.getValue();
 }
 
 std::unordered_map<UserID,
@@ -403,8 +403,7 @@ void GroupRoom::setAdministrator(UserID user_id)
         auto itor = m_impl->m_user_id_map.find(user_id);
         if (itor == m_impl->m_user_id_map.end())
         {
-            m_impl->m_user_id_map[user_id] = UserDataStructure{
-                serverManager.getUser(user_id)->getUserName(), 1 };
+            m_impl->m_user_id_map.emplace(user_id, serverManager.getUser(user_id)->getUserName());
             m_impl->m_permission.modifyUserPermission(user_id,
                 PermissionType::Administrator);
         }
