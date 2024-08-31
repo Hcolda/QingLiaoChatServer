@@ -59,7 +59,7 @@ public:
         return u1.m_user_id < u2.m_user_id;
     }
 
-    operator long long()
+    operator long long() const
     {
         return m_user_id;
     }

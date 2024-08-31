@@ -59,7 +59,7 @@ public:
         return g1.m_group_id < g1.m_group_id;
     }
 
-    operator long long()
+    operator long long() const
     {
         return m_group_id;
     }
