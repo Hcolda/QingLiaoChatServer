@@ -26,14 +26,16 @@ public:
 
     UserID& operator=(const UserID& u)
     {
-        if (&u == this) return *this;
+        if (&u == this)
+            return *this;
         m_user_id = u.m_user_id;
         return *this;
     }
 
     UserID& operator=(UserID&& u)
     {
-        if (&u == this) return *this;
+        if (&u == this)
+            return *this;
         m_user_id = u.m_user_id;
         return *this;
     }
@@ -59,7 +61,7 @@ public:
         return u1.m_user_id < u2.m_user_id;
     }
 
-    operator long long()
+    operator long long() const
     {
         return m_user_id;
     }

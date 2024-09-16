@@ -26,14 +26,16 @@ public:
 
     GroupID& operator=(const GroupID& u)
     {
-        if (&u == this) return *this;
+        if (&u == this)
+            return *this;
         m_group_id = u.m_group_id;
         return *this;
     }
 
     GroupID& operator=(GroupID&& u)
     {
-        if (&u == this) return *this;
+        if (&u == this)
+            return *this;
         m_group_id = u.m_group_id;
         return *this;
     }
@@ -59,7 +61,7 @@ public:
         return g1.m_group_id < g1.m_group_id;
     }
 
-    operator long long()
+    operator long long() const
     {
         return m_group_id;
     }

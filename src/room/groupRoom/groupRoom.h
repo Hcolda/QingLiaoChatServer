@@ -21,7 +21,7 @@ namespace qls
 
 struct GroupRoomImpl;
 
-class GroupRoom final : public ChattingRoom
+class GroupRoom final : public TextDataRoom
 {
 public:
     struct UserDataStructure
@@ -58,11 +58,11 @@ public:
     std::vector<UserID>                     getDefaultUserList() const;
     std::vector<UserID>                     getOperatorList() const;
     
-    bool muteUser(UserID executorId, UserID user_id, const std::chrono::minutes& mins);
-    bool unmuteUser(UserID executorId, UserID user_id);
-    bool kickUser(UserID executorId, UserID user_id);
-    bool addOperator(UserID executorId, UserID user_id);
-    bool removeOperator(UserID executorId, UserID user_id);
+    bool muteUser(UserID executor_id, UserID user_id, const std::chrono::minutes& mins);
+    bool unmuteUser(UserID executor_id, UserID user_id);
+    bool kickUser(UserID executor_id, UserID user_id);
+    bool addOperator(UserID executor_id, UserID user_id);
+    bool removeOperator(UserID executor_id, UserID user_id);
     void setAdministrator(UserID user_id);
 
     void removeThisRoom();

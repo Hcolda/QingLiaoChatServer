@@ -13,14 +13,12 @@ void qls::Package::write(std::string_view data)
 
 bool qls::Package::canRead() const
 {
-    using namespace qls;
-
     if (m_buffer.size() < sizeof(int))
         return false;
 
     int length = 0;
     std::memcpy(&length, m_buffer.c_str(), sizeof(int));
-    length = swapNetworkEndianness(length);
+    length = qls::swapNetworkEndianness(length);
     if (length > m_buffer.size())
         return false;
 
@@ -29,14 +27,12 @@ bool qls::Package::canRead() const
 
 size_t qls::Package::firstMsgLength() const
 {
-    using namespace qls;
-
     if (m_buffer.size() < sizeof(int))
         return 0;
 
     int length = 0;
     std::memcpy(&length, m_buffer.c_str(), sizeof(int));
-    length = swapNetworkEndianness(length);
+    length = qls::swapNetworkEndianness(length);
     return size_t(length);
 }
 

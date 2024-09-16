@@ -6,7 +6,7 @@
 #include <cstring>
 
 #include "inputCommands.h"
-#include "Logger.hpp"
+#include "logger.hpp"
 
 // 服务器log系统
 extern Log::Logger serverLogger;
@@ -17,8 +17,7 @@ template<size_t N, size_t N2>
 constexpr static void getTargetName(const char(&data)[N], char(&out)[N2])
 {
     size_t size = std::strlen(data);
-    for (auto i = 0ull; i < size; ++i)
-    {
+    for (auto i = 0ull; i < size; ++i) {
         if (data[i] == '_')
             out[i] = ' ';
         else
@@ -57,28 +56,22 @@ public:
         if (first_word.empty()) return true;
         std::string arguments(iter, command.cend());
 
-        if (auto words = split(first_word); words[0] == "help")
-        {
-            if (first_word.size() <= sizeof("help"))
-            {
-                for (auto i = m_command_map.begin(); i != m_command_map.end(); ++i)
-                {
+        if (auto words = split(first_word); words[0] == "help") {
+            if (first_word.size() <= sizeof("help")) {
+                for (auto i = m_command_map.begin(); i != m_command_map.end(); ++i) {
                     serverLogger.info(i->first, ": ", i->second->registerCommand().description);
                 }
                 return true;
             }
             std::string origin_command = strip(first_word.substr(sizeof("help")));
             auto iter = m_command_map.find(origin_command);
-            if (iter != m_command_map.end())
-            {
+            if (iter != m_command_map.end()) {
                 serverLogger.info(origin_command, ": ", iter->second->registerCommand().description);
                 return true;
             }
             bool has_find = false;
-            for (auto i = m_command_map.begin(); i != m_command_map.end(); ++i)
-            {
-                if (i->first.substr(0, origin_command.size()) == origin_command)
-                {
+            for (auto i = m_command_map.begin(); i != m_command_map.end(); ++i) {
+                if (i->first.substr(0, origin_command.size()) == origin_command) {
                     has_find = true;
                     serverLogger.info(i->first, ": ", i->second->registerCommand().description);
                 }
@@ -89,8 +82,7 @@ public:
         }
 
         auto map_iter = m_command_map.find(first_word);
-        if (map_iter == m_command_map.cend())
-        {
+        if (map_iter == m_command_map.cend()) {
             serverLogger.warning("Command not existed: ", first_word);
             return true;
         }
@@ -99,8 +91,7 @@ public:
         opt.add("help", opt::Option::OptionType::OPT_OPTIONAL);
         opt.add("h", opt::Option::OptionType::OPT_OPTIONAL);
         opt.parse(split(arguments));
-        if (opt.has_opt_with_value("help") || opt.has_opt_with_value("h"))
-        {
+        if (opt.has_opt_with_value("help") || opt.has_opt_with_value("h")) {
             serverLogger.info(map_iter->first, ": ", map_iter->second->registerCommand().description);
             return true;
         }
@@ -131,10 +122,8 @@ private:
         long long begin = -1;
         long long i = 0;
 
-        for (; static_cast<size_t>(i) < data.size(); i++)
-        {
-            if (data[i] == ' ')
-            {
+        for (; static_cast<size_t>(i) < data.size(); i++) {
+            if (data[i] == ' ') {
                 if ((i - begin - 1) > 0)
                     dataList.emplace_back(data.begin() + (begin + 1), data.begin() + i);
                 begin = i;

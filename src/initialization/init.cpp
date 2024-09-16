@@ -1,6 +1,6 @@
 #include "init.h"
 
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <functional>
 #include <filesystem>
 #include <fstream>
@@ -22,8 +22,7 @@ void Init::createConfig()
 {
     std::filesystem::create_directory("./config");
 
-    if (!std::filesystem::exists("./config/config.ini"))
-    {
+    if (!std::filesystem::exists("./config/config.ini")) {
         std::ofstream outfile("./config/config.ini");
 
         qini::INIObject ini;
@@ -64,21 +63,18 @@ int init()
     else
         serverLogger.info("The local endianness of the server is little-endian");
 
-    try
-    {
+    try {
         serverLogger.info("Reading configuration file...");
         serverIni = Init::readConfig();
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
         Init::createConfig();
         serverLogger.error("Please modify the configuration file");
         return -1;
     }
 
-    try
-    {
+    try {
         if (std::stoll(serverIni["mysql"]["port"]) > 65535)
             throw std::logic_error("INI configuration file section: mysql, key: port, the port is too large!");
 
@@ -128,31 +124,27 @@ int init()
         
         serverLogger.info("Configuration file read successfully!");
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
         // Init::createConfig();
         serverLogger.error("Please modify the configuration file");
         return -1;
     }
 
-    try
-    {
+    try {
         serverLogger.info("Loading serverManager...");
 
         serverManager.init();
 
         serverLogger.info("serverManager loaded successfully!");
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.critical(std::string(e.what()));
         serverLogger.critical("serverManager failed to load!");
         return -1;
     }
 
-    try
-    {
+    try {
         serverLogger.info("Server command line starting...");
         std::thread([](){
             Input input;
@@ -172,8 +164,7 @@ int init()
         serverNetwork.run(serverIni["server"]["host"], std::stoi(serverIni["server"]["port"]));
         
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
         return -1;
     }

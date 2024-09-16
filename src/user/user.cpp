@@ -5,7 +5,7 @@
 #include <asio.hpp>
 
 #include "manager.h"
-#include "Logger.hpp"
+#include "logger.hpp"
 #include "qls_error.h"
 
 // 服务器log系统
@@ -58,12 +58,10 @@ User::User(UserID user_id, bool is_create):
     m_impl->registered_time = std::chrono::time_point_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now()).time_since_epoch().count();
 
-    if (is_create)
-    {
+    if (is_create) {
         // sql 创建用户
     }
-    else
-    {
+    else {
         // sql 读取用户信息
     }
 }
@@ -117,8 +115,7 @@ bool User::isUserPassword(const std::string& p) const
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
     std::string localPassword = p + m_impl->salt;
 
-    for (size_t i = 0; i < 256ull; i++)
-    {
+    for (size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
     }
 
@@ -164,16 +161,14 @@ void User::firstUpdateUserPassword(const std::string& new_password)
     std::mt19937_64         mt(std::random_device{}());
 
     size_t mt_temp = 0;
-    for (size_t i = 0; i < 256ull; i++)
-    {
+    for (size_t i = 0; i < 256ull; i++) {
         mt_temp = mt();
     }
 
     std::string localSalt = std::to_string(mt_temp);
     std::string localPassword = new_password + localSalt;
 
-    for (size_t i = 0; i < 256ull; i++)
-    {
+    for (size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
     }
 
@@ -196,16 +191,14 @@ void User::updateUserPassword(const std::string& old_password, const std::string
     std::mt19937_64         mt(std::random_device{}());
 
     size_t mt_temp = 0;
-    for (size_t i = 0; i < 256ull; i++)
-    {
+    for (size_t i = 0; i < 256ull; i++) {
         mt_temp = mt();
     }
 
     std::string localSalt = std::to_string(mt_temp);
     std::string localPassword = new_password + localSalt;
 
-    for (size_t i = 0; i < 256ull; i++)
-    {
+    for (size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
     }
 
@@ -248,16 +241,13 @@ std::unordered_set<GroupID> User::getGroupList() const
 bool User::addFriend(UserID friend_user_id)
 {
     auto& ver = serverManager.getServerVerificationManager();
-    if (!ver.hasFriendRoomVerification(m_impl->user_id,
-        friend_user_id))
-    {
-        ver.addFriendRoomVerification(m_impl->user_id,
-            friend_user_id);
-        ver.setFriendVerified(m_impl->user_id, friend_user_id,
-            m_impl->user_id);
+    if (!ver.hasFriendRoomVerification(m_impl->user_id, friend_user_id)) {
+        ver.addFriendRoomVerification(m_impl->user_id, friend_user_id);
+        ver.setFriendVerified(m_impl->user_id, friend_user_id, m_impl->user_id);
         return true;
     }
-    else return false;
+    else
+        return false;
 }
 
 void User::updateFriendList(const std::unordered_set<UserID>& set)
@@ -300,7 +290,7 @@ void User::removeFriendVerification(UserID friend_user_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
     auto itor = m_impl->m_user_friend_verification_map.find(friend_user_id);
-    if (itor == m_impl->m_user_friend_verification_map.end())
+    if (itor == m_impl->m_user_friend_verification_map.cend())
         throw std::system_error(qls_errc::private_room_verification_not_existed);
     m_impl->m_user_friend_verification_map.erase(itor);
 }
@@ -314,13 +304,9 @@ std::unordered_map<UserID, UserVerificationStructure> User::getFriendVerificatio
 bool User::addGroup(GroupID group_id)
 {
     auto& ver = serverManager.getServerVerificationManager();
-    if (!ver.hasGroupRoomVerification(group_id,
-        m_impl->user_id))
-    {
-        ver.addGroupRoomVerification(group_id,
-            m_impl->user_id);
-        ver.setGroupRoomUserVerified(group_id,
-            m_impl->user_id);
+    if (!ver.hasGroupRoomVerification(group_id, m_impl->user_id)) {
+        ver.addGroupRoomVerification(group_id, m_impl->user_id);
+        ver.setGroupRoomUserVerified(group_id, m_impl->user_id);
         return true;
     }
     else return false;
@@ -333,10 +319,8 @@ void User::removeGroupVerification(GroupID group_id, UserID user_id)
     if (!size) throw std::system_error(qls_errc::group_room_verification_not_existed);
 
     auto itor = m_impl->m_user_group_verification_map.find(group_id);
-    for (; itor->first == group_id && itor != m_impl->m_user_group_verification_map.end(); itor++)
-    {
-        if (itor->second.user_id == user_id)
-        {
+    for (; itor->first == group_id && itor != m_impl->m_user_group_verification_map.cend(); itor++) {
+        if (itor->second.user_id == user_id) {
             m_impl->m_user_group_verification_map.erase(itor);
             break;
         }
@@ -388,10 +372,9 @@ void User::notifyAll(std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::make_shared<std::string>(data));
-    for (auto& [socket_ptr, type]: m_impl->m_socket_map)
-    {
+    for (auto& [socket_ptr, type]: m_impl->m_socket_map) {
         asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
-            [this, buffer_ptr](std::error_code ec, size_t n){
+            [this, buffer_ptr](std::error_code ec, size_t n) {
                 if (ec)
                     serverLogger.error('[', ec.category().name(), ']', ec.message());
             });
@@ -402,12 +385,10 @@ void User::notifyWithType(DeviceType type, std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::make_shared<std::string>(data));
-    for (auto& [socket_ptr, dtype]: m_impl->m_socket_map)
-    {
-        if (dtype == type)
-        {
+    for (auto& [socket_ptr, dtype]: m_impl->m_socket_map) {
+        if (dtype == type) {
             asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
-                [this, buffer_ptr](std::error_code ec, size_t n){
+                [this, buffer_ptr](std::error_code ec, size_t n) {
                     if (ec)
                         serverLogger.error('[', ec.category().name(), ']', ec.message());
                 });

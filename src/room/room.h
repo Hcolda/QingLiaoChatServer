@@ -44,11 +44,11 @@ private:
     std::unique_ptr<BaseRoomImpl> m_impl;
 };
 
-class ChattingRoom: public BaseRoom
+class TextDataRoom: public BaseRoom
 {
 public:
-    ChattingRoom() = default;
-    virtual ~ChattingRoom() = default;
+    TextDataRoom() = default;
+    virtual ~TextDataRoom() = default;
 
 protected:
     virtual void sendData(std::string_view data);

@@ -137,8 +137,7 @@ public:
         m_msgQueue.push(std::bind([mode = std::move(mode), this](auto&&... args) {
             std::string modeString;
 
-            switch (mode)
-            {
+            switch (mode) {
             case Logger::LogMode::LogINFO:
                 modeString = "[INFO]";
                 break;

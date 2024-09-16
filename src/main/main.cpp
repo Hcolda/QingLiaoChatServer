@@ -1,5 +1,5 @@
 #include <iostream>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <thread>
 #include <chrono>
 
