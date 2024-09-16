@@ -10,7 +10,7 @@
 #include "Ini.h"
 #include "manager.h"
 #include "SQLProcess.hpp"
-#include "Logger.hpp"
+#include "logger.hpp"
 
 // 服务器log系统
 extern Log::Logger serverLogger;
@@ -39,8 +39,7 @@ bool show_user_command::execute()
 {
     std::string show;
     auto list = serverManager.getUserList();
-    for (auto i = list.begin(); i != list.end(); i++)
-    {
+    for (auto i = list.begin(); i != list.end(); i++) {
         show += std::format("user id: {}, name: {}\n",
             i->first.getOriginValue(), i->second->getUserName());
     }

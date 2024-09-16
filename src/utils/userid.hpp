@@ -26,14 +26,16 @@ public:
 
     UserID& operator=(const UserID& u)
     {
-        if (&u == this) return *this;
+        if (&u == this)
+            return *this;
         m_user_id = u.m_user_id;
         return *this;
     }
 
     UserID& operator=(UserID&& u)
     {
-        if (&u == this) return *this;
+        if (&u == this)
+            return *this;
         m_user_id = u.m_user_id;
         return *this;
     }

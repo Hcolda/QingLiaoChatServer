@@ -2,7 +2,7 @@
 
 #include <asio/experimental/awaitable_operators.hpp>
 #include <system_error>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <Json.h>
 
 #include "userid.hpp"
@@ -80,10 +80,8 @@ asio::awaitable<std::shared_ptr<qls::DataPackage>>
 
     std::shared_ptr<qls::DataPackage> datapack;
     // receive data
-    if (!m_impl->m_package.canRead())
-    {
-        do
-        {
+    if (!m_impl->m_package.canRead()) {
+        do {
             size_t size = co_await m_impl->m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
             m_impl->m_package.write({ buffer, static_cast<size_t>(size) });
         } while (!m_impl->m_package.canRead());
@@ -114,14 +112,12 @@ asio::awaitable<void> SocketService::process(
     const std::string& data,
     std::shared_ptr<qls::DataPackage> pack)
 {
-    if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1)
-    {
+    if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1) {
         co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")), pack->requestID, 1);
         co_return;
     }
 
-    switch (pack->type)
-    {
+    switch (pack->type) {
     case 1:
         // json data type
         co_await async_send(qjson::JWriter::fastWrite(
@@ -152,33 +148,30 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
     std::shared_ptr<Network::SocketDataStructure> sds,
     std::chrono::steady_clock::time_point& deadline)
 {
-    if (sds.get() == nullptr) throw std::logic_error("sds is nullptr");
+    if (sds.get() == nullptr)
+        throw std::logic_error("sds is nullptr");
 
     SocketService socketService(socket_ptr);
 
     // get address from socket
     std::string addr = socket2ip(*socket_ptr);
 
-    try
-    {
+    try {
         long long heart_beat_times = 0;
         auto heart_beat_time_point = std::chrono::steady_clock::now();
-        for (;;)
-        {
+        for (;;) {
             deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
             auto pack = co_await socketService.async_receive();
 
             // Determine if the package is available
-            if (pack.get() == nullptr)
-            {
+            if (pack.get() == nullptr) {
                 // Data reception error
                 serverLogger.error("[", addr, "]", "package is nullptr, auto closing connection...");
                 std::error_code ignore_error;
                 socket_ptr->shutdown(ignore_error);
                 co_return;
             }
-            else if (pack->type == 4)
-            {
+            else if (pack->type == 4) {
                 // Heartbeat package
                 heart_beat_times++;
                 if (std::chrono::steady_clock::now() - heart_beat_time_point >= std::chrono::seconds(10))
@@ -202,20 +195,14 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
             continue;
         }
     }
-    catch (const std::system_error& e)
-    {
+    catch (const std::system_error& e) {
         const auto& errc = e.code();
         if (errc.message() == "End of file")
-        {
             serverLogger.info(std::format("[{}] disconnected from the server", addr));
-        }
         else
-        {
             serverLogger.error('[', addr, ']', '[', errc.category().name(), ']', errc.message());
-        }
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
     }
 

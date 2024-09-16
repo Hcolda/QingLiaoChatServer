@@ -442,16 +442,16 @@ std::vector<UserID> GroupRoom::getOperatorList() const
     return std::move(m_impl->m_permission.getOperatorList());
 }
 
-bool GroupRoom::muteUser(UserID executorId, UserID user_id, const std::chrono::minutes& mins)
+bool GroupRoom::muteUser(UserID executor_id, UserID user_id, const std::chrono::minutes& mins)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (executorId == user_id || !hasUser(user_id) || !hasUser(executorId))
+    if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
-    auto executorIdType = m_impl->m_permission.getUserPermissionType(executorId);
+    auto executor_idType = m_impl->m_permission.getUserPermissionType(executor_id);
     auto userIdType = m_impl->m_permission.getUserPermissionType(user_id);
-    if (userIdType >= executorIdType)
+    if (userIdType >= executor_idType)
         return false;
 
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex, std::defer_lock);
@@ -463,22 +463,22 @@ bool GroupRoom::muteUser(UserID executorId, UserID user_id, const std::chrono::m
         std::chrono::minutes>{ std::chrono::time_point_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now()),
         mins };
-    sendTipMessage(executorId, std::format("{} was muted by {}",
-        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executorId].nickname));
+    sendTipMessage(executor_id, std::format("{} was muted by {}",
+        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
 
     return true;
 }
 
-bool GroupRoom::unmuteUser(UserID executorId, UserID user_id)
+bool GroupRoom::unmuteUser(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (executorId == user_id || !hasUser(user_id) || !hasUser(executorId))
+    if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
-    auto executorIdType = m_impl->m_permission.getUserPermissionType(executorId);
+    auto executor_idType = m_impl->m_permission.getUserPermissionType(executor_id);
     auto userIdType = m_impl->m_permission.getUserPermissionType(user_id);
-    if (userIdType >= executorIdType)
+    if (userIdType >= executor_idType)
         return false;
 
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex, std::defer_lock);
@@ -486,42 +486,42 @@ bool GroupRoom::unmuteUser(UserID executorId, UserID user_id)
     std::lock(local_unique_lock, local_shared_lock);
 
     m_impl->m_muted_user_map.erase(user_id);
-    sendTipMessage(executorId, std::format("{} was unmuted by {}",
-        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executorId].nickname));
+    sendTipMessage(executor_id, std::format("{} was unmuted by {}",
+        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
 
     return true;
 }
 
-bool GroupRoom::kickUser(UserID executorId, UserID user_id)
+bool GroupRoom::kickUser(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (executorId == user_id || !hasUser(user_id) || !hasUser(executorId))
+    if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
-    auto executorIdType = m_impl->m_permission.getUserPermissionType(executorId);
+    auto executor_idType = m_impl->m_permission.getUserPermissionType(executor_id);
     auto userIdType = m_impl->m_permission.getUserPermissionType(user_id);
-    if (userIdType >= executorIdType)
+    if (userIdType >= executor_idType)
         return false;
 
     std::unique_lock<std::shared_mutex> local_unique_lock1(m_impl->m_user_id_map_mutex, std::defer_lock),
         local_shared_lock2(m_impl->m_muted_user_map_mutex, std::defer_lock);
     std::lock(local_unique_lock1, local_shared_lock2);
-    sendTipMessage(executorId, std::format("{} was kicked by {}",
-        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executorId].nickname));
+    sendTipMessage(executor_id, std::format("{} was kicked by {}",
+        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
     m_impl->m_user_id_map.erase(user_id);
 
     return true;
 }
 
-bool GroupRoom::addOperator(UserID executorId, UserID user_id)
+bool GroupRoom::addOperator(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (executorId == user_id || !hasUser(user_id) || !hasUser(executorId))
+    if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
-    if (m_impl->m_permission.getUserPermissionType(executorId) !=
+    if (m_impl->m_permission.getUserPermissionType(executor_id) !=
         PermissionType::Administrator)
         return false;
     if (m_impl->m_permission.getUserPermissionType(user_id) !=
@@ -532,20 +532,20 @@ bool GroupRoom::addOperator(UserID executorId, UserID user_id)
         PermissionType::Operator);
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
-    sendTipMessage(executorId, std::format("{} was turned operator by {}",
-        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executorId].nickname));
+    sendTipMessage(executor_id, std::format("{} was turned operator by {}",
+        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
 
     return true;
 }
 
-bool GroupRoom::removeOperator(UserID executorId, UserID user_id)
+bool GroupRoom::removeOperator(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (executorId == user_id || !hasUser(user_id) || !hasUser(executorId))
+    if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
-    if (m_impl->m_permission.getUserPermissionType(executorId) !=
+    if (m_impl->m_permission.getUserPermissionType(executor_id) !=
         PermissionType::Administrator)
         return false;
     if (m_impl->m_permission.getUserPermissionType(user_id) !=
@@ -556,8 +556,8 @@ bool GroupRoom::removeOperator(UserID executorId, UserID user_id)
         PermissionType::Default);
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
-    sendTipMessage(executorId, std::format("{} was turned default user by {}",
-        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executorId].nickname));
+    sendTipMessage(executor_id, std::format("{} was turned default user by {}",
+        m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
 
     return true;
 }

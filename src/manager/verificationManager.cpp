@@ -23,11 +23,11 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
         if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
-            m_FriendRoomVerification_map.end())
+            m_FriendRoomVerification_map.cend())
             throw std::invalid_argument("The same verification already exists!");
 
         m_FriendRoomVerification_map.emplace(PrivateRoomIDStruct{ user_id_1, user_id_2 },
-                                                FriendRoomVerification{ user_id_1, user_id_2 });
+                                             FriendRoomVerification{ user_id_1, user_id_2 });
     }
     
     // user1

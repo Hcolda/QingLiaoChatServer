@@ -122,8 +122,7 @@ public:
 
         this->m_thread_is_running = true;
         this->m_work_thread = std::thread([this]() -> void {
-            while (m_thread_is_running)
-            {
+            while (m_thread_is_running) {
                 std::unique_lock<std::mutex> lock(m_function_queue_mutex);
                 this->m_cv.wait(lock,
                     [this]() { return !m_function_queue.empty() || !m_thread_is_running; });
@@ -142,8 +141,7 @@ public:
 
         this->m_thread_is_running_2 = true;
         this->m_work_thread_2 = std::thread([this]() -> void {
-            while (m_thread_is_running_2)
-            {
+            while (m_thread_is_running_2) {
                 std::unique_lock<std::mutex> lock(m_function_queue_mutex_2);
                 this->m_cv_2.wait(lock,
                     [this]() { return !m_function_queue_2.empty() || !m_thread_is_running_2; });

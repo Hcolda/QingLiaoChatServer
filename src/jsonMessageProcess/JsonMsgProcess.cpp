@@ -2,7 +2,7 @@
 
 #include <format>
 #include <unordered_set>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include "manager.h"
 #include "regexMatch.hpp"
 #include "returnStateMessage.hpp"
@@ -91,8 +91,7 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
 
 asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
-    try
-    {
+    try {
         std::string function_name = json["function"].getString();
         const qjson::JObject& param = json["parameters"];
 
@@ -101,8 +100,9 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
             // Check if userid == -1
             if (m_user_id == UserID(-1) &&
                 function_name != "login" &&
-                function_name != "register")
+                function_name != "register") {
                 co_return makeErrorMessage("You haven't logged in!");
+            }
         }
         
         auto itor = m_function_map.find(function_name);
@@ -149,8 +149,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
             co_return co_await getFriendVerificationList();
         case 12:
             // accept group verification
-            co_return co_await acceptGroupVerification(GroupID(param["group_id"].getInt()),
-                UserID(param["user_id"].getInt()));
+            co_return co_await acceptGroupVerification(GroupID(param["group_id"].getInt()), UserID(param["user_id"].getInt()));
         case 13:
             // get group verification list
             co_return co_await getGroupVerificationList();
@@ -158,8 +157,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
             co_return makeErrorMessage("There isn't a function that matches your request.");
         }
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         co_return makeErrorMessage(e.what());
     }
 }
@@ -171,8 +169,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(UserID user_id, co
     
     auto user = serverManager.getUser(user_id);
     
-    if (user->isUserPassword(password))
-    {
+    if (user->isUserPassword(password)) {
         // check device type
         if (device == "PersonalComputer")
             serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::PersonalComputer);
@@ -246,11 +243,9 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendList()
     auto set = std::move(serverManager.getUser(this->m_user_id)->getFriendList());
     qjson::JObject returnJson = makeSuccessMessage("Successfully obtained friend list!");
 
-    for (auto i : set)
-    {
+    for (auto i : set) {
         returnJson["friend_list"].push_back(i.getOriginValue());
     }
-
     serverLogger.info("User ", this->m_user_id.getOriginValue(), " get friend list");
 
     co_return returnJson;
@@ -261,8 +256,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendVerificationLis
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     auto map = serverManager.getUser(this->m_user_id)->getFriendVerificationList();
     qjson::JObject localVector;
-    for (const auto& [user_id, user_struct] : map)
-    {
+    for (const auto& [user_id, user_struct] : map) {
         qjson::JObject localJson;
         localJson["user_id"] = user_id.getOriginValue();
         localJson["verification_type"] = (int)user_struct.verification_type;
@@ -303,8 +297,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupList()
     auto set = std::move(serverManager.getUser(this->m_user_id)->getGroupList());
     qjson::JObject returnJson = makeSuccessMessage("Successfully obtained group list!");
 
-    for (auto i : set)
-    {
+    for (auto i : set) {
         returnJson["friend_list"].push_back(i.getOriginValue());
     }
 
@@ -318,8 +311,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupVerificationList
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     auto map = std::move(serverManager.getUser(this->m_user_id)->getGroupVerificationList());
     auto returnJson = makeSuccessMessage("Successfully obtained verification list!");
-    for (const auto& [group_id, user_struct] : map)
-    {
+    for (const auto& [group_id, user_struct] : map) {
         auto group = std::to_string(group_id.getOriginValue());
         returnJson["result"][group.c_str()]["user_id"] = user_struct.user_id.getOriginValue();
         returnJson["result"][group.c_str()]["verification_type"] = (int)user_struct.verification_type;

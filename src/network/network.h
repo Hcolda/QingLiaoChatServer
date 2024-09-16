@@ -20,13 +20,6 @@
 namespace qls
 {
 
-using asio::ip::tcp;
-using asio::awaitable;
-using asio::co_spawn;
-using asio::detached;
-using asio::use_awaitable;
-namespace this_coro = asio::this_coro;
-
 /**
  * @brief Converts a socket's address to a string representation.
  * @param s The socket.
@@ -56,10 +49,6 @@ public:
     {
         qls::Package package; ///< Package used to receive data.
     };
-
-    using acceptFunction = std::function<asio::awaitable<void>(tcp::socket&)>;
-    using receiveFunction = std::function<asio::awaitable<void>(tcp::socket&, std::string, std::shared_ptr<qls::DataPackage>)>;
-    using closeFunction = std::function<asio::awaitable<void>(tcp::socket&)>;
 
     Network();
     Network(const Network&) = delete;
@@ -96,13 +85,13 @@ private:
      * @param socket The socket.
      * @return An awaitable task.
      */
-    awaitable<void> echo(tcp::socket socket);
+    asio::awaitable<void> echo(asio::ip::tcp::socket socket);
 
     /**
      * @brief Listens for incoming connections.
      * @return An awaitable task.
      */
-    awaitable<void> listener();
+    asio::awaitable<void> listener();
 
     std::string                         host_; ///< Host address.
     unsigned short                      port_; ///< Port number.

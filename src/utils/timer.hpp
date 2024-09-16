@@ -35,15 +35,15 @@ public:
     template<typename Func, typename... Args>
     bool addTask(const std::string& taskName, long long interval, Func&& func, Args&&... args)
     {
-        if (std::find(m_taskNames.begin(), m_taskNames.end(), taskName) != m_taskNames.end())
-        {
+        if (std::find(m_taskNames.begin(), m_taskNames.end(), taskName) != m_taskNames.end()) {
             return false;
         }
 
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_taskNames.push_back(taskName);
-            m_tasks.push({ std::clock(), taskName, std::bind(std::forward<Func>(func), std::forward<Args>(args)...), interval });
+            m_tasks.push({ std::clock(), taskName, std::bind(std::forward<Func>(func),
+                std::forward<Args>(args)...), interval });
         }
         m_cv.notify_all();
 
@@ -76,9 +76,9 @@ protected:
     struct Task
     {
         std::clock_t            clock = 0;
-        std::string                taskName;
-        std::function<void()>    function;
-        long long                interval = 0;
+        std::string             taskName;
+        std::function<void()>   function;
+        long long               interval = 0;
 
         Task& operator =(const Task& t)
         {
@@ -110,8 +110,7 @@ protected:
             if (!m_isRunning)
                 return;
 
-            if (!m_removeTask.empty() && m_removeTask.front() == m_tasks.top().taskName)
-            {
+            if (!m_removeTask.empty() && m_removeTask.front() == m_tasks.top().taskName) {
                 m_removeTask.pop();
                 m_tasks.pop();
                 lock.unlock();

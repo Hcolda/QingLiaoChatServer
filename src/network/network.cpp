@@ -1,7 +1,7 @@
 #include "network.h"
 
 #include <asio/experimental/awaitable_operators.hpp>
-#include <Logger.hpp>
+#include <logger.hpp>
 #include <system_error>
 #include <Json.h>
 #include <Ini.h>
@@ -18,6 +18,15 @@ extern qls::Manager serverManager;
 extern qls::SocketFunction serverSocketFunction;
 extern qini::INIObject serverIni;
 
+namespace qls {
+    using asio::ip::tcp;
+    using asio::awaitable;
+    using asio::co_spawn;
+    using asio::detached;
+    using asio::use_awaitable;
+    namespace this_coro = asio::this_coro;
+}
+
 qls::Network::Network() :
     port_(55555),
     thread_num_((12 > int(std::thread::hardware_concurrency())
@@ -29,8 +38,7 @@ qls::Network::Network() :
 
 qls::Network::~Network()
 {
-    for (int i = 0; i < thread_num_; i++)
-    {
+    for (int i = 0; i < thread_num_; i++) {
         if (threads_[i].joinable())
             threads_[i].join();
     }
@@ -56,27 +64,23 @@ void qls::Network::run(std::string_view host, unsigned short port)
     if (!ssl_context_ptr_)
         throw std::system_error(qls_errc::null_tls_context);
 
-    try
-    {
+    try {
         asio::signal_set signals(io_context_, SIGINT, SIGTERM);
         signals.async_wait([&](auto, auto) { io_context_.stop(); });
 
-        for (int i = 0; i < thread_num_; i++)
-        {
+        for (int i = 0; i < thread_num_; i++) {
             threads_[i] = std::thread([&]() {
                 co_spawn(io_context_, listener(), detached);
                 io_context_.run();
                 });
         }
 
-        for (int i = 0; i < thread_num_; i++)
-        {
+        for (int i = 0; i < thread_num_; i++) {
             if (threads_[i].joinable())
                 threads_[i].join();
         }
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
 }
@@ -105,30 +109,25 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     // register the socket
     serverManager.registerSocket(socket_ptr);
 
-    try
-    {
+    try {
         serverLogger.info(std::format("[{}] connected to the server", addr));
 
         // SSL handshake
         co_await socket_ptr->async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
 
         char data[8192];
-        for (;;)
-        {
-            do
-            {
+        for (;;) {
+            do {
                 std::size_t n = co_await socket_ptr->async_read_some(asio::buffer(data), use_awaitable);
                 // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
                 sds->package.write({ data, n });
             } while (!sds->package.canRead());
 
-            while (sds->package.canRead())
-            {
+            while (sds->package.canRead()) {
                 std::shared_ptr<qls::DataPackage> datapack;
 
                 // Check if the data package is normal
-                try
-                {
+                try {
                     // Data package
                     datapack = std::shared_ptr<qls::DataPackage>(
                         qls::DataPackage::stringToPackage(
@@ -137,8 +136,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     if (datapack->getData() != "test")
                         throw std::system_error(qls_errc::connection_test_failed);
                 }
-                catch (const std::exception& e)
-                {
+                catch (const std::exception& e) {
                     serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
                     std::error_code ignore_error;
                     socket_ptr->shutdown(ignore_error);
@@ -148,8 +146,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                 auto execute_function = [addr](std::shared_ptr<Socket> socket_ptr,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
-                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void>
-                    {
+                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void> {
                         asio::steady_timer timer(co_await this_coro::executor);
                         auto now = std::chrono::steady_clock::now();
                         while (deadline > now)
@@ -161,12 +158,10 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                         throw std::system_error(std::make_error_code(std::errc::timed_out));
                     };
                     std::chrono::steady_clock::time_point deadline;
-                    try
-                    {
+                    try {
                         co_await (SocketService::echo(socket_ptr, std::move(sds), deadline) && watchdog(deadline));
                     }
-                    catch (const std::system_error& e)
-                    {
+                    catch (const std::system_error& e) {
                         const auto& errc = e.code();
                         if (errc.message() == "End of file")
                         {
@@ -177,8 +172,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                             serverLogger.error('[', errc.category().name(), ']', errc.message());
                         }
                     }
-                    catch (const std::exception& e)
-                    {
+                    catch (const std::exception& e) {
                         serverLogger.error(std::string(e.what()));
                     }
                     serverManager.removeSocket(socket_ptr);
@@ -190,20 +184,14 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
             }
         }
     }
-    catch (const std::system_error& e)
-    {
+    catch (const std::system_error& e) {
         const auto& errc = e.code();
         if (errc.message() == "End of file")
-        {
             serverLogger.info(std::format("[{}] disconnected from the server", addr));
-        }
         else
-        {
             serverLogger.error('[', errc.category().name(), ']', errc.message());
-        }
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
     serverManager.removeSocket(socket_ptr);
@@ -214,8 +202,7 @@ asio::awaitable<void> qls::Network::listener()
 {
     auto executor = co_await this_coro::executor;
     tcp::acceptor acceptor(executor, { asio::ip::address::from_string(host_), port_ });
-    for (;;)
-    {
+    for (;;) {
         tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
         co_spawn(executor, echo(std::move(socket)), detached);
     }
@@ -238,23 +225,18 @@ inline std::string qls::showBinaryData(const std::string& data)
     for (const auto& i : data)
     {
         if (isShowableCharacter(static_cast<unsigned char>(i)))
-        {
             result += i;
-        }
-        else
-        {
+        else {
             std::string hex;
             int locch = static_cast<unsigned char>(i);
             while (locch)
             {
-                if (locch % 16 < 10)
-                {
+                if (locch % 16 < 10) {
                     hex += ('0' + (locch % 16));
                     locch /= 16;
                     continue;
                 }
-                switch (locch % 16)
-                {
+                switch (locch % 16) {
                 case 10:
                     hex += 'a';
                     break;
@@ -278,17 +260,11 @@ inline std::string qls::showBinaryData(const std::string& data)
             }
 
             if (hex.empty())
-            {
                 result += "\\x00";
-            }
             else if (hex.size() == 1)
-            {
                 result += "\\x0" + hex;
-            }
             else
-            {
                 result += "\\x" + hex;
-            }
         }
     }
 

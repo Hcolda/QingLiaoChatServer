@@ -17,7 +17,8 @@ NAMESPACE_OPTION_START
 class Option
 {
 public:
-    enum class OptionType {
+    enum class OptionType
+    {
         OPT_UNKNOWN = 0,
         OPT_NO,
         OPT_REQUIRED,
@@ -73,10 +74,8 @@ public:
     void remove(const std::string& opt_name)
     {
         auto itor = m_opt_map.find(opt_name);
-        if (itor != m_opt_map.end())
-        {
+        if (itor != m_opt_map.cend())
             m_opt_map.erase(itor);
-        }
     }
 
     /*
@@ -88,8 +87,7 @@ public:
     {
         std::vector<std::string> args;
 
-        for (int i = 0; i < argc; i++)
-        {
+        for (int i = 0; i < argc; i++) {
             args.emplace_back(argv[i]);
         }
 
@@ -108,14 +106,10 @@ public:
         long long begin = -1;
         long long i = 0;
 
-        for (; size_t(i) < data.size(); i++)
-        {
-            if (data[i] == ' ')
-            {
+        for (; size_t(i) < data.size(); i++) {
+            if (data[i] == ' ') {
                 if ((i - begin - 1) > 0)
-                {
                     dataList.push_back(data.substr(begin + 1, i - begin - 1));
-                }
                 begin = i;
             }
         }
@@ -130,17 +124,14 @@ public:
     */
     void parse(const std::vector<std::string>& args)
     {
-        for (auto i = args.begin(); i != args.end(); i++)
-        {
+        for (auto i = args.begin(); i != args.cend(); i++) {
             const std::string& arg = *i;
 
-            if (arg.substr(0, 1) != "-")
-            {
+            if (arg.substr(0, 1) != "-") {
                 // Ignore regular arguments
                 continue;
             }
-            if (arg.substr(0, 2) == "--")
-            {
+            if (arg.substr(0, 2) == "--") {
                 // Long option parsing
 
                 std::string str = arg.substr(2);
@@ -148,14 +139,12 @@ public:
                     continue;
 
                 auto pos = str.find('=');
-                if (pos != std::string::npos)
-                {
+                if (pos != std::string::npos) {
                     // Found '='
                     std::string opt_name = str.substr(0, pos);
                     std::string value = str.substr(pos + 1);
 
-                    switch (get_type(opt_name))
-                    {
+                    switch (get_type(opt_name)) {
                     case OptionType::OPT_UNKNOWN:
                         throw std::logic_error("No such option: " + opt_name);
 
@@ -171,17 +160,15 @@ public:
                         break;
                     }
                 }
-                else
-                {
+                else {
                     std::string& opt_name = str;
-                    switch (get_type(opt_name))
-                    {
+                    switch (get_type(opt_name)) {
                     case OptionType::OPT_NO:
                         m_args_map[opt_name] = "";
                         break;
                         
                     case OptionType::OPT_OPTIONAL:
-                        if ((i + 1) != args.end() && (i + 1)->substr(0, 1) != "-")
+                        if ((i + 1) != args.cend() && (i + 1)->substr(0, 1) != "-")
                         {
                             m_args_map[opt_name] = *(i + 1);
                             i++;
@@ -191,8 +178,7 @@ public:
                         break;
                     
                     case OptionType::OPT_REQUIRED:
-                        if ((i + 1) != args.end() && (i + 1)->substr(0, 1) != "-")
-                        {
+                        if ((i + 1) != args.cend() && (i + 1)->substr(0, 1) != "-") {
                             m_args_map[opt_name] = *(i + 1);
                             i++;
                             break;
@@ -205,8 +191,7 @@ public:
                     }
                 }
             }
-            else
-            {
+            else {
                 // Short option parsing
 
                 std::string str = arg.substr(1);
@@ -217,11 +202,9 @@ public:
                 
                 std::string opt_name = str.substr(0, 1);
 
-                switch (get_type(opt_name))
-                {
+                switch (get_type(opt_name)) {
                 case OptionType::OPT_NO:
-                    for (int i = 0; i < str.size(); i++)
-                    {
+                    for (int i = 0; i < str.size(); i++) {
                         std::string o(1, str[i]);
                         if (get_type(o) != OptionType::OPT_NO)
                             continue;
@@ -232,8 +215,7 @@ public:
                 case OptionType::OPT_OPTIONAL:
                     if (str.size() > 1)
                         m_args_map[opt_name] = str.substr(1);
-                    else if ((i + 1) != args.end() && (i + 1)->substr(0, 1) != "-")
-                    {
+                    else if ((i + 1) != args.cend() && (i + 1)->substr(0, 1) != "-") {
                         m_args_map[opt_name] = *(i + 1);
                         i++;
                     }
@@ -243,18 +225,15 @@ public:
                     break;
                 
                 case OptionType::OPT_REQUIRED:
-                {
                     if (str.size() > 1)
                         m_args_map[opt_name] = str.substr(1);
-                    else if ((i + 1) != args.end() && (i + 1)->substr(0, 1) != "-")
-                    {
+                    else if ((i + 1) != args.cend() && (i + 1)->substr(0, 1) != "-") {
                         m_args_map[opt_name] = *(i + 1);
                         i++;
                         break;
                     }
                     else
                         throw std::logic_error("Option requires an argument: " + opt_name);
-                }
                     break;
 
                 default:
@@ -271,7 +250,7 @@ public:
     */
     bool has_opt(const std::string& opt) const
     {
-        return  m_opt_map.find(opt) != m_opt_map.cend();
+        return m_opt_map.find(opt) != m_opt_map.cend();
     }
 
     /*
@@ -281,7 +260,7 @@ public:
     */
     bool has_opt_with_value(const std::string& opt) const
     {
-        return  m_opt_map.find(opt) != m_opt_map.cend() &&
+        return m_opt_map.find(opt) != m_opt_map.cend() &&
             m_args_map.find(opt) != m_args_map.cend();
     }
 
@@ -361,8 +340,7 @@ public:
     void show() const
     {
         std::cout << "m_opt_map\n";
-        for (auto i = m_opt_map.begin(); i != m_opt_map.end(); i++)
-        {
+        for (auto i = m_opt_map.begin(); i != m_opt_map.cend(); i++) {
             switch (i->second)
             {
             case OptionType::OPT_UNKNOWN:
@@ -387,8 +365,7 @@ public:
         }
 
         std::cout << "m_args_map\n";
-        for (auto i = m_args_map.begin(); i != m_args_map.end(); i++)
-        {
+        for (auto i = m_args_map.begin(); i != m_args_map.cend(); i++) {
             std::cout << i->first << ' ' << i->second << '\n';
         }
     }
@@ -403,7 +380,7 @@ protected:
     {
         auto itor = m_opt_map.find(opt);
 
-        if (itor == m_opt_map.end())
+        if (itor == m_opt_map.cend())
         {
             return OptionType::OPT_UNKNOWN;
         }
