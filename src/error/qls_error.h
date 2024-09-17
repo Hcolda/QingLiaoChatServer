@@ -30,24 +30,28 @@ enum class qls_errc
     // user error
     password_already_set,
     password_mismatched,
+    user_existed,
     user_not_existed,
 
+    // verification error
+    verification_existed,
+    verification_not_existed,
+
     // private room error
+    private_room_existed,
     private_room_not_existed,
     private_room_unable_to_use,
-    private_room_verification_not_existed,
 
     // group room error
+    group_room_existed,
     group_room_not_existed,
     group_room_unable_to_use,
-    group_room_verification_not_existed,
     group_room_user_level_invalid,
 
     // permission error
     no_permission,
     permission_denied
 };
-
 std::error_code make_error_code(qls::qls_errc errc) noexcept;
 
 } // namespace qls

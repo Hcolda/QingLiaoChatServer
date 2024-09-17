@@ -58,7 +58,7 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(const std::string& dat
     std::hash<std::string_view> hash;
     size_t gethash = hash(package->getData());
     if (gethash != package->verifyCode)
-        throw std::system_error(qls_errc::hash_mismatched,
+        throw std::system_error(make_error_code(qls_errc::hash_mismatched),
             std::format("hash is different, local hash: {}, pack hash: {}",
             gethash, package->verifyCode));
 

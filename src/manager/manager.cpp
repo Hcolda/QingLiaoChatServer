@@ -112,7 +112,7 @@ GroupID Manager::getPrivateRoomId(UserID user1_id, UserID user2_id) const
     else if (m_impl->m_userID_to_privateRoomID_map.find(
         { user2_id , user1_id }) != m_impl->m_userID_to_privateRoomID_map.cend())
         return GroupID(m_impl->m_userID_to_privateRoomID_map.find({ user2_id , user1_id })->second);
-    else throw std::system_error(qls_errc::private_room_not_existed);
+    else throw std::system_error(make_error_code(qls_errc::private_room_not_existed));
 }
 
 bool Manager::hasPrivateRoom(GroupID private_room_id) const
@@ -127,7 +127,7 @@ std::shared_ptr<PrivateRoom> Manager::getPrivateRoom(GroupID private_room_id) co
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_basePrivateRoom_map_mutex);
     auto itor = m_impl->m_basePrivateRoom_map.find(private_room_id);
     if (itor == m_impl->m_basePrivateRoom_map.cend())
-        throw std::system_error(qls_errc::private_room_not_existed);
+        throw std::system_error(make_error_code(qls_errc::private_room_not_existed));
     return itor->second;
 }
 
@@ -139,7 +139,7 @@ void Manager::removePrivateRoom(GroupID private_room_id)
 
     auto itor = m_impl->m_basePrivateRoom_map.find(private_room_id);
     if (itor == m_impl->m_basePrivateRoom_map.cend())
-        throw std::system_error(qls_errc::private_room_not_existed);
+        throw std::system_error(make_error_code(qls_errc::private_room_not_existed));
 
     {
         /*
@@ -189,7 +189,7 @@ std::shared_ptr<GroupRoom> Manager::getGroupRoom(GroupID group_room_id) const
     std::shared_lock<std::shared_mutex> lock(m_impl->m_baseRoom_map_mutex);
     auto itor = m_impl->m_baseRoom_map.find(group_room_id);
     if (itor == m_impl->m_baseRoom_map.cend())
-        throw std::system_error(qls_errc::group_room_not_existed);
+        throw std::system_error(make_error_code(qls_errc::group_room_not_existed));
     return itor->second;
 }
 
@@ -198,7 +198,7 @@ void Manager::removeGroupRoom(GroupID group_room_id)
     std::unique_lock<std::shared_mutex> lock(m_impl->m_baseRoom_map_mutex);
     auto itor = m_impl->m_baseRoom_map.find(group_room_id);
     if (itor == m_impl->m_baseRoom_map.cend())
-        throw std::system_error(qls_errc::group_room_not_existed);
+        throw std::system_error(make_error_code(qls_errc::group_room_not_existed));
 
     {
         /*
@@ -233,7 +233,7 @@ std::shared_ptr<User> Manager::getUser(UserID user_id) const
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex);
     auto itor = m_impl->m_user_map.find(user_id);
     if (itor == m_impl->m_user_map.cend())
-        throw std::system_error(qls_errc::user_not_existed);
+        throw std::system_error(make_error_code(qls_errc::user_not_existed));
     
     return itor->second;
 }
@@ -248,7 +248,7 @@ void Manager::registerSocket(const std::shared_ptr<Socket> &socket_ptr)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
     if (m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend())
-        throw std::system_error(qls_errc::socket_pointer_existed);
+        throw std::system_error(make_error_code(qls_errc::socket_pointer_existed));
     m_impl->m_socket_map.emplace(socket_ptr, -1ll);
 }
 
@@ -271,7 +271,7 @@ UserID Manager::getUserIDOfSocket(const std::shared_ptr<Socket> &socket_ptr) con
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
     auto iter = m_impl->m_socket_map.find(socket_ptr);
     if (iter == m_impl->m_socket_map.cend())
-        throw std::system_error(qls_errc::socket_pointer_not_existed);
+        throw std::system_error(make_error_code(qls_errc::socket_pointer_not_existed));
     return iter->second;
 }
 
@@ -282,11 +282,11 @@ void Manager::modifyUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, User
     std::lock(local_unique_lock, local_shared_lock);
 
     if (m_impl->m_user_map.find(user_id) == m_impl->m_user_map.cend())
-        throw std::system_error(qls_errc::user_not_existed);
+        throw std::system_error(make_error_code(qls_errc::user_not_existed));
 
     auto iter = m_impl->m_socket_map.find(socket_ptr);
     if (iter == m_impl->m_socket_map.cend())
-        throw std::system_error(qls_errc::socket_pointer_not_existed);
+        throw std::system_error(make_error_code(qls_errc::socket_pointer_not_existed));
 
     if (iter->second != -1ll)
         m_impl->m_user_map.find(iter->second)->second->removeSocket(socket_ptr);
@@ -302,7 +302,7 @@ void Manager::removeSocket(const std::shared_ptr<Socket> &socket_ptr)
 
     auto iter = m_impl->m_socket_map.find(socket_ptr);
     if (iter == m_impl->m_socket_map.cend())
-        throw std::system_error(qls_errc::socket_pointer_not_existed);
+        throw std::system_error(make_error_code(qls_errc::socket_pointer_not_existed));
 
     if (iter->second != -1l)
         m_impl->m_user_map.find(iter->second)->second->removeSocket(socket_ptr);

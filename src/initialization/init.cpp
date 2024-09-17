@@ -98,7 +98,7 @@ int init()
             serverLogger.info("Key file path: ", serverIni["ssl"]["key_file"]);
             serverLogger.info("DH file path: ", serverIni["ssl"]["dh_file"]);
 
-            serverNetwork.set_tls_config([](){
+            serverNetwork.setTlsConfig([](){
                 std::shared_ptr<asio::ssl::context> ssl_context =
                         std::make_shared<asio::ssl::context>(asio::ssl::context::tlsv12);
 
@@ -151,8 +151,7 @@ int init()
             input.init();
             std::string command;
             char buffer[1024] {0};
-            while (true)
-            {
+            while (true) {
                 std::cin.getline(buffer, 1023);
                 command = buffer;
                 if (!input.input(command))

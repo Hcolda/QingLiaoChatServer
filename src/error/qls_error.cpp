@@ -49,24 +49,32 @@ std::string qls_error_category::message(int Errval) const
         return "user has set password";
     case qls_errc::password_mismatched:
         return "password mismatched";
+    case qls_errc::user_existed:
+        return "user already exists";
     case qls_errc::user_not_existed:
         return "user doesn't exist";
 
+    // verification error
+    case qls_errc::verification_existed:
+        return "verification already exists";
+    case qls_errc::verification_not_existed:
+        return "verification doesn't exist";
+
     // private room error
+    case qls_errc::private_room_existed:
+        return "private room already exists";
     case qls_errc::private_room_not_existed:
         return "private room doesn't exist";
     case qls_errc::private_room_unable_to_use:
         return "room can't be used";
-    case qls_errc::private_room_verification_not_existed:
-        return "friend verification doesn't exist";
 
     // group room error
+    case qls_errc::group_room_existed:
+        return "group room already exists";
     case qls_errc::group_room_not_existed:
         return "group room doesn't exist";
     case qls_errc::group_room_unable_to_use:
         return "room can't be used";
-    case qls_errc::group_room_verification_not_existed:
-        return "group verification doesn't exist";
     case qls_errc::group_room_user_level_invalid:
         return "level of user(s) in group room is invalid";
 
@@ -83,7 +91,7 @@ std::string qls_error_category::message(int Errval) const
     return "unknown error";
 }
 
-const qls_error_category QLSErrCategory {};
+constexpr qls_error_category QLSErrCategory;
 
 std::error_code qls::make_error_code(qls::qls_errc errc) noexcept
 {

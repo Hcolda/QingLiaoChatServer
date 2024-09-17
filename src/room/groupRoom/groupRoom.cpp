@@ -67,9 +67,9 @@ GroupRoom::~GroupRoom() = default;
 bool GroupRoom::addMember(UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     std::lock_guard<std::shared_mutex> lg(m_impl->m_user_id_map_mutex);
-    if (m_impl->m_user_id_map.find(user_id) == m_impl->m_user_id_map.end())
+    if (m_impl->m_user_id_map.find(user_id) == m_impl->m_user_id_map.cend())
         m_impl->m_user_id_map.emplace(user_id, serverManager.getUser(user_id)->getUserName());
 
     return true;
@@ -78,7 +78,7 @@ bool GroupRoom::addMember(UserID user_id)
 bool GroupRoom::hasMember(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     std::lock_guard<std::shared_mutex> lg(m_impl->m_user_id_map_mutex);
     return m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.cend();
 }
@@ -86,9 +86,9 @@ bool GroupRoom::hasMember(UserID user_id) const
 bool GroupRoom::removeMember(UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     std::lock_guard<std::shared_mutex> lg(m_impl->m_user_id_map_mutex);
-    if (m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.end())
+    if (m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.cend())
         m_impl->m_user_id_map.erase(user_id);
 
     return true;
@@ -97,7 +97,7 @@ bool GroupRoom::removeMember(UserID user_id)
 void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     // 是否有此user_id
     if (!hasUser(sender_user_id))
         return;
@@ -106,16 +106,12 @@ void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
     {
         std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_muted_user_map_mutex);
         auto itor = m_impl->m_muted_user_map.find(sender_user_id);
-        if (itor != m_impl->m_muted_user_map.end())
-        {
+        if (itor != m_impl->m_muted_user_map.cend()) {
             if (itor->second.first + itor->second.second >=
                 std::chrono::time_point_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now()))
-            {
                 return;
-            }
-            else
-            {
+            else {
                 local_shared_lock.unlock();
                 std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex);
                 m_impl->m_muted_user_map.erase(sender_user_id);
@@ -148,7 +144,7 @@ void GroupRoom::sendTipMessage(UserID sender_user_id,
     std::string_view message)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     // 是否有此user_id
     if (!hasUser(sender_user_id))
         return;
@@ -157,16 +153,12 @@ void GroupRoom::sendTipMessage(UserID sender_user_id,
     {
         std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_muted_user_map_mutex);
         auto itor = m_impl->m_muted_user_map.find(sender_user_id);
-        if (itor != m_impl->m_muted_user_map.end())
-        {
+        if (itor != m_impl->m_muted_user_map.cend()) {
             if (itor->second.first + itor->second.second >=
                 std::chrono::time_point_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now()))
-            {
                 return;
-            }
-            else
-            {
+            else {
                 local_shared_lock.unlock();
                 std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex);
                 m_impl->m_muted_user_map.erase(sender_user_id);
@@ -197,7 +189,7 @@ void GroupRoom::sendUserTipMessage(UserID sender_user_id,
     std::string_view message, UserID receiver_user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     // 是否有此user_id
     if (!hasUser(receiver_user_id))
         return;
@@ -206,16 +198,12 @@ void GroupRoom::sendUserTipMessage(UserID sender_user_id,
     {
         std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_muted_user_map_mutex);
         auto itor = m_impl->m_muted_user_map.find(sender_user_id);
-        if (itor != m_impl->m_muted_user_map.end())
-        {
+        if (itor != m_impl->m_muted_user_map.cend()) {
             if (itor->second.first + itor->second.second >=
                 std::chrono::time_point_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now()))
-            {
                 return;
-            }
-            else
-            {
+            else {
                 local_shared_lock.unlock();
                 std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex);
                 m_impl->m_muted_user_map.erase(sender_user_id);
@@ -237,9 +225,8 @@ void GroupRoom::getMessage(
     const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
-    if (from > to)
-    {
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
+    if (from > to) {
         sendData(qjson::JWriter::fastWrite(makeErrorMessage("Illegal time point")));
         return;
     }
@@ -251,22 +238,16 @@ void GroupRoom::getMessage(
         size_t left = 0ull;
         size_t right = m_impl->m_message_queue.size() - 1;
         size_t middle = (left + right) / 2;
-
-        while (left < right - 1)
-        {
+        while (left < right - 1) {
             if (m_impl->m_message_queue[middle].first.time_since_epoch().count() ==
                 p.time_since_epoch().count())
-            {
                 return middle;
-            }
             else if (m_impl->m_message_queue[middle].first.time_since_epoch().count() <
-                p.time_since_epoch().count())
-            {
+                p.time_since_epoch().count()) {
                 left = middle;
                 middle = (left + right) / 2;
             }
-            else
-            {
+            else {
                 right = middle;
                 middle = (left + right) / 2;
             }
@@ -276,8 +257,7 @@ void GroupRoom::getMessage(
         };
 
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
-    if (m_impl->m_message_queue.empty())
-    {
+    if (m_impl->m_message_queue.empty()) {
         sendData(qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
         return;
     }
@@ -291,12 +271,9 @@ void GroupRoom::getMessage(
     size_t to_itor = searchPoint(to, false);
 
     qjson::JObject returnJson(qjson::JValueType::JList);
-    for (auto i = from_itor; i <= to_itor; i++)
-    {
-        switch (m_impl->m_message_queue[i].second.type)
-        {
-        case MessageType::NOMAL_MESSAGE:
-        {
+    for (auto i = from_itor; i <= to_itor; i++) {
+        switch (m_impl->m_message_queue[i].second.type) {
+        case MessageType::NOMAL_MESSAGE: {
             const auto& MessageStructure = m_impl->m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "group_message";
@@ -305,10 +282,9 @@ void GroupRoom::getMessage(
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_impl->m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
-        }
             break;
-        case MessageType::TIP_MESSAGE:
-        {
+        }
+        case MessageType::TIP_MESSAGE: {
             const auto& MessageStructure = m_impl->m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "group_tip_message";
@@ -317,8 +293,8 @@ void GroupRoom::getMessage(
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_impl->m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
-        }
             break;
+        }
         default:
             break;
         }
@@ -330,16 +306,16 @@ void GroupRoom::getMessage(
 bool GroupRoom::hasUser(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
-    return m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.end();
+    return m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.cend();
 }
 
 std::unordered_map<UserID, GroupRoom::UserDataStructure> GroupRoom::getUserList() const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
     return m_impl->m_user_id_map;
@@ -348,12 +324,12 @@ std::unordered_map<UserID, GroupRoom::UserDataStructure> GroupRoom::getUserList(
 std::string GroupRoom::getUserNickname(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
     auto itor = m_impl->m_user_id_map.find(user_id);
-    if (itor == m_impl->m_user_id_map.end())
-        throw std::system_error(qls_errc::user_not_existed, "user isn't in the room");
+    if (itor == m_impl->m_user_id_map.cend())
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "user isn't in the room");
 
     return itor->second.nickname;
 }
@@ -361,12 +337,12 @@ std::string GroupRoom::getUserNickname(UserID user_id) const
 long long GroupRoom::getUserGroupLevel(UserID user_id) const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
     auto itor = m_impl->m_user_id_map.find(user_id);
-    if (itor == m_impl->m_user_id_map.end())
-        throw std::system_error(qls_errc::user_not_existed, "user isn't in the room");
+    if (itor == m_impl->m_user_id_map.cend())
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "user isn't in the room");
 
     return itor->second.level.getValue();
 }
@@ -375,7 +351,7 @@ std::unordered_map<UserID,
     PermissionType> GroupRoom::getUserPermissionList() const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     return std::move(m_impl->m_permission.getUserPermissionList());
 }
@@ -383,7 +359,7 @@ std::unordered_map<UserID,
 UserID GroupRoom::getAdministrator() const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_administrator_user_id_mutex);
     return m_impl->m_administrator_user_id;
@@ -392,26 +368,22 @@ UserID GroupRoom::getAdministrator() const
 void GroupRoom::setAdministrator(UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
     std::unique_lock<std::shared_mutex> local_unique_lock1(m_impl->m_user_id_map_mutex, std::defer_lock);
     std::unique_lock<std::shared_mutex> local_unique_lock2(m_impl->m_administrator_user_id_mutex, std::defer_lock);
     std::lock(local_unique_lock1, local_unique_lock2);
 
-    if (m_impl->m_administrator_user_id == 0)
-    {
+    if (m_impl->m_administrator_user_id == 0) {
         auto itor = m_impl->m_user_id_map.find(user_id);
-        if (itor == m_impl->m_user_id_map.end())
-        {
+        if (itor == m_impl->m_user_id_map.cend()) {
             m_impl->m_user_id_map.emplace(user_id, serverManager.getUser(user_id)->getUserName());
             m_impl->m_permission.modifyUserPermission(user_id,
                 PermissionType::Administrator);
         }
         else
-        {
             m_impl->m_permission.modifyUserPermission(user_id,
                 PermissionType::Administrator);
-        }
     }
     else
     {
@@ -431,21 +403,21 @@ GroupID GroupRoom::getGroupID() const
 std::vector<UserID> GroupRoom::getDefaultUserList() const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     return std::move(m_impl->m_permission.getDefaultUserList());
 }
 
 std::vector<UserID> GroupRoom::getOperatorList() const
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     return std::move(m_impl->m_permission.getOperatorList());
 }
 
 bool GroupRoom::muteUser(UserID executor_id, UserID user_id, const std::chrono::minutes& mins)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
@@ -472,7 +444,7 @@ bool GroupRoom::muteUser(UserID executor_id, UserID user_id, const std::chrono::
 bool GroupRoom::unmuteUser(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
@@ -495,7 +467,7 @@ bool GroupRoom::unmuteUser(UserID executor_id, UserID user_id)
 bool GroupRoom::kickUser(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
@@ -517,15 +489,13 @@ bool GroupRoom::kickUser(UserID executor_id, UserID user_id)
 bool GroupRoom::addOperator(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 
-    if (m_impl->m_permission.getUserPermissionType(executor_id) !=
-        PermissionType::Administrator)
+    if (m_impl->m_permission.getUserPermissionType(executor_id) != PermissionType::Administrator)
         return false;
-    if (m_impl->m_permission.getUserPermissionType(user_id) !=
-        PermissionType::Default)
+    if (m_impl->m_permission.getUserPermissionType(user_id) != PermissionType::Default)
         return false;
 
     m_impl->m_permission.modifyUserPermission(user_id,
@@ -541,7 +511,7 @@ bool GroupRoom::addOperator(UserID executor_id, UserID user_id)
 bool GroupRoom::removeOperator(UserID executor_id, UserID user_id)
 {
     if (!m_impl->m_can_be_used)
-        throw std::system_error(qls_errc::group_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
     if (executor_id == user_id || !hasUser(user_id) || !hasUser(executor_id))
         return false;
 

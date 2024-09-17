@@ -28,7 +28,7 @@ PrivateRoom::PrivateRoom(UserID user_id_1, UserID user_id_2, bool is_create) :
 void PrivateRoom::sendMessage(std::string_view message, UserID sender_user_id)
 {
     if (!this->m_can_be_used)
-        throw std::system_error(qls_errc::private_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::private_room_unable_to_use));
     if (!hasUser(sender_user_id))
         return;
 
@@ -53,7 +53,7 @@ void PrivateRoom::sendMessage(std::string_view message, UserID sender_user_id)
 void PrivateRoom::sendTipMessage(std::string_view message, UserID sender_user_id)
 {
     if (!this->m_can_be_used)
-        throw std::system_error(qls_errc::private_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::private_room_unable_to_use));
     if (!hasUser(sender_user_id))
         return;
     
@@ -79,7 +79,7 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
     const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to)
 {
     if (!this->m_can_be_used)
-        throw std::system_error(qls_errc::private_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::private_room_unable_to_use));
     if (from > to) return;
 
     auto searchPoint = [this](
@@ -90,21 +90,16 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
             size_t right = m_message_queue.size() - 1;
             size_t middle = (left + right) / 2;
 
-            while (left < right - 1)
-            {
+            while (left < right - 1) {
                 if (m_message_queue[middle].first.time_since_epoch().count() ==
                     p.time_since_epoch().count())
-                {
                     return middle;
-                }
                 else if (m_message_queue[middle].first.time_since_epoch().count() <
-                    p.time_since_epoch().count())
-                {
+                    p.time_since_epoch().count()) {
                     left = middle;
                     middle = (left + right) / 2;
                 }
-                else
-                {
+                else {
                     right = middle;
                     middle = (left + right) / 2;
                 }
@@ -130,12 +125,9 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
     size_t to_itor = searchPoint(to, false);
 
     qjson::JObject returnJson(qjson::JValueType::JList);
-    for (auto i = from_itor; i <= to_itor; i++)
-    {
-        switch (m_message_queue[i].second.type)
-        {
-        case MessageType::NOMAL_MESSAGE:
-        {
+    for (auto i = from_itor; i <= to_itor; i++) {
+        switch (m_message_queue[i].second.type) {
+        case MessageType::NOMAL_MESSAGE: {
             const auto& MessageStructure = m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "private_message";
@@ -143,10 +135,9 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
+            break;
         }
-        break;
-        case MessageType::TIP_MESSAGE:
-        {
+        case MessageType::TIP_MESSAGE: {
             const auto& MessageStructure = m_message_queue[i].second;
             qjson::JObject localjson;
             localjson["type"] = "private_tip_message";
@@ -154,8 +145,8 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
             localjson["data"]["message"] = MessageStructure.message;
             localjson["time_point"] = m_message_queue[i].first.time_since_epoch().count();
             returnJson.push_back(std::move(localjson));
+            break;
         }
-        break;
         default:
             break;
         }
@@ -167,14 +158,14 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
 std::pair<UserID, UserID> PrivateRoom::getUserID() const
 {
     if (!this->m_can_be_used)
-        throw std::system_error(qls_errc::private_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::private_room_unable_to_use));
     return {m_user_id_1, m_user_id_2};
 }
 
 bool PrivateRoom::hasMember(UserID user_id) const
 {
     if (!this->m_can_be_used)
-        throw std::system_error(qls_errc::private_room_unable_to_use);
+        throw std::system_error(make_error_code(qls_errc::private_room_unable_to_use));
     return user_id == m_user_id_1 || user_id == m_user_id_2;
 }
 

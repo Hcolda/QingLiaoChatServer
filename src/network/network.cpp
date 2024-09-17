@@ -28,56 +28,57 @@ namespace qls {
 }
 
 qls::Network::Network() :
-    port_(55555),
-    thread_num_((12 > int(std::thread::hardware_concurrency())
-        ? 12 : int(std::thread::hardware_concurrency())))
+    m_port(55555),
+    m_thread_num((12 > static_cast<int>(std::thread::hardware_concurrency())
+        ? 12 : static_cast<int>(std::thread::hardware_concurrency())))
     {
         // Only after thread_num is initialized can we allocate memory for threads
-        threads_ = std::unique_ptr<std::thread[]>(new std::thread[size_t(thread_num_) + 1]{});
+        m_threads = std::unique_ptr<std::thread[]>(
+            new std::thread[static_cast<size_t>(m_thread_num) + 1]{});
     }
 
 qls::Network::~Network()
 {
-    for (int i = 0; i < thread_num_; i++) {
-        if (threads_[i].joinable())
-            threads_[i].join();
+    for (int i = 0; i < m_thread_num; i++) {
+        if (m_threads[i].joinable())
+            m_threads[i].join();
     }
 }
 
-void qls::Network::set_tls_config(
+void qls::Network::setTlsConfig(
     std::function<std::shared_ptr<
         asio::ssl::context>()> callback_handle)
 {
     if (!callback_handle)
         throw std::system_error(qls_errc::null_tls_callback_handle);
-    ssl_context_ptr_ = callback_handle();
-    if (!ssl_context_ptr_)
+    m_ssl_context_ptr = callback_handle();
+    if (!m_ssl_context_ptr)
         throw std::system_error(qls_errc::null_tls_context);
 }
 
 void qls::Network::run(std::string_view host, unsigned short port)
 {
-    host_ = host;
-    port_ = port;
+    m_host = host;
+    m_port = port;
 
     // Check if SSL context ptr is null
-    if (!ssl_context_ptr_)
+    if (!m_ssl_context_ptr)
         throw std::system_error(qls_errc::null_tls_context);
 
     try {
-        asio::signal_set signals(io_context_, SIGINT, SIGTERM);
-        signals.async_wait([&](auto, auto) { io_context_.stop(); });
+        asio::signal_set signals(m_io_context, SIGINT, SIGTERM);
+        signals.async_wait([&](auto, auto) { m_io_context.stop(); });
 
-        for (int i = 0; i < thread_num_; i++) {
-            threads_[i] = std::thread([&]() {
-                co_spawn(io_context_, listener(), detached);
-                io_context_.run();
+        for (int i = 0; i < m_thread_num; i++) {
+            m_threads[i] = std::thread([&]() {
+                co_spawn(m_io_context, listener(), detached);
+                m_io_context.run();
                 });
         }
 
-        for (int i = 0; i < thread_num_; i++) {
-            if (threads_[i].joinable())
-                threads_[i].join();
+        for (int i = 0; i < m_thread_num; i++) {
+            if (m_threads[i].joinable())
+                m_threads[i].join();
         }
     }
     catch (const std::exception& e) {
@@ -87,12 +88,7 @@ void qls::Network::run(std::string_view host, unsigned short port)
 
 void qls::Network::stop()
 {
-    io_context_.stop();
-}
-
-std::string qls::Network::get_password() const
-{
-    return (serverIni["ssl"]["password"]);
+    m_io_context.stop();
 }
 
 asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
@@ -100,7 +96,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     auto executor = co_await asio::this_coro::executor;
 
     // Load SSL socket pointer
-    std::shared_ptr<Socket> socket_ptr = std::make_shared<Socket>(std::move(origin_socket), *ssl_context_ptr_);
+    std::shared_ptr<Socket> socket_ptr = std::make_shared<Socket>(std::move(origin_socket), *m_ssl_context_ptr);
     // Socket encrypted structure
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
     // String address for data processing
@@ -115,7 +111,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
         // SSL handshake
         co_await socket_ptr->async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
 
-        char data[8192];
+        char data[8192] {0};
         for (;;) {
             do {
                 std::size_t n = co_await socket_ptr->async_read_some(asio::buffer(data), use_awaitable);
@@ -143,19 +139,18 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     co_return;
                 }
 
-                auto execute_function = [addr](std::shared_ptr<Socket> socket_ptr,
+                auto executeFunction = [addr](std::shared_ptr<Socket> socket_ptr,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
                     auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void> {
                         asio::steady_timer timer(co_await this_coro::executor);
                         auto now = std::chrono::steady_clock::now();
-                        while (deadline > now)
-                        {
+                        while (deadline > now) {
                             timer.expires_at(deadline);
                             co_await timer.async_wait(use_awaitable);
                             now = std::chrono::steady_clock::now();
                         }
-                        throw std::system_error(std::make_error_code(std::errc::timed_out));
+                        throw std::system_error(make_error_code(std::errc::timed_out));
                     };
                     std::chrono::steady_clock::time_point deadline;
                     try {
@@ -164,13 +159,9 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     catch (const std::system_error& e) {
                         const auto& errc = e.code();
                         if (errc.message() == "End of file")
-                        {
                             serverLogger.info(std::format("[{}] disconnected from the server", addr));
-                        }
                         else
-                        {
                             serverLogger.error('[', errc.category().name(), ']', errc.message());
-                        }
                     }
                     catch (const std::exception& e) {
                         serverLogger.error(std::string(e.what()));
@@ -179,7 +170,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     co_return;
                     };
 
-                asio::co_spawn(executor, execute_function(std::move(socket_ptr), std::move(sds)), asio::detached);
+                asio::co_spawn(executor, executeFunction(std::move(socket_ptr), std::move(sds)), asio::detached);
                 co_return;
             }
         }
@@ -201,7 +192,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 asio::awaitable<void> qls::Network::listener()
 {
     auto executor = co_await this_coro::executor;
-    tcp::acceptor acceptor(executor, { asio::ip::address::from_string(host_), port_ });
+    tcp::acceptor acceptor(executor, { asio::ip::address::from_string(m_host), m_port });
     for (;;) {
         tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
         co_spawn(executor, echo(std::move(socket)), detached);
@@ -221,16 +212,13 @@ inline std::string qls::showBinaryData(const std::string& data)
         };
 
     std::string result;
-
-    for (const auto& i : data)
-    {
+    for (const auto& i : data) {
         if (isShowableCharacter(static_cast<unsigned char>(i)))
             result += i;
         else {
             std::string hex;
             int locch = static_cast<unsigned char>(i);
-            while (locch)
-            {
+            while (locch) {
                 if (locch % 16 < 10) {
                     hex += ('0' + (locch % 16));
                     locch /= 16;
