@@ -59,7 +59,7 @@ public:
      * @brief Sets the TLS configuration.
      * @param callback_handle A callback function to configure TLS.
      */
-    void set_tls_config(std::function<std::shared_ptr<asio::ssl::context>()> callback_handle);
+    void setTlsConfig(std::function<std::shared_ptr<asio::ssl::context>()> callback_handle);
 
     /**
      * @brief Runs the network.
@@ -75,12 +75,6 @@ public:
 
 private:
     /**
-     * @brief Retrieves the password for the SSL context.
-     * @return The password string.
-     */
-    std::string get_password() const;
-
-    /**
      * @brief Handles echo functionality for a socket.
      * @param socket The socket.
      * @return An awaitable task.
@@ -93,12 +87,12 @@ private:
      */
     asio::awaitable<void> listener();
 
-    std::string                         host_; ///< Host address.
-    unsigned short                      port_; ///< Port number.
-    std::unique_ptr<std::thread[]>      threads_; ///< Thread pool for handling connections.
-    const int                           thread_num_; ///< Number of threads.
-    asio::io_context                    io_context_; ///< IO context for ASIO.
-    std::shared_ptr<asio::ssl::context> ssl_context_ptr_; ///< Shared pointer to the SSL context.
+    std::string                         m_host; ///< Host address.
+    unsigned short                      m_port; ///< Port number.
+    std::unique_ptr<std::thread[]>      m_threads; ///< Thread pool for handling connections.
+    const int                           m_thread_num; ///< Number of threads.
+    asio::io_context                    m_io_context; ///< IO context for ASIO.
+    std::shared_ptr<asio::ssl::context> m_ssl_context_ptr; ///< Shared pointer to the SSL context.
 };
 
 } // namespace qls

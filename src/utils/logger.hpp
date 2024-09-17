@@ -211,8 +211,7 @@ protected:
      */
     void workFunction()
     {
-        while (m_isRunning)
-        {
+        while (m_isRunning) {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_cv.wait(lock, [&]() {return !m_msgQueue.empty() || !m_isRunning; });
             if (!m_isRunning && m_msgQueue.empty())

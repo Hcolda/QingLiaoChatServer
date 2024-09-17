@@ -23,7 +23,7 @@ void GroupPermission::removePermission(const std::string& permissionName)
     // 是否有此权限
     auto itor = m_permission_map.find(permissionName);
     if (itor == m_permission_map.end())
-        throw std::system_error(qls_errc::no_permission, "no permission: " + permissionName);
+        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + permissionName);
 
     m_permission_map.erase(itor);
 }
@@ -35,7 +35,7 @@ PermissionType GroupPermission::getPermissionType(const std::string& permissionN
     // 是否有此权限
     auto itor = m_permission_map.find(permissionName);
     if (itor == m_permission_map.end())
-        throw std::system_error(qls_errc::no_permission, "no permission: " + permissionName);
+        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + permissionName);
 
     return itor->second;
 }
@@ -59,7 +59,7 @@ void GroupPermission::removeUser(UserID user_id)
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
     if (itor == m_user_permission_map.end())
-        throw std::system_error(qls_errc::user_not_existed, "no user: " + std::to_string(user_id));
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "no user: " + std::to_string(user_id));
 
     m_user_permission_map.erase(itor);
 }
@@ -73,12 +73,12 @@ bool GroupPermission::userHasPermission(UserID user_id, const std::string& permi
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
     if (itor == m_user_permission_map.end())
-        throw std::system_error(qls_errc::user_not_existed, "no user: " + std::to_string(user_id));
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "no user: " + std::to_string(user_id));
 
     // 是否有此权限
     auto itor2 = m_permission_map.find(permissionName);
     if (itor2 == m_permission_map.end())
-        throw std::system_error(qls_errc::no_permission, "no permission: " + permissionName);
+        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + permissionName);
 
     // 返回权限
     return itor->second >= itor2->second;
@@ -91,7 +91,7 @@ PermissionType GroupPermission::getUserPermissionType(UserID user_id) const
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
     if (itor == m_user_permission_map.end())
-        throw std::system_error(qls_errc::user_not_existed, "no user: " + std::to_string(user_id));
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "no user: " + std::to_string(user_id));
 
     return itor->second;
 }
@@ -108,7 +108,8 @@ std::vector<UserID> GroupPermission::getDefaultUserList() const
     std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
         [&return_vector](const std::pair<UserID, PermissionType>& p) {
-        if (p.second == PermissionType::Default) return_vector.push_back(p.first);
+            if (p.second == PermissionType::Default)
+                return_vector.push_back(p.first);
         });
 
     return return_vector;
@@ -121,7 +122,8 @@ std::vector<UserID> GroupPermission::getOperatorList() const
     std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
         [&return_vector](const std::pair<UserID, PermissionType>& p) {
-            if (p.second == PermissionType::Operator) return_vector.push_back(p.first);
+            if (p.second == PermissionType::Operator)
+                return_vector.push_back(p.first);
         });
 
     return return_vector;
@@ -134,7 +136,8 @@ std::vector<UserID> GroupPermission::getAdministratorList() const
     std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
         [&return_vector](const std::pair<UserID, PermissionType>& p) {
-            if (p.second == PermissionType::Administrator) return_vector.push_back(p.first);
+            if (p.second == PermissionType::Administrator)
+                return_vector.push_back(p.first);
         });
 
     return return_vector;

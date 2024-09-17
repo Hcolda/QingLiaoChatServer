@@ -341,8 +341,7 @@ public:
     {
         std::cout << "m_opt_map\n";
         for (auto i = m_opt_map.begin(); i != m_opt_map.cend(); i++) {
-            switch (i->second)
-            {
+            switch (i->second) {
             case OptionType::OPT_UNKNOWN:
                 std::cout << i->first << " OPT_UNKNOWN\n";
                 break;

@@ -291,7 +291,7 @@ void User::removeFriendVerification(UserID friend_user_id)
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
     auto itor = m_impl->m_user_friend_verification_map.find(friend_user_id);
     if (itor == m_impl->m_user_friend_verification_map.cend())
-        throw std::system_error(qls_errc::private_room_verification_not_existed);
+        throw std::system_error(qls_errc::verification_not_existed);
     m_impl->m_user_friend_verification_map.erase(itor);
 }
 
@@ -316,7 +316,7 @@ void User::removeGroupVerification(GroupID group_id, UserID user_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
     size_t size = m_impl->m_user_group_verification_map.count(group_id);
-    if (!size) throw std::system_error(qls_errc::group_room_verification_not_existed);
+    if (!size) throw std::system_error(qls_errc::verification_not_existed);
 
     auto itor = m_impl->m_user_group_verification_map.find(group_id);
     for (; itor->first == group_id && itor != m_impl->m_user_group_verification_map.cend(); itor++) {
