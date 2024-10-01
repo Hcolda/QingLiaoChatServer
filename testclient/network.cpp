@@ -237,16 +237,16 @@ namespace qls
     Network::~Network()
     {
         if (m_network_impl->has_stopped) return;
-        m_network_impl->has_stopped = false;
+        m_network_impl->has_stopped = true;
         m_network_impl->is_running = false;
         if (m_network_impl->is_receiving)
         {
+            m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
             m_network_impl->deadline_timer.cancel();
             m_network_impl->heartbeat_timer.cancel();
         }
-            m_network_impl->is_receiving = false;
         m_network_impl->io_context.stop();
         m_network_impl->condition_variable.notify_all();
         if (m_network_impl->work_thread.joinable())
@@ -295,20 +295,18 @@ namespace qls
     void Network::stop()
     {
         if (m_network_impl->has_stopped) return;
-        m_network_impl->has_stopped = false;
+        m_network_impl->has_stopped = true;
         m_network_impl->is_running = false;
         if (m_network_impl->is_receiving)
         {
+            m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
             m_network_impl->deadline_timer.cancel();
             m_network_impl->heartbeat_timer.cancel();
         }
-        m_network_impl->is_receiving = false;
         m_network_impl->io_context.stop();
         m_network_impl->condition_variable.notify_all();
-        if (m_network_impl->work_thread.joinable())
-            m_network_impl->work_thread.join();
     }
 
     void Network::send_data(const std::string& data)
