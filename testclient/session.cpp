@@ -1,12 +1,36 @@
 #include "session.h"
 
+#include <vector>
+
+#include <Json.h>
+
 namespace qls
 {
 
 struct SessionImpl
 {
     Network& network;
+    UserID user_id;
+    bool has_login = false;
 };
+
+static qjson::JObject makeJsonFunctionDataPackage(std::string_view functionName,
+    std::initializer_list<std::pair<std::string, qjson::JObject>> list)
+{
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["function"] = functionName;
+    json["parameters"] = qjson::JObject(qjson::JValueType::JDict);
+    for (auto [parameterName, parameterValue]: list)
+    {
+        json["parameters"][parameterName.c_str()] = parameterValue;
+    }
+    return json;
+}
+
+static qjson::JObject readJsonFunctionDataPackage(const std::shared_ptr<qls::DataPackage>& package)
+{
+    return qjson::JParser::fastParse(package->getData());
+}
 
 Session::Session(Network& network):
     m_impl(std::make_unique<SessionImpl>(network))
@@ -15,52 +39,86 @@ Session::Session(Network& network):
 
 Session::~Session() = default;
 
-void Session::registerUser(std::string_view email, std::string_view password)
+bool Session::registerUser(std::string_view email, std::string_view password, UserID& newUserID)
 {
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("register", {{"email", email}, {"password", password}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = 1;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    bool returnState = returnJson["state"].getString() == "success";
+    if (returnState)
+        newUserID = UserID(returnJson["user_id"].getInt());
+    return returnState;
 }
 
-void Session::loginUser(std::string_view email, std::string_view password)
+bool Session::loginUser(UserID user_id, std::string_view password)
 {
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("login",
+            {{"user_id", user_id.getOriginValue()}, {"password", password}, {"device", "PersonalComputer"}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = 1;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    bool returnState = returnJson["state"].getString() == "success";
+    if (returnState)
+    {
+        m_impl->user_id = user_id;
+        m_impl->has_login = true;
+    }
+    return returnState;
 }
 
-void Session::createFriendApplication(UserID userid)
+bool Session::createFriendApplication(UserID userid)
 {
+    return false;
 }
 
-void Session::applyFriendApplication(UserID userid)
+bool Session::applyFriendApplication(UserID userid)
 {
+    return false;
 }
 
-void Session::rejectFriendApplication(UserID userid)
+bool Session::rejectFriendApplication(UserID userid)
 {
+    return false;
 }
 
-void Session::createGroupApplication(GroupID groupid)
+bool Session::createGroupApplication(GroupID groupid)
 {
+    return false;
 }
 
-void Session::applyGroupApplication(GroupID groupid, UserID userid)
+bool Session::applyGroupApplication(GroupID groupid, UserID userid)
 {
+    return false;
 }
 
-void Session::rejectGroupApplication(GroupID groupid, UserID userid)
+bool Session::rejectGroupApplication(GroupID groupid, UserID userid)
 {
+    return false;
 }
 
-void Session::sendFriendMessage(UserID userid, std::string_view message)
+bool Session::sendFriendMessage(UserID userid, std::string_view message)
 {
+    return false;
 }
 
-void Session::sendGroupMessage(GroupID groupid, std::string_view message)
+bool Session::sendGroupMessage(GroupID groupid, std::string_view message)
 {
+    return false;
 }
 
-void Session::removeFriend(UserID userid)
+bool Session::removeFriend(UserID userid)
 {
+    return false;
 }
 
-void Session::leaveGroup(GroupID groupid)
+bool Session::leaveGroup(GroupID groupid)
 {
+    return false;
 }
 
 } // namespace qls

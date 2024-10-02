@@ -320,18 +320,19 @@ namespace qls
             asio::buffer(wrapper->data), std::bind(&Network::handle_write, this, _1, _2, wrapper));
     }
 
-    std::shared_ptr<DataPackage> Network::send_data_with_result_n_option(const std::string& data,
+    std::future<std::shared_ptr<DataPackage>> Network::send_data_with_result_n_option(const std::string& data,
         const std::function<void(std::shared_ptr<DataPackage>&)>& option_function)
     {
         if (!m_network_impl->is_receiving)
             throw std::runtime_error("Socket is not able to use");
 
-        std::promise<std::shared_ptr<DataPackage>> future_result;
+        std::shared_ptr<std::promise<std::shared_ptr<DataPackage>>> future_result = 
+            std::make_shared<std::promise<std::shared_ptr<DataPackage>>>();
         send_data_with_option(data, option_function,
-            [&future_result](std::shared_ptr<DataPackage> pack) {
-                future_result.set_value(std::move(pack));
+            [future_result](std::shared_ptr<DataPackage> pack) {
+                future_result->set_value(std::move(pack));
             });
-        return future_result.get_future().get();
+        return future_result->get_future();
     }
 
     long long Network::send_data_with_option(const std::string& origin_data,
@@ -340,6 +341,8 @@ namespace qls
     {
         if (!m_network_impl->is_receiving)
             throw std::runtime_error("Socket is not able to use");
+        if (!option_function || !callback_function)
+            throw std::runtime_error("Functions is null");
 
         auto pack = DataPackage::makePackage(origin_data);
         option_function(pack);
@@ -358,8 +361,8 @@ namespace qls
         }
         pack->requestID = requestId;
 
-        send_data(pack->packageToString());
         m_network_impl->requestID2Function_map[requestId] = callback_function;
+        send_data(pack->packageToString());
 
         return requestId;
     }
@@ -547,8 +550,10 @@ namespace qls
             return;
 
         m_network_impl->deadline_timer.expires_after(std::chrono::seconds(60));
-        asio::async_connect(m_network_impl->socket_ptr->lowest_layer(), m_network_impl->endpoints.begin(), m_network_impl->endpoints.end(), std::bind(&Network::handle_connect,
-            this, _1));
+        asio::async_connect(m_network_impl->socket_ptr->lowest_layer(),
+            m_network_impl->endpoints.begin(),
+            m_network_impl->endpoints.end(),
+            std::bind(&Network::handle_connect, this, _1));
     }
 
     void Network::handle_connect(const std::error_code& error)
@@ -622,7 +627,6 @@ namespace qls
             return;
 
         m_network_impl->deadline_timer.expires_after(std::chrono::seconds(30));
-
         m_network_impl->socket_ptr->async_read_some(asio::buffer(m_network_impl->input_buffer),
             std::bind(&Network::handle_read, this, _1, _2));
     }

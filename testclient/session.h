@@ -20,22 +20,22 @@ public:
     Session(Network& network);
     ~Session();
 
-    void registerUser(std::string_view email, std::string_view password);
-    void loginUser(std::string_view email, std::string_view password);
+    bool registerUser(std::string_view email, std::string_view password, UserID& newUserID);
+    bool loginUser(UserID user_id, std::string_view password);
 
-    void createFriendApplication(UserID userid);
-    void applyFriendApplication(UserID userid);
-    void rejectFriendApplication(UserID userid);
+    bool createFriendApplication(UserID userid);
+    bool applyFriendApplication(UserID userid);
+    bool rejectFriendApplication(UserID userid);
 
-    void createGroupApplication(GroupID groupid);
-    void applyGroupApplication(GroupID groupid, UserID userid);
-    void rejectGroupApplication(GroupID groupid, UserID userid);
+    bool createGroupApplication(GroupID groupid);
+    bool applyGroupApplication(GroupID groupid, UserID userid);
+    bool rejectGroupApplication(GroupID groupid, UserID userid);
 
-    void sendFriendMessage(UserID userid, std::string_view message);
-    void sendGroupMessage(GroupID groupid, std::string_view message);
+    bool sendFriendMessage(UserID userid, std::string_view message);
+    bool sendGroupMessage(GroupID groupid, std::string_view message);
 
-    void removeFriend(UserID userid);
-    void leaveGroup(GroupID groupid);
+    bool removeFriend(UserID userid);
+    bool leaveGroup(GroupID groupid);
 
 private:
     std::unique_ptr<SessionImpl> m_impl;

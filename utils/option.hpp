@@ -241,6 +241,12 @@ public:
                 }
             }
         }
+        for (const auto& [opt_name, opt_type]: m_opt_map)
+        {
+            if (opt_type == OptionType::OPT_REQUIRED)
+                if (m_args_map.find(opt_name) == m_args_map.cend())
+                    throw std::logic_error("Option requires an argument: " + opt_name);
+        }
     }
 
     /*
