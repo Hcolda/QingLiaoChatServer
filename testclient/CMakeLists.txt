@@ -13,7 +13,8 @@ endif()
 add_executable(TestClient
     main.cpp
     network.cpp
-    session.cpp)
+    session.cpp
+    commands.cpp)
 target_link_libraries(TestClient PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto

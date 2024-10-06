@@ -33,9 +33,7 @@ static qjson::JObject readJsonFunctionDataPackage(const std::shared_ptr<qls::Dat
 }
 
 Session::Session(Network& network):
-    m_impl(std::make_unique<SessionImpl>(network))
-{
-}
+    m_impl(std::make_unique<SessionImpl>(network)) {}
 
 Session::~Session() = default;
 
