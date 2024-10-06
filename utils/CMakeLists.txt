@@ -12,19 +12,29 @@ find_package(asio CONFIG REQUIRED)
 find_package(unofficial-mariadb-connector-cpp CONFIG REQUIRED)
 
 if(MINGW)
-  find_library(WSOCK32_LIBRARY wsock32)
-  find_library(WS2_32_LIBRARY ws2_32)
+    find_library(WSOCK32_LIBRARY wsock32)
+    find_library(WS2_32_LIBRARY ws2_32)
 endif()
 
-add_library(Utils INTERFACE)
-target_include_directories(Utils INTERFACE .)
+add_library(Utils 
+    network/dataPackage.cpp
+    network/package.cpp
+    network/socket.cpp
+    error/qls_error.cpp
+    parser/Ini.cpp
+    parser/Json.cpp)
+target_include_directories(Utils PUBLIC
+    .
+    network
+    error
+    parser)
 
-target_link_libraries(Utils INTERFACE
-  OpenSSL::SSL
-  OpenSSL::Crypto
-  unofficial::mariadb-connector-cpp::mariadbcpp
-  asio::asio)
+target_link_libraries(Utils PUBLIC
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    unofficial::mariadb-connector-cpp::mariadbcpp
+    asio::asio)
 
 if(MINGW)
-  target_link_libraries(Utils INTERFACE wsock32 ws2_32)
+    target_link_libraries(Utils PUBLIC wsock32 ws2_32)
 endif()

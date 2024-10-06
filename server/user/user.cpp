@@ -336,7 +336,7 @@ std::multimap<GroupID, UserVerificationStructure> User::getGroupVerificationList
 void User::addSocket(const std::shared_ptr<Socket> &socket_ptr, DeviceType type)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
-    if (m_impl->m_socket_map.find(socket_ptr) == m_impl->m_socket_map.cend())
+    if (m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend())
         throw std::system_error(qls_errc::socket_pointer_existed);
 
     m_impl->m_socket_map.emplace(socket_ptr, type);

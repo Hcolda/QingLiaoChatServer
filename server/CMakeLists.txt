@@ -24,10 +24,6 @@ add_executable(Server
     manager/dataManager.cpp
     manager/verificationManager.cpp
     network/network.cpp
-    network/dataPackage.cpp
-    network/package.cpp
-    parser/Ini.cpp
-    parser/Json.cpp
     room/room.cpp
     room/groupRoom/groupRoom.cpp
     room/groupRoom/groupRoomVerification.cpp
@@ -36,10 +32,8 @@ add_executable(Server
     socketFunctions/socketFunctions.cpp
     user/user.cpp
     room/groupRoom/groupPermission.cpp
-    network/socket.cpp
     input/input.cpp
-    input/inputCommands.cpp
-    error/qls_error.cpp)
+    input/inputCommands.cpp)
 
 target_include_directories(Server PUBLIC
     main
@@ -48,7 +42,6 @@ target_include_directories(Server PUBLIC
     jsonMessageProcess
     manager
     network
-    parser
     room/groupRoom
     room/privateRoom
     room
