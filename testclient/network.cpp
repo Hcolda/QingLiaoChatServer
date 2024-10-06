@@ -57,16 +57,13 @@ namespace qls
             else {
                 std::string hex;
                 int locch = static_cast<unsigned char>(i);
-                while (locch)
-                {
-                    if (locch % 16 < 10)
-                    {
+                while (locch) {
+                    if (locch % 16 < 10) {
                         hex += ('0' + (locch % 16));
                         locch /= 16;
                         continue;
                     }
-                    switch (locch % 16)
-                    {
+                    switch (locch % 16) {
                     case 10:
                         hex += 'a';
                         break;
@@ -91,17 +88,11 @@ namespace qls
 
                 //result += "\\x" + (hex.size() == 1 ? "0" + hex : hex);
                 if (hex.empty())
-                {
                     result += "\\x00";
-                }
                 else if (hex.size() == 1)
-                {
                     result += "\\x0" + hex;
-                }
                 else
-                {
                     result += "\\x" + hex;
-                }
             }
         }
 
@@ -213,18 +204,14 @@ namespace qls
         m_network_impl->is_receiving = false;
         m_network_impl->has_stopped = false;
         
-        m_network_impl->work_thread = std::thread([&](){
-            while (m_network_impl->is_running)
-            {
+        m_network_impl->work_thread = std::thread([&]() {
+            while (m_network_impl->is_running) {
                 std::unique_lock<std::mutex> lock(m_network_impl->mutex);
                 m_network_impl->condition_variable.wait(lock,
                     [&]() { return !m_network_impl->is_running || !m_network_impl->endpoints.empty(); });
-
                 if (!m_network_impl->is_running)
                     return;
-
-                try
-                {
+                try {
                     lock.unlock();
                     start_connect();
                     m_network_impl->io_context.run();
@@ -236,11 +223,11 @@ namespace qls
 
     Network::~Network()
     {
-        if (m_network_impl->has_stopped) return;
+        if (m_network_impl->has_stopped)
+            return;
         m_network_impl->has_stopped = true;
         m_network_impl->is_running = false;
-        if (m_network_impl->is_receiving)
-        {
+        if (m_network_impl->is_receiving) {
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
@@ -257,25 +244,20 @@ namespace qls
     {
         asio::io_service io_service;
         asio::ip::tcp::resolver resolver(io_service);
-
         asio::ip::tcp::resolver::query resolver_query(m_network_impl->host,
             std::to_string(m_network_impl->port));
         std::error_code ec;
-
         asio::ip::tcp::resolver::iterator it =
             resolver.resolve(resolver_query, ec);
-
         asio::ip::tcp::resolver::iterator it_end;
 
         if (it == it_end)
             throw std::runtime_error("there is not a service match the host");
-
         {
             m_network_impl->is_receiving = false;
             std::unique_lock<std::mutex> lock(m_network_impl->mutex);
             m_network_impl->endpoints = resolver.resolve(resolver_query, ec);
         }
-
         m_network_impl->condition_variable.notify_all();
     }
 
@@ -294,11 +276,11 @@ namespace qls
 
     void Network::stop()
     {
-        if (m_network_impl->has_stopped) return;
+        if (m_network_impl->has_stopped)
+            return;
         m_network_impl->has_stopped = true;
         m_network_impl->is_running = false;
-        if (m_network_impl->is_receiving)
-        {
+        if (m_network_impl->is_receiving) {
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
@@ -313,9 +295,7 @@ namespace qls
     {
         if (!m_network_impl->is_receiving)
             throw std::runtime_error("Socket is not able to use");
-
         auto wrapper = std::make_shared<StringWrapper>(data);
-
         asio::async_write(*(m_network_impl->socket_ptr),
             asio::buffer(wrapper->data), std::bind(&Network::handle_write, this, _1, _2, wrapper));
     }
@@ -325,7 +305,6 @@ namespace qls
     {
         if (!m_network_impl->is_receiving)
             throw std::runtime_error("Socket is not able to use");
-
         std::shared_ptr<std::promise<std::shared_ptr<DataPackage>>> future_result = 
             std::make_shared<std::promise<std::shared_ptr<DataPackage>>>();
         send_data_with_option(data, option_function,
@@ -343,27 +322,22 @@ namespace qls
             throw std::runtime_error("Socket is not able to use");
         if (!option_function || !callback_function)
             throw std::runtime_error("Functions is null");
-
         auto pack = DataPackage::makePackage(origin_data);
         option_function(pack);
-
         long long requestId = 0;
         {
             std::unique_lock<std::mutex> mt_lock(m_network_impl->requestID_mt_mutex, std::defer_lock);
             std::unique_lock<std::shared_mutex> set_lock(m_network_impl->requestID_set_mutex, std::defer_lock),
                 map_lock(m_network_impl->requestID2Function_map_mutex, std::defer_lock);
             std::lock(mt_lock, set_lock, map_lock);
-            do
-            {
+            do {
                 requestId = m_network_impl->requestID_mt();
             } while (m_network_impl->requestID_set.find(requestId) != m_network_impl->requestID_set.cend());
             m_network_impl->requestID_set.insert(requestId);
         }
         pack->requestID = requestId;
-
         m_network_impl->requestID2Function_map[requestId] = callback_function;
         send_data(pack->packageToString());
-
         return requestId;
     }
 
@@ -371,11 +345,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->revceiveStdStringFunction_map_mutex);
-
         auto iter = m_network_impl->revceiveStdStringFunction_map.find(name);
         if (iter != m_network_impl->revceiveStdStringFunction_map.end())
             return false;
-
         m_network_impl->revceiveStdStringFunction_map[name] = std::move(func);
         return true;
     }
@@ -384,11 +356,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->revceiveStdStringFunction_map_mutex);
-
         auto iter = m_network_impl->revceiveStdStringFunction_map.find(name);
         if (iter == m_network_impl->revceiveStdStringFunction_map.end())
             return false;
-
         m_network_impl->revceiveStdStringFunction_map.erase(iter);
         return true;
     }
@@ -397,11 +367,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->connectedCallbackFunction_map_mutex);
-
         auto iter = m_network_impl->connectedCallbackFunction_map.find(name);
         if (iter != m_network_impl->connectedCallbackFunction_map.end())
             return false;
-
         m_network_impl->connectedCallbackFunction_map[name] = std::move(func);
         return true;
     }
@@ -410,11 +378,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->connectedCallbackFunction_map_mutex);
-
         auto iter = m_network_impl->connectedCallbackFunction_map.find(name);
         if (iter == m_network_impl->connectedCallbackFunction_map.end())
             return false;
-
         m_network_impl->connectedCallbackFunction_map.erase(iter);
         return true;
     }
@@ -423,11 +389,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->disconnectedCallbackFunction_map_mutex);
-
         auto iter = m_network_impl->disconnectedCallbackFunction_map.find(name);
         if (iter != m_network_impl->disconnectedCallbackFunction_map.end())
             return false;
-
         m_network_impl->disconnectedCallbackFunction_map[name] = std::move(func);
         return true;
     }
@@ -475,9 +439,7 @@ namespace qls
     {
         std::shared_lock<std::shared_mutex> lock(
             m_network_impl->connectedCallbackFunction_map_mutex);
-
-        for (const auto& [_, func] : m_network_impl->connectedCallbackFunction_map)
-        {
+        for (const auto& [_, func]: m_network_impl->connectedCallbackFunction_map) {
             func();
         }
     }
@@ -486,9 +448,7 @@ namespace qls
     {
         std::shared_lock<std::shared_mutex> lock(
             m_network_impl->disconnectedCallbackFunction_map_mutex);
-
-        for (const auto& [_, func] : m_network_impl->disconnectedCallbackFunction_map)
-        {
+        for (const auto& [_, func] : m_network_impl->disconnectedCallbackFunction_map) {
             func();
         }
     }
@@ -497,21 +457,17 @@ namespace qls
     {
         std::shared_lock<std::shared_mutex> lock(
             m_network_impl->connectedErrorCallbackFunction_map_mutex);
-
-        for (const auto& [_, func] : m_network_impl->connectedErrorCallbackFunction_map)
-        {
+        for (const auto& [_, func] : m_network_impl->connectedErrorCallbackFunction_map) {
             func(error);
         }
     }
 
     void Network::call_received_stdstring(std::string data)
     {
-        try
-        {
+        try {
             auto pack = DataPackage::stringToPackage(data);
             long long requestID = pack->requestID;
-            if (pack->requestID != 0)
-            {
+            if (pack->requestID != 0) {
                 std::unique_lock<std::shared_mutex> map_lock(m_network_impl->requestID2Function_map_mutex,
                     std::defer_lock),
                     set_lock(m_network_impl->requestID_set_mutex, std::defer_lock);
@@ -529,16 +485,13 @@ namespace qls
                 return;
             }
         }
-        catch (...)
-        {
+        catch (...) {
             return;
         }
 
         std::shared_lock<std::shared_mutex> lock(
             m_network_impl->revceiveStdStringFunction_map_mutex);
-
-        for (const auto& [_, func] : m_network_impl->revceiveStdStringFunction_map)
-        {
+        for (const auto& [_, func] : m_network_impl->revceiveStdStringFunction_map) {
             func(data);
         }
     }
@@ -548,7 +501,6 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running)
             return;
-
         m_network_impl->deadline_timer.expires_after(std::chrono::seconds(60));
         asio::async_connect(m_network_impl->socket_ptr->lowest_layer(),
             m_network_impl->endpoints.begin(),
@@ -561,25 +513,19 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running)
             return;
-
-        if (!m_network_impl->socket_ptr->lowest_layer().is_open())
-        {
+        if (!m_network_impl->socket_ptr->lowest_layer().is_open()) {
             lock.unlock();
             call_connected_error(error);
             std::this_thread::sleep_for(10s);
             start_connect();
-        }
-        else if (error)
-        {
+        } else if (error) {
             std::error_code ec;
             m_network_impl->socket_ptr->lowest_layer().close(ec);
             lock.unlock();
             call_connected_error(error);
             std::this_thread::sleep_for(10s);
             start_connect();
-        }
-        else
-        {
+        } else {
             lock.unlock();
             async_handshake();
         }
@@ -590,7 +536,6 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running)
             return;
-
         m_network_impl->deadline_timer.expires_after(std::chrono::seconds(10));
         m_network_impl->socket_ptr->async_handshake(asio::ssl::stream_base::client,
             std::bind(&Network::handle_handshake, this, _1));
@@ -601,18 +546,14 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running)
             return;
-
-        if (!error)
-        {
+        if (!error) {
             m_network_impl->is_receiving = true;
             lock.unlock();
             send_data(DataPackage::makePackage("test")->packageToString());
             async_read();
             heart_beat_write();
             call_connected();
-        }
-        else
-        {
+        } else {
             std::error_code ec;
             m_network_impl->socket_ptr->shutdown(ec);
             std::cout << error.message() << '\n';
@@ -625,7 +566,6 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
-
         m_network_impl->deadline_timer.expires_after(std::chrono::seconds(30));
         m_network_impl->socket_ptr->async_read_some(asio::buffer(m_network_impl->input_buffer),
             std::bind(&Network::handle_read, this, _1, _2));
@@ -633,33 +573,26 @@ namespace qls
 
     void Network::handle_read(const std::error_code& error, std::size_t n)
     {
-        if (!n)
-        {
+        if (!n) {
             async_read();
             return;
         }
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
-
-        if (!error)
-        {
+        if (!error) {
             m_network_impl->package.write({ m_network_impl->input_buffer.begin(),
                 m_network_impl->input_buffer.begin() + n });
             m_network_impl->input_buffer.clear();
             m_network_impl->input_buffer.resize(8192);
 
             if (m_network_impl->package.canRead())
-            {
                 call_received_stdstring(std::move(
                     m_network_impl->package.read()));
-            }
 
             lock.unlock();
             async_read();
-        }
-        else
-        {
+        } else {
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
@@ -673,12 +606,9 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
-
         auto pack = DataPackage::makePackage("heartbeat");
         pack->type = 4;
-
         auto wrapper = std::make_shared<StringWrapper>(pack->packageToString());
-
         asio::async_write(*(m_network_impl->socket_ptr), asio::buffer(wrapper->data),
             std::bind(&Network::handle_heart_beat_write, this, _1, wrapper));
     }
@@ -688,14 +618,10 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
-
-        if (!error)
-        {
+        if (!error) {
             m_network_impl->heartbeat_timer.expires_after(std::chrono::seconds(10));
             m_network_impl->heartbeat_timer.async_wait(std::bind(&Network::heart_beat_write, this));
-        }
-        else
-        {
+        } else {
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
@@ -710,9 +636,7 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
-
-        if (m_network_impl->deadline_timer.expiry() <= asio::steady_timer::clock_type::now())
-        {
+        if (m_network_impl->deadline_timer.expiry() <= asio::steady_timer::clock_type::now()) {
             std::error_code ec;
             m_network_impl->socket_ptr->shutdown(ec);
             m_network_impl->is_receiving = false;
@@ -734,9 +658,7 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
-
-        if (error)
-        {
+        if (error) {
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);

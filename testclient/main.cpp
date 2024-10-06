@@ -5,6 +5,7 @@
 
 #include "network.h"
 #include "session.h"
+#include "commands.h"
 #include <option.hpp>
 
 static std::string strip(std::string_view data)
@@ -38,11 +39,15 @@ static std::vector<std::string> split(std::string_view data)
     return dataList;
 }
 
+qls::CommandManager command_manager;
+qls::Network network;
+qls::Session session(network);
+
 int main() {
-    qls::Network network;
+    
     std::atomic<bool> can_be_used = false;
 
-    network.add_connected_error_callback("connected_error_callback", [](std::error_code ec){
+    network.add_connected_error_callback("connected_error_callback", [](std::error_code ec) {
         std::cerr << "Connected error: " << ec.message() << '\n';
         exit(-1);
     });
@@ -50,18 +55,15 @@ int main() {
         std::cout << "Connected to server successfully!\n";
         can_be_used = true;
     });
-    network.add_received_stdstring_callback("received_stdstring_callback", [](std::string message){
+    network.add_received_stdstring_callback("received_stdstring_callback", [](std::string message) {
         std::cout << "Message received: " << message << '\n';
     });
 
     network.connect();
-    qls::Session session(network);
 
     std::cout << "Connecting to server...\n";
-    while (true)
-    {
-        if (!can_be_used)
-        {
+    while (true) {
+        if (!can_be_used) {
             using namespace std::chrono;
             std::this_thread::sleep_for(0.1s);
             continue;
@@ -71,45 +73,19 @@ int main() {
         std::cin.getline(buffer, sizeof(buffer) - 1);
         command = buffer;
         if (command == "") continue;
-        if (command == "stop")
-        {
-            return 0;
-        }
 
         std::vector<std::string> vec = split(strip(command));
-        try
-        {
-            if (vec[0] == "registerUser")
-            {
-                opt::Option opt;
-                opt.add("email", opt::Option::OptionType::OPT_REQUIRED);
-                opt.add("password", opt::Option::OptionType::OPT_REQUIRED);
-                opt.parse(std::vector<std::string>{vec.begin() + 1, vec.end()});
-                qls::UserID user_id;
-                if (session.registerUser(opt.get_string("email"), opt.get_string("password"), user_id))
-                    std::cout << "Successfully created a new user! User id is: " << user_id << '\n';
-                else
-                    std::cout << "Failed to created a new user!\n";
-            }
-            else if (vec[0] == "loginUser")
-            {
-                opt::Option opt;
-                opt.add("userid", opt::Option::OptionType::OPT_REQUIRED);
-                opt.add("password", opt::Option::OptionType::OPT_REQUIRED);
-                opt.parse(std::vector<std::string>{vec.begin() + 1, vec.end()});
-                qls::UserID user_id;
-                if (session.loginUser(qls::UserID(opt.get_int("userid")), opt.get_string("password")))
-                    std::cout << "Successfully logined a user!\n";
-                else
-                    std::cout << "Failed to logined a user!\n";
-            }
-            else
-            {
+        try {
+            if (!command_manager.canFindCommand(vec[0])) {
                 std::cout << "Could not find a command: " << vec[0] << '\n';
+                continue;
             }
+            auto command = command_manager.getCommand(vec[0]);
+            opt::Option opt = command->getOption();
+            opt.parse(std::vector<std::string>{++vec.begin(), vec.end()});
+            command->execute(opt);
         }
-        catch(const std::exception& e)
-        {
+        catch(const std::exception& e) {
             std::cerr << e.what() << '\n';
         }
     }
