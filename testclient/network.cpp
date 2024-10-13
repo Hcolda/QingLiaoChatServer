@@ -471,26 +471,29 @@ namespace qls
                 std::unique_lock<std::shared_mutex> map_lock(m_network_impl->requestID2Function_map_mutex,
                     std::defer_lock),
                     set_lock(m_network_impl->requestID_set_mutex, std::defer_lock);
+                bool need_moving_data = false;
                 std::lock(map_lock, set_lock);
                 {
                     auto iter = m_network_impl->requestID_set.find(requestID);
-                    if (iter == m_network_impl->requestID_set.cend()) return;
-                    m_network_impl->requestID_set.erase(iter);
+                    if (iter != m_network_impl->requestID_set.cend()) {
+                        need_moving_data = true;
+                        m_network_impl->requestID_set.erase(iter);
+                    }
                 }
+                if (need_moving_data)
                 {
                     auto iter = m_network_impl->requestID2Function_map.find(requestID);
-                    if (iter != m_network_impl->requestID2Function_map.cend()) iter->second(std::move(pack));
+                    if (iter != m_network_impl->requestID2Function_map.cend())
+                        iter->second(std::move(pack));
                     m_network_impl->requestID2Function_map.erase(iter);
+                    return;
                 }
-                return;
             }
         }
         catch (...) {
             return;
         }
-
-        std::shared_lock<std::shared_mutex> lock(
-            m_network_impl->revceiveStdStringFunction_map_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_network_impl->revceiveStdStringFunction_map_mutex);
         for (const auto& [_, func] : m_network_impl->revceiveStdStringFunction_map) {
             func(data);
         }
@@ -573,14 +576,14 @@ namespace qls
 
     void Network::handle_read(const std::error_code& error, std::size_t n)
     {
-        if (!n) {
-            async_read();
-            return;
-        }
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
         if (!error) {
+            if (!n) {
+                async_read();
+                return;
+            }
             m_network_impl->package.write({ m_network_impl->input_buffer.begin(),
                 m_network_impl->input_buffer.begin() + n });
             m_network_impl->input_buffer.clear();
