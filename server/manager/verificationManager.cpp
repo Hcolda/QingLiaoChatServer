@@ -2,6 +2,8 @@
 
 #include <mutex>
 #include <shared_mutex>
+#include <Json.h>
+#include <dataPackage.h>
 
 #include "user.h"
 #include "manager.h"
@@ -19,6 +21,9 @@ void VerificationManager::init()
 
 void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID user_id_2)
 {
+    if (user_id_1 == user_id_2)
+        throw std::system_error(make_error_code(qls_errc::invalid_verification));
+
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
@@ -40,9 +45,6 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
 
         auto ptr = serverManager.getUser(user_id_1);
         ptr->addFriendVerification(user_id_2, std::move(uv));
-
-        // 未完成 通知另一方
-        // m_globalRoom->baseSendData()
     }
 
     // user2
@@ -56,13 +58,21 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
         auto ptr = serverManager.getUser(user_id_2);
         ptr->addFriendVerification(user_id_1, std::move(uv));
 
-        // 未完成 通知另一方
-        // m_globalRoom->baseSendData()
+        // notify the other successfully adding a friend
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["userid"] = user_id_1.getOriginValue();
+        json["type"] = "added_friend_verfication";
+        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+        pack->type = 1;
+        serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
     }
 }
 
 bool VerificationManager::hasFriendRoomVerification(UserID user_id_1, UserID user_id_2) const
 {
+    if (user_id_1 == user_id_2)
+        throw std::system_error(make_error_code(qls_errc::invalid_verification));
+
     std::shared_lock<std::shared_mutex> local_shared_lock(m_FriendRoomVerification_map_mutex);
     
     return m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
@@ -72,6 +82,9 @@ bool VerificationManager::hasFriendRoomVerification(UserID user_id_1, UserID use
 bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
                                             UserID user_id)
 {
+    if (user_id_1 == user_id_2)
+        throw std::system_error(make_error_code(qls_errc::invalid_verification));
+    
     bool result = false;
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
@@ -95,7 +108,7 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
         catch (...) {
             serverManager.addPrivateRoom(user_id_1, user_id_2);
 
-            // 更新user1的friendList
+            // update the 1st user's friend list
             {
                 if (!serverManager.hasUser(user_id_1))
                     throw std::system_error(make_error_code(qls_errc::user_not_existed),
@@ -108,7 +121,7 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
                 ptr->removeFriendVerification(user_id_2);
             }
             
-            // 更新user2的friendList
+            // update the 2nd user's friend list
             {
                 if (!serverManager.hasUser(user_id_2))
                     throw std::system_error(make_error_code(qls_errc::user_not_existed),
@@ -121,8 +134,13 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
                 ptr->removeFriendVerification(user_id_1);
             }
 
-            // 未完成 通知另一方
-            // m_globalRoom->baseSendData()
+            // notify the other successfully adding a friend
+            qjson::JObject json(qjson::JValueType::JDict);
+            json["userid"] = user_id_1.getOriginValue();
+            json["type"] = "added_friend";
+            auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+            pack->type = 1;
+            serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
         }
 
         if (error)
@@ -134,6 +152,9 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
 
 void VerificationManager::removeFriendRoomVerification(UserID user_id_1, UserID user_id_2)
 {
+    if (user_id_1 == user_id_2)
+        throw std::system_error(make_error_code(qls_errc::invalid_verification));
+
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 

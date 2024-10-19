@@ -1,7 +1,7 @@
 #include "session.h"
 
 #include <vector>
-
+#include <iostream>
 #include <Json.h>
 
 namespace qls
@@ -69,9 +69,16 @@ bool Session::loginUser(UserID user_id, std::string_view password)
     return returnState;
 }
 
-bool Session::createFriendApplication(UserID userid)
+bool Session::createFriendApplication(UserID user_id)
 {
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("add_friend", {{"user_id", user_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = 1;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
 bool Session::applyFriendApplication(UserID userid)

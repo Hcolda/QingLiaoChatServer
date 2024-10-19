@@ -185,7 +185,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(UserID user_id, co
         this->m_user_id = user_id;
 
         
-        serverLogger.info("User", user_id.getOriginValue(), "logged into the server");
+        serverLogger.info("User ", user_id.getOriginValue(), " logged into the server");
 
         co_return returnJson;
     }
@@ -224,7 +224,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::addFriend(UserID friend_
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
     {
-        serverLogger.info("User", this->m_user_id.getOriginValue(), "sent a friend request to user", friend_id.getOriginValue());
+        serverLogger.info("User ", this->m_user_id.getOriginValue(), " sent a friend request to user", friend_id.getOriginValue());
         co_return makeSuccessMessage("Successfully sent application!");
     }
     else co_return makeErrorMessage("Can't send application");

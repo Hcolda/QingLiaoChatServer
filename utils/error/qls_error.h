@@ -36,6 +36,7 @@ enum class qls_errc
     // verification error
     verification_existed,
     verification_not_existed,
+    invalid_verification,
 
     // private room error
     private_room_existed,

@@ -150,7 +150,7 @@ namespace qls
         NetworkImpl() :
             deadline_timer(io_context),
             heartbeat_timer(io_context),
-            ssl_context(asio::ssl::context::tlsv12),
+            ssl_context(asio::ssl::context::tlsv13_client),
             requestID_mt(std::random_device{}())
         {
             input_buffer.resize(8192);
@@ -165,6 +165,7 @@ namespace qls
                 | asio::ssl::context::no_sslv3
                 | asio::ssl::context::no_tlsv1
                 | asio::ssl::context::no_tlsv1_1
+                | asio::ssl::context::no_tlsv1_2
                 | asio::ssl::context::single_dh_use
             );
 
@@ -180,7 +181,6 @@ namespace qls
             // ssl_context.set_verify_callback(ssl::rfc2818_verification("host.name"));
 
             socket_ptr = std::make_shared<ssl_socket>(io_context, ssl_context);
-            // SSL_set_tlsext_host_name(socket_ptr->native_handle(), host.c_str());
         }
 
         ~NetworkImpl() = default;

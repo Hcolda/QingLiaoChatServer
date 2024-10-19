@@ -56,7 +56,11 @@ int main() {
         can_be_used = true;
     });
     network.add_received_stdstring_callback("received_stdstring_callback", [](std::string message) {
-        std::cout << "Message received: " << message << '\n';
+        auto pack = qls::DataPackage::stringToPackage(message);
+        
+        std::cout << "Message received:\n"
+                  << "\tType: " << pack->type << '\n'
+                  << "\tBody: " << pack->getData() << '\n';
     });
 
     network.connect();

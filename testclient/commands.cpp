@@ -114,12 +114,36 @@ public:
     }
 };
 
+class CreateFriendApplication: public Command
+{
+public:
+    CreateFriendApplication() = default;
+    ~CreateFriendApplication() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("userid", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        qls::UserID user_id;
+        if (session.createFriendApplication(qls::UserID(opt.get_int("userid"))))
+            std::cout << "Successfully send a application to the user!\n";
+        else
+            std::cout << "Failed to send a application to the user!\n";
+    }
+};
+
 CommandManager::CommandManager()
 {
     addCommand("exit", std::make_shared<ExitCommand>());
     addCommand("help", std::make_shared<HelpCommand>(*this));
     addCommand("registerUser", std::make_shared<RegisterUserCommand>());
     addCommand("loginUser", std::make_shared<LoginUserCommand>());
+    addCommand("createFriendApplication", std::make_shared<CreateFriendApplication>());
 }
 
 bool CommandManager::addCommand(const std::string &commandName, const std::shared_ptr<Command> &command_ptr)
