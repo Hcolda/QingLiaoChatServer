@@ -26,7 +26,7 @@ public:
     JsonMessageProcessImpl(UserID user_id) :
         m_user_id(user_id) {}
 
-    static asio::awaitable<qjson::JObject> getUserPublicInfo(UserID user_id);
+    static asio::awaitable<qjson::JObject> getUserPublicdebug(UserID user_id);
 
     static asio::awaitable<qjson::JObject> hasUser(UserID user_id);
     static asio::awaitable<qjson::JObject> searchUser(const std::string& user_name);
@@ -42,11 +42,13 @@ public:
 
     asio::awaitable<qjson::JObject> addFriend(UserID friend_id);
     asio::awaitable<qjson::JObject> acceptFriendVerification(UserID user_id);
+    asio::awaitable<qjson::JObject> rejectFriendVerification(UserID user_id);
     asio::awaitable<qjson::JObject> getFriendList();
     asio::awaitable<qjson::JObject> getFriendVerificationList();
 
     asio::awaitable<qjson::JObject> addGroup(GroupID group_id);
     asio::awaitable<qjson::JObject> acceptGroupVerification(GroupID group_id, UserID user_id);
+    asio::awaitable<qjson::JObject> rejectGroupVerification(GroupID group_id, UserID user_id);
     asio::awaitable<qjson::JObject> getGroupList();
     asio::awaitable<qjson::JObject> getGroupVerificationList();
 
@@ -66,7 +68,7 @@ JsonMessageProcess::JsonMessageProcess(UserID user_id) :
 
 JsonMessageProcess::~JsonMessageProcess() = default;
 
-asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getUserPublicInfo(UserID user_id)
+asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getUserPublicdebug(UserID user_id)
 {
     co_return qjson::JObject();
 }
@@ -153,6 +155,12 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
         case 13:
             // get group verification list
             co_return co_await getGroupVerificationList();
+        case 14:
+            // reject friend verification
+            co_return co_await rejectFriendVerification(UserID(param["user_id"].getInt()));
+        case 15:
+            // reject group verification
+            co_return co_await rejectGroupVerification(GroupID(param["group_id"].getInt()), UserID(param["user_id"].getInt()));
         default:
             co_return makeErrorMessage("There isn't a function that matches your request.");
         }
@@ -185,7 +193,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::login(UserID user_id, co
         this->m_user_id = user_id;
 
         
-        serverLogger.info("User ", user_id.getOriginValue(), " logged into the server");
+        serverLogger.debug("User ", user_id.getOriginValue(), " logged into the server");
 
         co_return returnJson;
     }
@@ -214,7 +222,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::registerUser(const std::
     UserID id = ptr->getUserID();
     returnJson["user_id"] = id.getOriginValue();
 
-    serverLogger.info("Registered new user: ", id.getOriginValue());
+    serverLogger.debug("Registered new user: ", id.getOriginValue());
 
     co_return returnJson;
 }
@@ -224,7 +232,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::addFriend(UserID friend_
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
     {
-        serverLogger.info("User ", this->m_user_id.getOriginValue(), " sent a friend request to user", friend_id.getOriginValue());
+        serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a friend request to user ", friend_id.getOriginValue());
         co_return makeSuccessMessage("Successfully sent application!");
     }
     else co_return makeErrorMessage("Can't send application");
@@ -237,6 +245,13 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptFriendVerification
         co_return makeSuccessMessage("Successfully added a friend!");
 }
 
+asio::awaitable<qjson::JObject> JsonMessageProcessImpl::rejectFriendVerification(UserID user_id)
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
+    serverManager.getServerVerificationManager().removeFriendRoomVerification(this->m_user_id, user_id);
+        co_return makeSuccessMessage("Successfully rejected a friend verification!");
+}
+
 asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendList()
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
@@ -246,7 +261,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendList()
     for (auto i : set) {
         returnJson["friend_list"].push_back(i.getOriginValue());
     }
-    serverLogger.info("User ", this->m_user_id.getOriginValue(), " get friend list");
+    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " get friend list");
 
     co_return returnJson;
 }
@@ -273,13 +288,13 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getFriendVerificationLis
 
 asio::awaitable<qjson::JObject> JsonMessageProcessImpl::addGroup(GroupID group_id)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (!serverManager.hasGroupRoom(group_id))
         co_return makeErrorMessage("There isn't a group room match this id!");
-
+        
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (serverManager.getUser(this->m_user_id)->addGroup(group_id))
     {
-        serverLogger.info("User", this->m_user_id.getOriginValue(), "sent a group request to group", group_id.getOriginValue());
+        serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a group request to group ", group_id.getOriginValue());
         co_return makeSuccessMessage("Successfully sent application!");
     }
     else co_return makeErrorMessage("Can't send application");
@@ -289,6 +304,12 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::acceptGroupVerification(
 {
     serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id);
         co_return makeSuccessMessage("Successfully added a group!");
+}
+
+asio::awaitable<qjson::JObject> JsonMessageProcessImpl::rejectGroupVerification(GroupID group_id, UserID user_id)
+{
+    serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);
+        co_return makeSuccessMessage("Successfully reject a group verfication!");
 }
 
 asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupList()
@@ -301,7 +322,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getGroupList()
         returnJson["friend_list"].push_back(i.getOriginValue());
     }
 
-    serverLogger.info("User", this->m_user_id.getOriginValue(), "obtained group list");
+    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " obtained group list");
 
     co_return returnJson;
 }
@@ -332,7 +353,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::sendFriendMessage(UserID
             serverManager.getPrivateRoomId(
                 this->m_user_id, friend_id))->sendMessage(msg, this->m_user_id);
 
-    serverLogger.info("User", this->m_user_id.getOriginValue(), "sent a message to user", friend_id.getOriginValue());
+    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a message to user", friend_id.getOriginValue());
 
     co_return makeSuccessMessage("Successfully sent a message!");
 }
@@ -344,7 +365,7 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::sendGroupMessage(GroupID
         co_return makeErrorMessage("You don't have this group!");
 
     serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg);
-    serverLogger.info("User", this->m_user_id.getOriginValue(), "sent a message to group", group_id.getOriginValue());
+    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a message to group", group_id.getOriginValue());
 
     co_return makeSuccessMessage("Successfully sent a message!");
 }
@@ -364,7 +385,9 @@ const std::multimap<std::string, long long> JsonMessageProcessImpl::m_function_m
         {"accept_friend_verification", 10},
         {"get_friend_verification_list", 11},
         {"accept_group_verification", 12},
-        {"get_group_verification_list", 13}
+        {"get_group_verification_list", 13},
+        {"reject_friend_verification", 14},
+        {"reject_group_verification", 15},
     }
 );
 

@@ -24,6 +24,18 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
     if (user_id_1 == user_id_2)
         throw std::system_error(make_error_code(qls_errc::invalid_verification));
 
+    // check if they are friends
+    {
+        bool error = false;
+        try {
+            serverManager.getPrivateRoomId(user_id_1, user_id_2);
+            error = true;
+        }
+        catch (...) {}
+        if (error)
+            throw std::system_error(make_error_code(qls_errc::private_room_existed));
+    }
+
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
@@ -84,7 +96,7 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
 {
     if (user_id_1 == user_id_2)
         throw std::system_error(make_error_code(qls_errc::invalid_verification));
-    
+
     bool result = false;
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
@@ -97,54 +109,47 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
         ver.setUserVerified(user_id);
 
         result = ver.getUserVerified(user_id_1) && ver.getUserVerified(user_id_2);
+        if (result) {
+            m_FriendRoomVerification_map.erase(itor);
+        }
     }
 
     if (result) {
-        bool error = false;
-        try {
-            serverManager.getPrivateRoomId(user_id_1, user_id_2);
-            error = true;
+        serverManager.addPrivateRoom(user_id_1, user_id_2);
+
+        // update the 1st user's friend list
+        {
+            if (!serverManager.hasUser(user_id_1))
+                throw std::system_error(make_error_code(qls_errc::user_not_existed),
+                    "The first user doesn't exist!");
+            auto ptr = serverManager.getUser(user_id_1);
+            auto set = std::move(ptr->getFriendList());
+            set.insert(user_id_2);
+            ptr->updateFriendList(std::move(set));
+
+            ptr->removeFriendVerification(user_id_2);
         }
-        catch (...) {
-            serverManager.addPrivateRoom(user_id_1, user_id_2);
+        
+        // update the 2nd user's friend list
+        {
+            if (!serverManager.hasUser(user_id_2))
+                throw std::system_error(make_error_code(qls_errc::user_not_existed),
+                    "The second user doesn't exist!");
+            auto ptr = serverManager.getUser(user_id_2);
+            auto set = std::move(ptr->getFriendList());
+            set.insert(user_id_1);
+            ptr->updateFriendList(std::move(set));
 
-            // update the 1st user's friend list
-            {
-                if (!serverManager.hasUser(user_id_1))
-                    throw std::system_error(make_error_code(qls_errc::user_not_existed),
-                        "The first user doesn't exist!");
-                auto ptr = serverManager.getUser(user_id_1);
-                auto set = std::move(ptr->getFriendList());
-                set.insert(user_id_2);
-                ptr->updateFriendList(std::move(set));
-
-                ptr->removeFriendVerification(user_id_2);
-            }
-            
-            // update the 2nd user's friend list
-            {
-                if (!serverManager.hasUser(user_id_2))
-                    throw std::system_error(make_error_code(qls_errc::user_not_existed),
-                        "The second user doesn't exist!");
-                auto ptr = serverManager.getUser(user_id_2);
-                auto set = std::move(ptr->getFriendList());
-                set.insert(user_id_1);
-                ptr->updateFriendList(std::move(set));
-
-                ptr->removeFriendVerification(user_id_1);
-            }
-
-            // notify the other successfully adding a friend
-            qjson::JObject json(qjson::JValueType::JDict);
-            json["userid"] = user_id_1.getOriginValue();
-            json["type"] = "added_friend";
-            auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
-            pack->type = 1;
-            serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
+            ptr->removeFriendVerification(user_id_1);
         }
 
-        if (error)
-            throw std::system_error(make_error_code(qls_errc::private_room_existed));
+        // notify the other successfully adding a friend
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["userid"] = user_id_1.getOriginValue();
+        json["type"] = "added_friend";
+        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+        pack->type = 1;
+        serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
     }
 
     return result;
@@ -167,6 +172,27 @@ void VerificationManager::removeFriendRoomVerification(UserID user_id_1, UserID 
 
     serverManager.getUser(user_id_1)->removeFriendVerification(user_id_2);
     serverManager.getUser(user_id_2)->removeFriendVerification(user_id_1);
+
+    // notify them to remove the friend verification
+    // (someone reject to add a friend)
+    // user1
+    {
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["userid"] = user_id_2.getOriginValue();
+        json["type"] = "rejected_to_add_friend";
+        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+        pack->type = 1;
+        serverManager.getUser(user_id_1)->notifyAll(pack->packageToString());
+    }
+    // user2
+    {
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["userid"] = user_id_1.getOriginValue();
+        json["type"] = "rejected_to_add_friend";
+        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+        pack->type = 1;
+        serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
+    }
 }
 
 void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user_id)

@@ -71,6 +71,8 @@ bool Session::loginUser(UserID user_id, std::string_view password)
 
 bool Session::createFriendApplication(UserID user_id)
 {
+    if (!m_impl->has_login)
+        return false;
     auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
         makeJsonFunctionDataPackage("add_friend", {{"user_id", user_id.getOriginValue()}})),
         [](std::shared_ptr<qls::DataPackage>& package){
@@ -81,48 +83,87 @@ bool Session::createFriendApplication(UserID user_id)
     return returnJson["state"].getString() == "success";
 }
 
-bool Session::applyFriendApplication(UserID userid)
+bool Session::applyFriendApplication(UserID user_id)
 {
-    return false;
+    if (!m_impl->has_login)
+        return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("accept_friend_verification", {{"user_id", user_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = 1;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::rejectFriendApplication(UserID userid)
+bool Session::rejectFriendApplication(UserID user_id)
 {
-    return false;
+    if (!m_impl->has_login)
+        return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("reject_friend_verification", {{"user_id", user_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = 1;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::createGroupApplication(GroupID groupid)
+bool Session::createGroupApplication(GroupID group_id)
 {
-    return false;
+    if (!m_impl->has_login)
+        return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("add_group", {{"group_id", group_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = 1;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
 bool Session::applyGroupApplication(GroupID groupid, UserID userid)
 {
+    if (!m_impl->has_login)
+        return false;
     return false;
 }
 
 bool Session::rejectGroupApplication(GroupID groupid, UserID userid)
 {
+    if (!m_impl->has_login)
+        return false;
     return false;
 }
 
 bool Session::sendFriendMessage(UserID userid, std::string_view message)
 {
+    if (!m_impl->has_login)
+        return false;
     return false;
 }
 
 bool Session::sendGroupMessage(GroupID groupid, std::string_view message)
 {
+    if (!m_impl->has_login)
+        return false;
     return false;
 }
 
 bool Session::removeFriend(UserID userid)
 {
+    if (!m_impl->has_login)
+        return false;
     return false;
 }
 
 bool Session::leaveGroup(GroupID groupid)
 {
+    if (!m_impl->has_login)
+        return false;
     return false;
 }
 
