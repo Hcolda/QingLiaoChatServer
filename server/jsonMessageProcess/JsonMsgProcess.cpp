@@ -26,7 +26,7 @@ public:
     JsonMessageProcessImpl(UserID user_id) :
         m_user_id(user_id) {}
 
-    static asio::awaitable<qjson::JObject> getUserPublicdebug(UserID user_id);
+    static asio::awaitable<qjson::JObject> getUserPublicInfo(UserID user_id);
 
     static asio::awaitable<qjson::JObject> hasUser(UserID user_id);
     static asio::awaitable<qjson::JObject> searchUser(const std::string& user_name);
@@ -68,7 +68,7 @@ JsonMessageProcess::JsonMessageProcess(UserID user_id) :
 
 JsonMessageProcess::~JsonMessageProcess() = default;
 
-asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getUserPublicdebug(UserID user_id)
+asio::awaitable<qjson::JObject> JsonMessageProcessImpl::getUserPublicInfo(UserID user_id)
 {
     co_return qjson::JObject();
 }
