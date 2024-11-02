@@ -345,33 +345,42 @@ public:
     */
     void show() const
     {
-        std::cout << "m_opt_map\n";
-        for (auto i = m_opt_map.begin(); i != m_opt_map.cend(); i++) {
-            switch (i->second) {
-            case OptionType::OPT_UNKNOWN:
-                std::cout << i->first << " OPT_UNKNOWN\n";
-                break;
+        if (m_opt_map.empty() && m_args_map.empty()) {
+            std::cout << "empty argument\n";
+            return;
+        }
 
-            case OptionType::OPT_NO:
-                std::cout << i->first << " OPT_NO\n";
-                break;
+        if (!m_opt_map.empty()) {
+            std::cout << "m_opt_map: \n";
+            for (auto i = m_opt_map.begin(); i != m_opt_map.cend(); i++) {
+                switch (i->second) {
+                case OptionType::OPT_UNKNOWN:
+                    std::cout << i->first << " OPT_UNKNOWN\n";
+                    break;
 
-            case OptionType::OPT_OPTIONAL:
-                std::cout << i->first << " OPT_OPTIONAL\n";
-                break;
+                case OptionType::OPT_NO:
+                    std::cout << i->first << " OPT_NO\n";
+                    break;
 
-            case OptionType::OPT_REQUIRED:
-                std::cout << i->first << " OPT_REQUIRED\n";
-                break;
-            
-            default:
-                break;
+                case OptionType::OPT_OPTIONAL:
+                    std::cout << i->first << " OPT_OPTIONAL\n";
+                    break;
+
+                case OptionType::OPT_REQUIRED:
+                    std::cout << i->first << " OPT_REQUIRED\n";
+                    break;
+                
+                default:
+                    break;
+                }
             }
         }
 
-        std::cout << "m_args_map\n";
-        for (auto i = m_args_map.begin(); i != m_args_map.cend(); i++) {
-            std::cout << i->first << ' ' << i->second << '\n';
+        if (!m_args_map.empty()) {
+            std::cout << "m_args_map: \n";
+            for (auto i = m_args_map.begin(); i != m_args_map.cend(); i++) {
+                std::cout << i->first << ' ' << i->second << '\n';
+            }
         }
     }
 

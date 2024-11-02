@@ -45,6 +45,7 @@ bool Session::registerUser(std::string_view email, std::string_view password, Us
             package->type = 1;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
     bool returnState = returnJson["state"].getString() == "success";
     if (returnState)
         newUserID = UserID(returnJson["user_id"].getInt());
@@ -60,6 +61,7 @@ bool Session::loginUser(UserID user_id, std::string_view password)
             package->type = 1;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
     bool returnState = returnJson["state"].getString() == "success";
     if (returnState)
     {
