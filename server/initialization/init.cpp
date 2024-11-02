@@ -100,7 +100,7 @@ int init()
 
             serverNetwork.setTlsConfig([](){
                 std::shared_ptr<asio::ssl::context> ssl_context =
-                        std::make_shared<asio::ssl::context>(asio::ssl::context::tlsv12);
+                        std::make_shared<asio::ssl::context>(asio::ssl::context::tlsv13_server);
 
                 // Set SSL parameters
                 ssl_context->set_options(
@@ -109,6 +109,7 @@ int init()
                     | asio::ssl::context::no_sslv3
                     | asio::ssl::context::no_tlsv1
                     | asio::ssl::context::no_tlsv1_1
+                    | asio::ssl::context::no_tlsv1_2
                     | asio::ssl::context::single_dh_use
                 );
 

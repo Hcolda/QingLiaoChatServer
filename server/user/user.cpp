@@ -240,6 +240,23 @@ std::unordered_set<GroupID> User::getGroupList() const
 
 bool User::addFriend(UserID friend_user_id)
 {
+    if (this->getUserID() == friend_user_id)
+        throw std::system_error(qls_errc::invalid_verification, "you can not add yourself as a friend");
+    if (!serverManager.hasUser(friend_user_id))
+        throw std::system_error(qls_errc::user_not_existed);
+
+    // check if they are friends
+    {
+        bool error = false;
+        try {
+            serverManager.getPrivateRoomId(this->getUserID(), friend_user_id);
+            error = true;
+        }
+        catch(...) {}
+        if (error)
+            throw std::system_error(qls_errc::invalid_verification, "they are already friends");
+    }
+
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasFriendRoomVerification(m_impl->user_id, friend_user_id)) {
         ver.addFriendRoomVerification(m_impl->user_id, friend_user_id);
@@ -303,6 +320,9 @@ std::unordered_map<UserID, UserVerificationStructure> User::getFriendVerificatio
 
 bool User::addGroup(GroupID group_id)
 {
+    if (!serverManager.hasGroupRoom(group_id))
+        throw std::system_error(qls_errc::group_room_not_existed);
+
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasGroupRoomVerification(group_id, m_impl->user_id)) {
         ver.addGroupRoomVerification(group_id, m_impl->user_id);
@@ -336,7 +356,7 @@ std::multimap<GroupID, UserVerificationStructure> User::getGroupVerificationList
 void User::addSocket(const std::shared_ptr<Socket> &socket_ptr, DeviceType type)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
-    if (m_impl->m_socket_map.find(socket_ptr) == m_impl->m_socket_map.cend())
+    if (m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend())
         throw std::system_error(qls_errc::socket_pointer_existed);
 
     m_impl->m_socket_map.emplace(socket_ptr, type);

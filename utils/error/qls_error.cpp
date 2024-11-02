@@ -59,6 +59,8 @@ std::string qls_error_category::message(int Errval) const
         return "verification already exists";
     case qls_errc::verification_not_existed:
         return "verification doesn't exist";
+    case qls_errc::invalid_verification:
+        return "invalid verification";
 
     // private room error
     case qls_errc::private_room_existed:

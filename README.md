@@ -13,11 +13,11 @@ cmake --build build --config Release
 ```
 
 ## TODO
-- [x] Network (with TLS-1.2)
-- [x] Manager (~Database manager yet~)
+- [x] Network (with TLS-1.3)
+- [ ] Manager (Database manager yet)
 - [x] User
 - [x] Room (private room and group room)
-- [ ] SQL database connection
+- [x] SQL database connection
 - [ ] Voice chat
 - [ ] File transport
 - [ ] Permission
