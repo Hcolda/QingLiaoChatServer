@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <stdexcept>
 #include <sstream>
@@ -59,19 +60,19 @@ public:
     * @param opt_name Name of the option
     * @param type Type of the option
     */
-    void add(const std::string& opt_name, OptionType type)
+    void add(std::string_view opt_name, OptionType type)
     {
         if (type == OptionType::OPT_UNKNOWN)
             throw std::logic_error("Option type cannot be \"OPT_UNKNOWN\"");
         
-        m_opt_map[opt_name] = type;
+        m_opt_map[std::string(opt_name)] = type;
     }
 
     /*
     * @brief Remove an option
     * @param opt_name Name of the option
     */
-    void remove(const std::string& opt_name)
+    void remove(std::string_view opt_name)
     {
         auto itor = m_opt_map.find(opt_name);
         if (itor != m_opt_map.cend())
@@ -98,9 +99,9 @@ public:
     * @brief Parse a command string
     * @param command Full command string to parse
     */
-    void parse(const std::string& command)
+    void parse(std::string_view command)
     {
-        const std::string& data = command;
+        std::string_view data = command;
         std::vector<std::string> dataList;
 
         long long begin = -1;
@@ -109,11 +110,11 @@ public:
         for (; size_t(i) < data.size(); i++) {
             if (data[i] == ' ') {
                 if ((i - begin - 1) > 0)
-                    dataList.push_back(data.substr(begin + 1, i - begin - 1));
+                    dataList.push_back(std::string(data.substr(begin + 1, i - begin - 1)));
                 begin = i;
             }
         }
-        dataList.push_back(data.substr(begin + 1, i - begin - 1));
+        dataList.push_back(std::string(data.substr(begin + 1, i - begin - 1)));
 
         parse(dataList);
     }
@@ -125,7 +126,7 @@ public:
     void parse(const std::vector<std::string>& args)
     {
         for (auto i = args.begin(); i != args.cend(); i++) {
-            const std::string& arg = *i;
+            std::string_view arg = *i;
 
             if (arg.substr(0, 1) != "-") {
                 // Ignore regular arguments
@@ -134,7 +135,7 @@ public:
             if (arg.substr(0, 2) == "--") {
                 // Long option parsing
 
-                std::string str = arg.substr(2);
+                std::string str(arg.substr(2));
                 if (str.empty())
                     continue;
 
@@ -146,10 +147,10 @@ public:
 
                     switch (get_type(opt_name)) {
                     case OptionType::OPT_UNKNOWN:
-                        throw std::logic_error("No such option: " + opt_name);
+                        throw std::logic_error("No such option: " + std::string(opt_name));
 
                     case OptionType::OPT_NO:
-                        throw std::logic_error("Option does not take an argument: " + opt_name);
+                        throw std::logic_error("Option does not take an argument: " + std::string(opt_name));
 
                     case OptionType::OPT_OPTIONAL:
                     case OptionType::OPT_REQUIRED:
@@ -184,7 +185,7 @@ public:
                             break;
                         }
                         else
-                            throw std::logic_error("Option requires an argument: " + opt_name);
+                            throw std::logic_error("Option requires an argument: " + std::string(opt_name));
 
                     default:
                         break;
@@ -194,7 +195,7 @@ public:
             else {
                 // Short option parsing
 
-                std::string str = arg.substr(1);
+                std::string str(arg.substr(1));
                 if (str.empty())
                     continue;
                 if (str.find('=') != std::string::npos)
@@ -233,7 +234,7 @@ public:
                         break;
                     }
                     else
-                        throw std::logic_error("Option requires an argument: " + opt_name);
+                        throw std::logic_error("Option requires an argument: " + std::string(opt_name));
                     break;
 
                 default:
@@ -245,7 +246,7 @@ public:
         {
             if (opt_type == OptionType::OPT_REQUIRED &&
                 m_args_map.find(opt_name) == m_args_map.cend())
-                throw std::logic_error("Option requires an argument: " + opt_name);
+                throw std::logic_error("Option requires an argument: " + std::string(opt_name));
         }
     }
 
@@ -254,7 +255,7 @@ public:
     * @param opt Option name
     * @return True if the option exists, false otherwise
     */
-    bool has_opt(const std::string& opt) const
+    bool has_opt(std::string_view opt) const
     {
         return m_opt_map.find(opt) != m_opt_map.cend();
     }
@@ -264,7 +265,7 @@ public:
     * @param opt Option name
     * @return True if the option exists and has value, false otherwise
     */
-    bool has_opt_with_value(const std::string& opt) const
+    bool has_opt_with_value(std::string_view opt) const
     {
         return m_opt_map.find(opt) != m_opt_map.cend() &&
             m_args_map.find(opt) != m_args_map.cend();
@@ -274,7 +275,7 @@ public:
     * @brief Get an option list
     * @return A list to show all the options
     */
-    std::unordered_map<std::string, OptionType> get_opt_list() const
+    auto get_opt_list() const
     {
         return m_opt_map;
     }
@@ -285,17 +286,17 @@ public:
     * @return Boolean value of the option
     * @throw std::logic_error If the option does not exist or is not a boolean
     */
-    bool get_bool(const std::string& opt) const
+    bool get_bool(std::string_view opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No such option: " + opt);
+            throw std::logic_error("No such option: " + std::string(opt));
 
         if (m_args_map.find(opt)->second == "true")
             return true;
         else if (m_args_map.find(opt)->second == "false")
             return false;
         else
-            throw std::logic_error("Option is not a boolean: " + opt);
+            throw std::logic_error("Option is not a boolean: " + std::string(opt));
     }
 
     /*
@@ -304,10 +305,10 @@ public:
     * @return String value of the option
     * @throw std::logic_error If the option does not exist
     */
-    std::string get_string(const std::string& opt) const
+    std::string get_string(std::string_view opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No such option: " + opt);
+            throw std::logic_error("No such option: " + std::string(opt));
 
         return m_args_map.find(opt)->second;
     }
@@ -318,10 +319,10 @@ public:
     * @return Integer value of the option
     * @throw std::logic_error If the option does not exist or is not an integer
     */
-    long long get_int(const std::string& opt) const
+    long long get_int(std::string_view opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No such option: " + opt);
+            throw std::logic_error("No such option: " + std::string(opt));
         
         return std::stoll(m_args_map.find(opt)->second);
     }
@@ -332,10 +333,10 @@ public:
     * @return Double value of the option
     * @throw std::logic_error If the option does not exist or is not a double
     */
-    long double get_double(const std::string& opt) const
+    long double get_double(std::string_view opt) const
     {
         if (!has_opt(opt))
-            throw std::logic_error("No such option: " + opt);
+            throw std::logic_error("No such option: " + std::string(opt));
         
         return std::stold(m_args_map.find(opt)->second);
     }
@@ -390,7 +391,7 @@ protected:
     * @param opt Option name
     * @return Type of the option
     */
-    OptionType get_type(const std::string& opt) const
+    OptionType get_type(std::string_view opt) const
     {
         auto itor = m_opt_map.find(opt);
 
@@ -402,8 +403,18 @@ protected:
     }
 
 private:
-    std::unordered_map<std::string, OptionType>     m_opt_map;   // Map to store option names and their types
-    std::unordered_map<std::string, std::string>    m_args_map;  // Map to store option names and their argument values
+    struct string_hash
+    {
+        using hash_type = std::hash<std::string_view>;
+        using is_transparent = void;
+    
+        std::size_t operator()(const char* str) const        { return hash_type{}(str); }
+        std::size_t operator()(std::string_view str) const   { return hash_type{}(str); }
+        std::size_t operator()(const std::string& str) const { return hash_type{}(str); }
+    };
+
+    std::unordered_map<std::string, OptionType, string_hash, std::equal_to<>>     m_opt_map;   // Map to store option names and their types
+    std::unordered_map<std::string, std::string, string_hash, std::equal_to<>>    m_args_map;  // Map to store option names and their argument values
 };
 
 NAMESPACE_OPTION_END

@@ -109,7 +109,7 @@ asio::awaitable<size_t> SocketService::async_send(std::string_view data, long lo
 
 asio::awaitable<void> SocketService::process(
     std::shared_ptr<Socket> socket_ptr,
-    const std::string& data,
+    std::string_view data,
     std::shared_ptr<qls::DataPackage> pack)
 {
     if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1) {

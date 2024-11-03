@@ -74,7 +74,7 @@ public:
     */
     asio::awaitable<void> process(
         std::shared_ptr<Socket> socket_ptr,
-        const std::string& data, std::shared_ptr<qls::DataPackage> pack);
+        std::string_view data, std::shared_ptr<qls::DataPackage> pack);
 
     /**
     * @brief Set the package buffer

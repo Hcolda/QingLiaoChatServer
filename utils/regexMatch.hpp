@@ -3,6 +3,7 @@
 
 #include <regex>
 #include <string>
+#include <string_view>
 
 namespace qls
 {
@@ -13,27 +14,25 @@ public:
     RegexMatch() = default;
     ~RegexMatch() = default;
 
-    static bool emailMatch(const std::string& email)
+    static bool emailMatch(std::string_view email)
     {
         static std::regex re(R"((\w+\.)*\w+@(\w+\.)+[A-Za-z]+)", std::regex::optimize);
         std::smatch results;
-        return std::regex_match(email, results, re);
+        return std::regex_match(email.cbegin(), email.cend(), re);
     }
 
-    static bool ipAddressMatch(const std::string& ip)
+    static bool ipAddressMatch(std::string_view ip)
     {
         static std::regex re(R"((((\d{1,2})|(1\d{2})|(2[0-4]\d)|(25[0-5]))\.){3}((\d{1,2})|(1\d{2})|(2[0-4]\d)|(25[0-5])))",
             std::regex::optimize);
-        std::smatch results;
-        return std::regex_match(ip, results, re);
+        return std::regex_match(ip.cbegin(), ip.cend(), re);
     }
 
-    static bool phoneMatch(const std::string& phone)
+    static bool phoneMatch(std::string_view phone)
     {
         static std::regex re(R"(\d{11})",
             std::regex::optimize);
-        std::smatch results;
-        return std::regex_match(phone, results, re);
+        return std::regex_match(phone.cbegin(), phone.cend(), re);
     }
 };
 } // namespace qls

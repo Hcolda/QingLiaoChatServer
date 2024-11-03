@@ -212,7 +212,7 @@ CommandManager::CommandManager()
     addCommand("createGroupApplication", std::make_shared<CreateGroupApplication>());
 }
 
-bool CommandManager::addCommand(const std::string &commandName, const std::shared_ptr<Command> &command_ptr)
+bool CommandManager::addCommand(std::string_view commandName, const std::shared_ptr<Command> &command_ptr)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_command_map_mutex);
     if (m_command_map.find(commandName) != m_command_map.cend()) {
@@ -222,7 +222,7 @@ bool CommandManager::addCommand(const std::string &commandName, const std::share
     return true;
 }
 
-bool CommandManager::removeCommand(const std::string &commandName)
+bool CommandManager::removeCommand(std::string_view commandName)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_command_map_mutex);
     auto iter = m_command_map.find(commandName);
@@ -233,19 +233,18 @@ bool CommandManager::removeCommand(const std::string &commandName)
     return true;
 }
 
-bool CommandManager::canFindCommand(const std::string &commandName) const
+bool CommandManager::canFindCommand(std::string_view commandName) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_command_map_mutex);
     return m_command_map.find(commandName) != m_command_map.cend();
 }
 
-std::shared_ptr<Command> CommandManager::getCommand(const std::string &commandName) const
+std::shared_ptr<Command> CommandManager::getCommand(std::string_view commandName) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_command_map_mutex);
     auto iter = m_command_map.find(commandName);
-    if (iter == m_command_map.cend()) {
-        throw std::logic_error(commandName + " does not exist");
-    }
+    if (iter == m_command_map.cend())
+        throw std::logic_error(std::string(commandName) + " does not exist");
     return iter->second;
 }
 

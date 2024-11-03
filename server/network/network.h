@@ -32,7 +32,7 @@ inline std::string socket2ip(const qls::Socket& s);
  * @param data The binary data.
  * @return The string representation of the binary data.
  */
-inline std::string showBinaryData(const std::string& data);
+inline std::string showBinaryData(std::string_view data);
 
 /**
  * @class Network

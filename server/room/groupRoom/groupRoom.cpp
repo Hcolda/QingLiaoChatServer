@@ -347,8 +347,8 @@ long long GroupRoom::getUserGroupLevel(UserID user_id) const
     return itor->second.level.getValue();
 }
 
-std::unordered_map<UserID,
-    PermissionType> GroupRoom::getUserPermissionList() const
+std::unordered_map<UserID, PermissionType>
+    GroupRoom::getUserPermissionList() const
 {
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));

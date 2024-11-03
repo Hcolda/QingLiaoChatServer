@@ -50,13 +50,13 @@ public:
      * @brief Reads the buffer data in the package.
      * @return The buffer as a string.
      */
-    const std::string& readBuffer() const;
+    std::string_view readBuffer() const;
 
     /**
      * @brief Sets the buffer with the given data.
      * @param buffer The data to set in the buffer.
      */
-    void setBuffer(const std::string& buffer);
+    void setBuffer(std::string_view buffer);
 
     /**
      * @brief Creates a data package from binary data.

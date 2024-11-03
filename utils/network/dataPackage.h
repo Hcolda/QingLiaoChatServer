@@ -47,7 +47,7 @@ public:
      * @param data Binary data representing a data package.
      * @return Shared pointer to the loaded data package.
      */
-    static std::shared_ptr<DataPackage> stringToPackage(const std::string& data);
+    static std::shared_ptr<DataPackage> stringToPackage(std::string_view data);
 
     /**
      * @brief Converts this data package to a binary string.

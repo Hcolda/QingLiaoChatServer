@@ -51,8 +51,8 @@ public:
         UserDataStructure>                  getUserList() const;
     std::string                             getUserNickname(UserID user_id) const;
     long long                               getUserGroupLevel(UserID user_id) const;
-    std::unordered_map<UserID,
-        PermissionType>                     getUserPermissionList() const;
+    std::unordered_map<UserID, PermissionType>
+                                            getUserPermissionList() const;
     UserID                                  getAdministrator() const;
     GroupID                                 getGroupID() const;
     std::vector<UserID>                     getDefaultUserList() const;

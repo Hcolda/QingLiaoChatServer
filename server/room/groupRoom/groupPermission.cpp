@@ -10,37 +10,38 @@
 namespace qls
 {
     
-void GroupPermission::modifyPermission(const std::string& permissionName, PermissionType type)
+void GroupPermission::modifyPermission(std::string_view permissionName, PermissionType type)
 {
     std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
-    m_permission_map[permissionName] = type;
+    m_permission_map[std::string(permissionName)] = type;
 }
 
-void GroupPermission::removePermission(const std::string& permissionName)
+void GroupPermission::removePermission(std::string_view permissionName)
 {
     std::lock_guard<std::shared_mutex> lg(m_permission_map_mutex);
 
     // 是否有此权限
     auto itor = m_permission_map.find(permissionName);
-    if (itor == m_permission_map.end())
-        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + permissionName);
+    if (itor == m_permission_map.cend())
+        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + std::string(permissionName));
 
     m_permission_map.erase(itor);
 }
 
-PermissionType GroupPermission::getPermissionType(const std::string& permissionName) const
+PermissionType GroupPermission::getPermissionType(std::string_view permissionName) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);
 
     // 是否有此权限
     auto itor = m_permission_map.find(permissionName);
-    if (itor == m_permission_map.end())
-        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + permissionName);
+    if (itor == m_permission_map.cend())
+        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + std::string(permissionName));
 
     return itor->second;
 }
 
-std::unordered_map<std::string, PermissionType> GroupPermission::getPermissionList() const
+std::unordered_map<std::string, PermissionType, GroupPermission::string_hash, std::equal_to<>>
+    GroupPermission::getPermissionList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);
     return m_permission_map;
@@ -58,13 +59,13 @@ void GroupPermission::removeUser(UserID user_id)
 
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
-    if (itor == m_user_permission_map.end())
+    if (itor == m_user_permission_map.cend())
         throw std::system_error(make_error_code(qls_errc::user_not_existed), "no user: " + std::to_string(user_id));
 
     m_user_permission_map.erase(itor);
 }
 
-bool GroupPermission::userHasPermission(UserID user_id, const std::string& permissionName) const
+bool GroupPermission::userHasPermission(UserID user_id, std::string_view permissionName) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock1(m_permission_map_mutex, std::defer_lock);
     std::shared_lock<std::shared_mutex> local_shared_lock2(m_user_permission_map_mutex, std::defer_lock);
@@ -72,13 +73,13 @@ bool GroupPermission::userHasPermission(UserID user_id, const std::string& permi
 
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
-    if (itor == m_user_permission_map.end())
+    if (itor == m_user_permission_map.cend())
         throw std::system_error(make_error_code(qls_errc::user_not_existed), "no user: " + std::to_string(user_id));
 
     // 是否有此权限
     auto itor2 = m_permission_map.find(permissionName);
-    if (itor2 == m_permission_map.end())
-        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + permissionName);
+    if (itor2 == m_permission_map.cend())
+        throw std::system_error(make_error_code(qls_errc::no_permission), "no permission: " + std::string(permissionName));
 
     // 返回权限
     return itor->second >= itor2->second;
@@ -90,12 +91,14 @@ PermissionType GroupPermission::getUserPermissionType(UserID user_id) const
 
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
-    if (itor == m_user_permission_map.end())
+    if (itor == m_user_permission_map.cend())
         throw std::system_error(make_error_code(qls_errc::user_not_existed), "no user: " + std::to_string(user_id));
 
     return itor->second;
 }
-std::unordered_map<UserID, PermissionType> GroupPermission::getUserPermissionList() const
+
+std::unordered_map<UserID, PermissionType>
+    GroupPermission::getUserPermissionList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
     return m_user_permission_map;

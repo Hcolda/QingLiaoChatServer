@@ -29,16 +29,16 @@ public:
     static qjson::JObject getUserPublicInfo(UserID user_id);
 
     static qjson::JObject hasUser(UserID user_id);
-    static qjson::JObject searchUser(const std::string& user_name);
+    static qjson::JObject searchUser(std::string_view user_name);
 
     UserID getLocalUserID() const;
 
     qjson::JObject processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
-    qjson::JObject login(UserID user_id, const std::string& password, const std::string& device, const SocketService& sf);
-    qjson::JObject login(const std::string& email, const std::string& password, const std::string& device);
+    qjson::JObject login(UserID user_id, std::string_view password, std::string_view device, const SocketService& sf);
+    qjson::JObject login(std::string_view email, std::string_view password, std::string_view device);
 
-    qjson::JObject registerUser(const std::string& email, const std::string& password);
+    qjson::JObject registerUser(std::string_view email, std::string_view password);
 
     qjson::JObject addFriend(UserID friend_id);
     qjson::JObject acceptFriendVerification(UserID user_id);
@@ -52,8 +52,8 @@ public:
     qjson::JObject getGroupList();
     qjson::JObject getGroupVerificationList();
 
-    qjson::JObject sendFriendMessage(UserID friend_id, const std::string& msg);
-    qjson::JObject sendGroupMessage(GroupID group_id, const std::string& msg);
+    qjson::JObject sendFriendMessage(UserID friend_id, std::string_view msg);
+    qjson::JObject sendGroupMessage(GroupID group_id, std::string_view msg);
 
 private:
 
@@ -80,7 +80,7 @@ qjson::JObject JsonMessageProcessImpl::hasUser(UserID user_id)
     return returnJson;
 }
 
-qjson::JObject JsonMessageProcessImpl::searchUser(const std::string& user_name)
+qjson::JObject JsonMessageProcessImpl::searchUser(std::string_view user_name)
 {
     return makeErrorMessage("This function is incomplete.");
 }
@@ -170,7 +170,7 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
     }
 }
 
-qjson::JObject JsonMessageProcessImpl::login(UserID user_id, const std::string& password, const std::string& device, const SocketService& sf)
+qjson::JObject JsonMessageProcessImpl::login(UserID user_id, std::string_view password, std::string_view device, const SocketService& sf)
 {
     if (!serverManager.hasUser(user_id))
         return makeErrorMessage("The user ID or password is wrong!");
@@ -200,7 +200,7 @@ qjson::JObject JsonMessageProcessImpl::login(UserID user_id, const std::string& 
     else return makeErrorMessage("The user ID or password is wrong!");
 }
 
-qjson::JObject JsonMessageProcessImpl::login(const std::string& email, const std::string& password, const std::string& device)
+qjson::JObject JsonMessageProcessImpl::login(std::string_view email, std::string_view password, std::string_view device)
 {
     if (!qls::RegexMatch::emailMatch(email))
         return makeErrorMessage("Email is invalid");
@@ -209,7 +209,7 @@ qjson::JObject JsonMessageProcessImpl::login(const std::string& email, const std
     return qjson::JObject();
 }
 
-qjson::JObject JsonMessageProcessImpl::registerUser(const std::string& email, const std::string& password)
+qjson::JObject JsonMessageProcessImpl::registerUser(std::string_view email, std::string_view password)
 {
     if (!qls::RegexMatch::emailMatch(email))
         return makeErrorMessage("Email is invalid");
@@ -350,7 +350,7 @@ qjson::JObject JsonMessageProcessImpl::getGroupVerificationList()
     return returnJson;
 }
 
-qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, const std::string& msg)
+qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, std::string_view msg)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (!serverManager.getUser(this->m_user_id)->userHasFriend(friend_id))
@@ -366,7 +366,7 @@ qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, const
     return makeSuccessMessage("Successfully sent a message!");
 }
 
-qjson::JObject JsonMessageProcessImpl::sendGroupMessage(GroupID group_id, const std::string& msg)
+qjson::JObject JsonMessageProcessImpl::sendGroupMessage(GroupID group_id, std::string_view msg)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (!serverManager.getUser(this->m_user_id)->userHasGroup(group_id))

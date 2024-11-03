@@ -16,7 +16,7 @@ public:
 
     void init();
 
-    bool input(const std::string& command);
+    bool input(std::string_view command);
 
 private:
     std::unique_ptr<InputImpl> m_impl;

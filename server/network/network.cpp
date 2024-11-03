@@ -205,7 +205,7 @@ inline std::string qls::socket2ip(const qls::Socket& s)
     return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
 }
 
-inline std::string qls::showBinaryData(const std::string& data)
+inline std::string qls::showBinaryData(std::string_view data)
 {
     auto isShowableCharacter = [](unsigned char ch) -> bool {
         return 32 <= ch && ch <= 126;

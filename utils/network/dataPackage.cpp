@@ -22,7 +22,7 @@ std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
     return package;
 }
 
-std::shared_ptr<DataPackage> DataPackage::stringToPackage(const std::string& data)
+std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
 {
     using namespace qls;
 
@@ -31,7 +31,7 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(const std::string& dat
 
     // Data package length
     int size = 0;
-    std::memcpy(&size, data.c_str(), sizeof(int));
+    std::memcpy(&size, data.data(), sizeof(int));
     size = swapNetworkEndianness(size);
 
     // Error handling if data package length does not match actual size,
@@ -46,7 +46,7 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(const std::string& dat
 
     std::shared_ptr<DataPackage> package(reinterpret_cast<DataPackage*>(new char[size] { 0 }),
         deleteDataPackage);
-    std::memcpy(package.get(), data.c_str(), size);
+    std::memcpy(package.get(), data.data(), size);
 
     // Endianness conversion
     package->length = swapNetworkEndianness(package->length);
