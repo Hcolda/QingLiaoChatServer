@@ -28,7 +28,7 @@ struct ManagerImpl
     std::shared_mutex       m_basePrivateRoom_map_mutex; ///< Mutex for private room map.
 
     // Map of user IDs to private room IDs
-    std::unordered_map<PrivateRoomIDStruct, long long, PrivateRoomIDStructHasher>
+    std::unordered_map<PrivateRoomIDStruct, GroupID, PrivateRoomIDStructHasher>
                             m_userID_to_privateRoomID_map; ///< Map of user ID structs to private room IDs.
     std::shared_mutex       m_userID_to_privateRoomID_map_mutex; ///< Mutex for user to private room ID map.
 

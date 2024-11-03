@@ -29,13 +29,23 @@ public:
     CommandManager();
     ~CommandManager() = default;
 
-    bool addCommand(const std::string& commandName, const std::shared_ptr<Command>& command_ptr);
-    bool removeCommand(const std::string& commandName);
-    bool canFindCommand(const std::string& commandName) const;
-    std::shared_ptr<Command> getCommand(const std::string& commandName) const;
+    bool addCommand(std::string_view commandName, const std::shared_ptr<Command>& command_ptr);
+    bool removeCommand(std::string_view commandName);
+    bool canFindCommand(std::string_view commandName) const;
+    std::shared_ptr<Command> getCommand(std::string_view commandName) const;
 
 private:
-    std::unordered_map<std::string, std::shared_ptr<Command>>
+    struct string_hash
+    {
+        using hash_type = std::hash<std::string_view>;
+        using is_transparent = void;
+    
+        std::size_t operator()(const char* str) const        { return hash_type{}(str); }
+        std::size_t operator()(std::string_view str) const   { return hash_type{}(str); }
+        std::size_t operator()(std::string const& str) const { return hash_type{}(str); }
+    };
+
+    std::unordered_map<std::string, std::shared_ptr<Command>, string_hash, std::equal_to<>>
                                 m_command_map;
     mutable std::shared_mutex   m_command_map_mutex;
 

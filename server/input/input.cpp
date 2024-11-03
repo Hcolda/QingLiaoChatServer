@@ -45,10 +45,10 @@ public:
 
     ~InputImpl() = default;
 
-    bool input(const std::string &command)
+    bool input(std::string_view command)
     {
         std::string first_word;
-        std::string::const_iterator iter = command.cbegin();
+        std::string_view::const_iterator iter = command.cbegin();
         while (iter != command.cend() && *iter == ' ') ++iter;
         while (iter != command.cend() && *iter != '-') first_word += *(iter++);
 
@@ -146,7 +146,7 @@ Input::~Input() = default;
 void Input::init()
 {}
 
-bool Input::input(const std::string &command)
+bool Input::input(std::string_view command)
 {
     return m_impl->input(command);
 }

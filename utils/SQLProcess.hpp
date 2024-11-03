@@ -43,10 +43,10 @@ public:
      * @param host Database host address.
      * @param port Database port.
      */
-    SQLDBProcess(const std::string& username,
-                    const std::string& password,
-                    const std::string& database_name,
-                    const std::string& host,
+    SQLDBProcess(std::string_view username,
+                    std::string_view password,
+                    std::string_view database_name,
+                    std::string_view host,
                     unsigned short port)
     {
         m_username = username;
@@ -85,10 +85,10 @@ public:
      * @param host Database host address.
      * @param port Database port.
      */
-    void setSQLServerInfo(const std::string& username,
-                            const std::string& password,
-                            const std::string& database_name,
-                            const std::string& host,
+    void setSQLServerInfo(std::string_view username,
+                            std::string_view password,
+                            std::string_view database_name,
+                            std::string_view host,
                             unsigned short port)
     {
         m_username = username;

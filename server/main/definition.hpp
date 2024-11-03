@@ -72,7 +72,7 @@ public:
     size_t operator()(T&& s) const
     {
         std::hash<long long> hasher;
-        return hasher(s.user_id_1.getOriginValue()) * hasher(s.user_id_2.getOriginValue());
+        return hasher(s.user_id_1.getOriginValue()) ^ hasher(s.user_id_2.getOriginValue());
     }
 };
 
@@ -105,7 +105,7 @@ public:
     size_t operator()(T&& g) const
     {
         std::hash<long long> hasher;
-        return hasher(g.group_id.getOriginValue()) * hasher(g.user_id.getOriginValue());
+        return hasher(g.group_id.getOriginValue()) ^ hasher(g.user_id.getOriginValue());
     }
 };
 

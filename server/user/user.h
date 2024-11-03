@@ -2,6 +2,7 @@
 #define USER_H
 
 #include <string>
+#include <string_view>
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -68,18 +69,18 @@ public:
     std::string getUserEmail() const;
     std::string getUserPhone() const;
     std::string getUserProfile() const;
-    bool        isUserPassword(const std::string&) const;
+    bool        isUserPassword(std::string_view) const;
 
     // Methods to update user information
 
-    void updateUserName(const std::string&);
+    void updateUserName(std::string_view);
     void updateAge(int);
-    void updateUserEmail(const std::string&);
-    void updateUserPhone(const std::string&);
-    void updateUserProfile(const std::string&);
-    void firstUpdateUserPassword(const std::string& new_password);
-    void updateUserPassword(const std::string& old_password,
-        const std::string& new_password);
+    void updateUserEmail(std::string_view);
+    void updateUserPhone(std::string_view);
+    void updateUserProfile(std::string_view);
+    void firstUpdateUserPassword(std::string_view new_password);
+    void updateUserPassword(std::string_view old_password,
+        std::string_view new_password);
 
     // Methods to get user associated information
 

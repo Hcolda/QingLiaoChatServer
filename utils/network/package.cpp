@@ -49,12 +49,12 @@ std::string qls::Package::read()
     return result;
 }
 
-const std::string& qls::Package::readBuffer() const
+std::string_view qls::Package::readBuffer() const
 {
     return m_buffer;
 }
 
-void qls::Package::setBuffer(const std::string& b)
+void qls::Package::setBuffer(std::string_view b)
 {
     m_buffer = b;
 }

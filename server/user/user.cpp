@@ -109,11 +109,11 @@ std::string User::getUserProfile() const
     return m_impl->profile;
 }
 
-bool User::isUserPassword(const std::string& p) const
+bool User::isUserPassword(std::string_view password) const
 {
     std::hash<std::string> string_hash;
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
-    std::string localPassword = p + m_impl->salt;
+    std::string localPassword = std::string(password) + m_impl->salt;
 
     for (size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
@@ -122,7 +122,7 @@ bool User::isUserPassword(const std::string& p) const
     return localPassword == m_impl->password;
 }
 
-void User::updateUserName(const std::string& user_name)
+void User::updateUserName(std::string_view user_name)
 {
     std::unique_lock<std::shared_mutex> lg(m_impl->m_data_mutex);
     m_impl->user_name = user_name;
@@ -134,31 +134,31 @@ void User::updateAge(int age)
     m_impl->age = age;
 }
 
-void User::updateUserEmail(const std::string& email)
+void User::updateUserEmail(std::string_view email)
 {
     std::unique_lock<std::shared_mutex> lg(m_impl->m_data_mutex);
     m_impl->email = email;
 }
 
-void User::updateUserPhone(const std::string& phone)
+void User::updateUserPhone(std::string_view phone)
 {
     std::unique_lock<std::shared_mutex> lg(m_impl->m_data_mutex);
     m_impl->phone = phone;
 }
 
-void User::updateUserProfile(const std::string& profile)
+void User::updateUserProfile(std::string_view profile)
 {
     std::unique_lock<std::shared_mutex> lg(m_impl->m_data_mutex);
     m_impl->profile = profile;
 }
 
-void User::firstUpdateUserPassword(const std::string& new_password)
+void User::firstUpdateUserPassword(std::string_view new_password)
 {
     if (!m_impl->password.empty())
         throw std::system_error(qls_errc::password_already_set);
 
-    std::hash<std::string>  string_hash;
-    std::mt19937_64         mt(std::random_device{}());
+    std::hash<std::string_view> string_hash;
+    std::mt19937_64             mt(std::random_device{}());
 
     size_t mt_temp = 0;
     for (size_t i = 0; i < 256ull; i++) {
@@ -166,7 +166,7 @@ void User::firstUpdateUserPassword(const std::string& new_password)
     }
 
     std::string localSalt = std::to_string(mt_temp);
-    std::string localPassword = new_password + localSalt;
+    std::string localPassword = std::string(new_password) + localSalt;
 
     for (size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
@@ -182,7 +182,7 @@ void User::firstUpdateUserPassword(const std::string& new_password)
     }
 }
 
-void User::updateUserPassword(const std::string& old_password, const std::string& new_password)
+void User::updateUserPassword(std::string_view old_password, std::string_view new_password)
 {
     if (!isUserPassword(old_password))
         throw std::system_error(qls_errc::password_mismatched, "wrong old password");
@@ -196,7 +196,7 @@ void User::updateUserPassword(const std::string& old_password, const std::string
     }
 
     std::string localSalt = std::to_string(mt_temp);
-    std::string localPassword = new_password + localSalt;
+    std::string localPassword = std::string(new_password) + localSalt;
 
     for (size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));

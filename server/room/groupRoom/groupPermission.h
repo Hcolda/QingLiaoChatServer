@@ -27,6 +27,16 @@ enum class PermissionType
 class GroupPermission final
 {
 public:
+    struct string_hash
+    {
+        using hash_type = std::hash<std::string_view>;
+        using is_transparent = void;
+    
+        std::size_t operator()(const char* str) const        { return hash_type{}(str); }
+        std::size_t operator()(std::string_view str) const   { return hash_type{}(str); }
+        std::size_t operator()(std::string const& str) const { return hash_type{}(str); }
+    };
+
     GroupPermission() = default;
     ~GroupPermission() = default;
 
@@ -35,26 +45,26 @@ public:
      * @param permissionName Name of the permission to modify.
      * @param type New permission type.
      */
-    void modifyPermission(const std::string& permissionName, PermissionType type = PermissionType::Default);
+    void modifyPermission(std::string_view permissionName, PermissionType type = PermissionType::Default);
 
     /**
      * @brief Removes a permission from the permission list.
      * @param permissionName Name of the permission to remove.
      */
-    void removePermission(const std::string& permissionName);
+    void removePermission(std::string_view permissionName);
 
     /**
      * @brief Retrieves the type of a specific permission.
      * @param permissionName Name of the permission.
      * @return PermissionType Type of the permission.
      */
-    PermissionType getPermissionType(const std::string& permissionName) const;
+    PermissionType getPermissionType(std::string_view permissionName) const;
 
     /**
      * @brief Retrieves the entire permission list.
      * @return std::unordered_map<std::string, PermissionType> Map of permissions and their types.
      */
-    std::unordered_map<std::string, PermissionType> getPermissionList() const;
+    std::unordered_map<std::string, PermissionType, string_hash, std::equal_to<>> getPermissionList() const;
 
     /**
      * @brief Modifies the permission type for a specific user.
@@ -75,7 +85,7 @@ public:
      * @param permissionName Name of the permission.
      * @return true if user has the permission, false otherwise.
      */
-    bool userHasPermission(UserID user_id, const std::string& permissionName) const;
+    bool userHasPermission(UserID user_id, std::string_view permissionName) const;
 
     /**
      * @brief Retrieves the permission type for a specific user.
@@ -109,11 +119,13 @@ public:
     std::vector<UserID> getAdministratorList() const;
 
 private:
-    std::unordered_map<std::string, PermissionType> m_permission_map; ///< Map of permissions and their types
-    mutable std::shared_mutex                       m_permission_map_mutex; ///< Mutex for thread-safe access to permission map
+    std::unordered_map<std::string, PermissionType, string_hash, std::equal_to<>>
+                                m_permission_map; ///< Map of permissions and their types
+    mutable std::shared_mutex   m_permission_map_mutex; ///< Mutex for thread-safe access to permission map
 
-    std::unordered_map<UserID, PermissionType>      m_user_permission_map; ///< Map of users and their permission types
-    mutable std::shared_mutex                       m_user_permission_map_mutex; ///< Mutex for thread-safe access to user permission map
+    std::unordered_map<UserID, PermissionType>
+                                m_user_permission_map; ///< Map of users and their permission types
+    mutable std::shared_mutex   m_user_permission_map_mutex; ///< Mutex for thread-safe access to user permission map
 };
 
 } // namespace qls
