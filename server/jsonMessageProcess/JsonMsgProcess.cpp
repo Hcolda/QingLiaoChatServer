@@ -45,12 +45,16 @@ public:
     qjson::JObject rejectFriendVerification(UserID user_id);
     qjson::JObject getFriendList();
     qjson::JObject getFriendVerificationList();
+    qjson::JObject removeFriend(UserID user_id);
 
     qjson::JObject addGroup(GroupID group_id);
     qjson::JObject acceptGroupVerification(GroupID group_id, UserID user_id);
     qjson::JObject rejectGroupVerification(GroupID group_id, UserID user_id);
     qjson::JObject getGroupList();
     qjson::JObject getGroupVerificationList();
+    qjson::JObject createGroup();
+    qjson::JObject removeGroup(GroupID group_id);
+    qjson::JObject leaveGroup(GroupID group_id);
 
     qjson::JObject sendFriendMessage(UserID friend_id, std::string_view msg);
     qjson::JObject sendGroupMessage(GroupID group_id, std::string_view msg);
@@ -290,6 +294,11 @@ qjson::JObject JsonMessageProcessImpl::getFriendVerificationList()
     return returnJson;
 }
 
+qjson::JObject JsonMessageProcessImpl::removeFriend(UserID user_id)
+{
+    return qjson::JObject();
+}
+
 qjson::JObject JsonMessageProcessImpl::addGroup(GroupID group_id)
 {
     if (!serverManager.hasGroupRoom(group_id))
@@ -350,6 +359,21 @@ qjson::JObject JsonMessageProcessImpl::getGroupVerificationList()
     return returnJson;
 }
 
+qjson::JObject JsonMessageProcessImpl::createGroup()
+{
+    return qjson::JObject();
+}
+
+qjson::JObject JsonMessageProcessImpl::removeGroup(GroupID group_id)
+{
+    return qjson::JObject();
+}
+
+qjson::JObject JsonMessageProcessImpl::leaveGroup(GroupID group_id)
+{
+    return qjson::JObject();
+}
+
 qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, std::string_view msg)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
@@ -396,6 +420,10 @@ const std::multimap<std::string, long long> JsonMessageProcessImpl::m_function_m
         {"get_group_verification_list", 13},
         {"reject_friend_verification", 14},
         {"reject_group_verification", 15},
+        {"create_group", 16},
+        {"remove_group", 17},
+        {"leave_group", 18},
+        {"remove_friend", 19}
     }
 );
 
