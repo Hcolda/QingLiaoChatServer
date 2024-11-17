@@ -109,6 +109,6 @@ public:
     }
 };
 
-}
+} // namespace qls
 
 #endif // !DEFINITION_HPP

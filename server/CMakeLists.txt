@@ -20,6 +20,7 @@ add_executable(Server
     main/main.cpp
     initialization/init.cpp
     jsonMessageProcess/JsonMsgProcess.cpp
+    jsonMessageProcess/JsonMsgProcessCommand.cpp
     manager/manager.cpp
     manager/dataManager.cpp
     manager/verificationManager.cpp

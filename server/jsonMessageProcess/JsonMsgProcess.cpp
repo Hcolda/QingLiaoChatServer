@@ -9,6 +9,7 @@
 #include "definition.hpp"
 #include "groupid.hpp"
 #include "userid.hpp"
+#include "JsonMsgProcessCommand.h"
 
 extern qls::Manager serverManager;
 extern Log::Logger serverLogger;
@@ -233,6 +234,9 @@ qjson::JObject JsonMessageProcessImpl::registerUser(std::string_view email, std:
 
 qjson::JObject JsonMessageProcessImpl::addFriend(UserID friend_id)
 {
+    if (!serverManager.hasUser(friend_id))
+        return makeErrorMessage("UserID is invalid!");
+
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
     {
@@ -244,6 +248,9 @@ qjson::JObject JsonMessageProcessImpl::addFriend(UserID friend_id)
 
 qjson::JObject JsonMessageProcessImpl::acceptFriendVerification(UserID user_id)
 {
+    if (!serverManager.hasUser(user_id))
+        return makeErrorMessage("UserID is invalid!");
+
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (serverManager.getServerVerificationManager().setFriendVerified(this->m_user_id, user_id, this->m_user_id))
         serverLogger.debug("User ", this->m_user_id.getOriginValue(), " apply user \"", user_id.getOriginValue(), "\"'s friend request");
@@ -252,6 +259,9 @@ qjson::JObject JsonMessageProcessImpl::acceptFriendVerification(UserID user_id)
 
 qjson::JObject JsonMessageProcessImpl::rejectFriendVerification(UserID user_id)
 {
+    if (!serverManager.hasUser(user_id))
+        return makeErrorMessage("UserID is invalid!");
+
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     serverManager.getServerVerificationManager().removeFriendRoomVerification(this->m_user_id, user_id);
     serverLogger.debug("User ", this->m_user_id.getOriginValue(), " reject user \"", user_id.getOriginValue(), "\"'s friend request");
@@ -296,13 +306,17 @@ qjson::JObject JsonMessageProcessImpl::getFriendVerificationList()
 
 qjson::JObject JsonMessageProcessImpl::removeFriend(UserID user_id)
 {
+    if (!serverManager.hasUser(user_id))
+        return makeErrorMessage("UserID is invalid!");
+
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     return qjson::JObject();
 }
 
 qjson::JObject JsonMessageProcessImpl::addGroup(GroupID group_id)
 {
     if (!serverManager.hasGroupRoom(group_id))
-        return makeErrorMessage("There isn't a group room match this id!");
+        return makeErrorMessage("GroupID is invalid!");
         
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (serverManager.getUser(this->m_user_id)->addGroup(group_id))
@@ -376,6 +390,9 @@ qjson::JObject JsonMessageProcessImpl::leaveGroup(GroupID group_id)
 
 qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, std::string_view msg)
 {
+    if (!serverManager.hasUser(friend_id))
+        return makeErrorMessage("UserID is invalid!");
+
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (!serverManager.getUser(this->m_user_id)->userHasFriend(friend_id))
         return makeErrorMessage("You don't have this friend!");
@@ -392,6 +409,9 @@ qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, std::
 
 qjson::JObject JsonMessageProcessImpl::sendGroupMessage(GroupID group_id, std::string_view msg)
 {
+    if (!serverManager.hasGroupRoom(group_id))
+        return makeErrorMessage("GroupID is invalid!");
+        
     std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
     if (!serverManager.getUser(this->m_user_id)->userHasGroup(group_id))
         return makeErrorMessage("You don't have this group!");

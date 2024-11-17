@@ -1,9 +1,9 @@
 #include "JsonMsgProcessCommand.h"
 
-#include <string>
 #include <format>
 #include <unordered_set>
 #include <logger.hpp>
+
 #include "manager.h"
 #include "regexMatch.hpp"
 #include "returnStateMessage.hpp"
@@ -14,7 +14,7 @@
 extern qls::Manager serverManager;
 extern Log::Logger serverLogger;
 
-qjson::JObject qls::LoginCommand::execute(opt::Option opt, bool& success)
+qjson::JObject qls::LoginCommand::execute(qjson::JObject parameters, bool& success)
 {
     // UserID user_id = UserID(opt.get_int("user_id"));
     // std::string password = opt.get_string("password");
@@ -48,7 +48,12 @@ qjson::JObject qls::LoginCommand::execute(opt::Option opt, bool& success)
     return qjson::JObject();
 }
 
-qjson::JObject qls::RegisterCommand::execute(opt::Option opt, bool &success)
+qjson::JObject qls::RegisterCommand::execute(qjson::JObject parameters, bool &success)
+{
+    return qjson::JObject();
+}
+
+qjson::JObject qls::AddFriendCommand::execute(qjson::JObject parameters, bool &success)
 {
     return qjson::JObject();
 }

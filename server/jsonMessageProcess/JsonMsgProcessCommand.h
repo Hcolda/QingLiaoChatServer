@@ -1,7 +1,8 @@
 #ifndef JSON_MESSAGE_PROCESS_COMMAND_H
 #define JSON_MESSAGE_PROCESS_COMMAND_H
 
-#include <option.hpp>
+#include <initializer_list>
+#include <string>
 #include <Json.h>
 
 namespace qls
@@ -12,17 +13,17 @@ class JsonMessageCommand
 public:
     enum CommandType : int
     {
-        NormalType = 0,
-        LoginType = 1, // Unless login function, others had better not use it.
-        NeedLoginType = 2
+        NormalType = 0, // Use it if the function do not need to login.
+        LoginType = 1, // Unless "login" function, other functions had better not use it.
+        NeedLoginType = 2 // Use it if the function need to login.
     };
 
     JsonMessageCommand() = default;
     virtual ~JsonMessageCommand() = default;
 
-    virtual opt::Option getOption() const = 0;
+    virtual const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const = 0;
     virtual int getCommandType() const = 0;
-    virtual qjson::JObject execute(opt::Option opt, bool& success) = 0;
+    virtual qjson::JObject execute(qjson::JObject parameters, bool& success) = 0;
 };
 
 class LoginCommand : public JsonMessageCommand
@@ -31,12 +32,13 @@ public:
     LoginCommand() = default;
     ~LoginCommand() = default;
 
-    opt::Option getOption() const
+    const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const
     {
-        static opt::Option opt;
-        opt.add("user_id", opt::Option::OptionType::OPT_REQUIRED);
-        opt.add("password", opt::Option::OptionType::OPT_REQUIRED);
-        opt.add("device", opt::Option::OptionType::OPT_REQUIRED);
+        static std::initializer_list<std::pair<std::string, qjson::JValueType>> init_list{
+            {"user_id", qjson::JInt},
+            {"password", qjson::JString},
+            {"device", qjson::JString}};
+        return init_list;
     }
 
     int getCommandType() const
@@ -44,7 +46,7 @@ public:
         return LoginType;
     }
 
-    qjson::JObject execute(opt::Option opt, bool& success);
+    qjson::JObject execute(qjson::JObject parameters, bool& success);
 };
 
 class RegisterCommand : public JsonMessageCommand
@@ -53,11 +55,12 @@ public:
     RegisterCommand() = default;
     ~RegisterCommand() = default;
 
-    opt::Option getOption() const
+    const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const
     {
-        static opt::Option opt;
-        opt.add("email", opt::Option::OptionType::OPT_REQUIRED);
-        opt.add("password", opt::Option::OptionType::OPT_REQUIRED);
+        static std::initializer_list<std::pair<std::string, qjson::JValueType>> init_list{
+            {"email", qjson::JString},
+            {"password", qjson::JString}};
+        return init_list;
     }
 
     int getCommandType() const
@@ -65,7 +68,7 @@ public:
         return NormalType;
     }
 
-    qjson::JObject execute(opt::Option opt, bool& success);
+    qjson::JObject execute(qjson::JObject parameters, bool& success);
 };
 
 class AddFriendCommand : public JsonMessageCommand
@@ -74,8 +77,20 @@ public:
     AddFriendCommand() = default;
     ~AddFriendCommand() = default;
 
-    
-}
+    const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const
+    {
+        static std::initializer_list<std::pair<std::string, qjson::JValueType>> init_list{
+            {"user_id", qjson::JInt}};
+        return init_list;
+    }
+
+    int getCommandType() const
+    {
+        return NeedLoginType;
+    }
+
+    qjson::JObject execute(qjson::JObject parameters, bool& success);
+};
 
 } // namespace qls
 

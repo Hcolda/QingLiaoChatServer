@@ -15,7 +15,7 @@ namespace qjson
     /**
      * @brief Enumeration for JSON value types.
      */
-    enum class JValueType
+    enum JValueType
     {
         JNull,
         JInt,
