@@ -51,7 +51,7 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
     // Endianness conversion
     package->length = swapNetworkEndianness(package->length);
     package->requestID = swapNetworkEndianness(package->requestID);
-    package->type = swapNetworkEndianness(package->type);
+    package->type = static_cast<DataPackageType>(swapNetworkEndianness(static_cast<int>(package->type)));
     package->sequence = swapNetworkEndianness(package->sequence);
     package->verifyCode = swapNetworkEndianness(package->verifyCode);
 
@@ -74,7 +74,7 @@ std::string DataPackage::packageToString() noexcept
     // Endianness conversion
     this->length = swapNetworkEndianness(this->length);
     this->requestID = swapNetworkEndianness(this->requestID);
-    this->type = swapNetworkEndianness(this->type);
+    this->type = static_cast<DataPackageType>(swapNetworkEndianness(static_cast<int>(this->type)));
     this->sequence = swapNetworkEndianness(this->sequence);
     this->verifyCode = swapNetworkEndianness(this->verifyCode);
 

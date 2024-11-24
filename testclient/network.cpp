@@ -610,7 +610,7 @@ namespace qls
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
         auto pack = DataPackage::makePackage("heartbeat");
-        pack->type = 4;
+        pack->type = DataPackage::HeartBeat;
         auto wrapper = std::make_shared<StringWrapper>(pack->packageToString());
         asio::async_write(*(m_network_impl->socket_ptr), asio::buffer(wrapper->data),
             std::bind(&Network::handle_heart_beat_write, this, _1, wrapper));

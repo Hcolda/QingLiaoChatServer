@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <shared_mutex>
+#include <Json.h>
 
 #include "userid.hpp"
 #include "groupid.hpp"
@@ -101,6 +102,9 @@ public:
      * @param user_id ID of the user requesting to join the group.
      */
     void removeGroupRoomVerification(GroupID group_id, UserID user_id);
+
+private:
+    void sendToUser(qls::UserID user_id, const qjson::JObject& json);
 
 private:
     /**

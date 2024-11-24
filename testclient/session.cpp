@@ -42,7 +42,7 @@ bool Session::registerUser(std::string_view email, std::string_view password, Us
     auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
         makeJsonFunctionDataPackage("register", {{"email", email}, {"password", password}})),
         [](std::shared_ptr<qls::DataPackage>& package){
-            package->type = 1;
+            package->type = DataPackage::Text;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
     std::cout << returnJson["message"].getString() << '\n';
@@ -58,7 +58,7 @@ bool Session::loginUser(UserID user_id, std::string_view password)
         makeJsonFunctionDataPackage("login",
             {{"user_id", user_id.getOriginValue()}, {"password", password}, {"device", "PersonalComputer"}})),
         [](std::shared_ptr<qls::DataPackage>& package){
-            package->type = 1;
+            package->type = DataPackage::Text;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
     std::cout << returnJson["message"].getString() << '\n';
@@ -78,7 +78,7 @@ bool Session::createFriendApplication(UserID user_id)
     auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
         makeJsonFunctionDataPackage("add_friend", {{"user_id", user_id.getOriginValue()}})),
         [](std::shared_ptr<qls::DataPackage>& package){
-            package->type = 1;
+            package->type = DataPackage::Text;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
     std::cout << returnJson["message"].getString() << '\n';
@@ -92,7 +92,7 @@ bool Session::applyFriendApplication(UserID user_id)
     auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
         makeJsonFunctionDataPackage("accept_friend_verification", {{"user_id", user_id.getOriginValue()}})),
         [](std::shared_ptr<qls::DataPackage>& package){
-            package->type = 1;
+            package->type = DataPackage::Text;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
     std::cout << returnJson["message"].getString() << '\n';
@@ -106,7 +106,7 @@ bool Session::rejectFriendApplication(UserID user_id)
     auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
         makeJsonFunctionDataPackage("reject_friend_verification", {{"user_id", user_id.getOriginValue()}})),
         [](std::shared_ptr<qls::DataPackage>& package){
-            package->type = 1;
+            package->type = DataPackage::Text;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
     std::cout << returnJson["message"].getString() << '\n';
@@ -120,7 +120,7 @@ bool Session::createGroupApplication(GroupID group_id)
     auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
         makeJsonFunctionDataPackage("add_group", {{"group_id", group_id.getOriginValue()}})),
         [](std::shared_ptr<qls::DataPackage>& package){
-            package->type = 1;
+            package->type = DataPackage::Text;
         }).get();
     auto returnJson = readJsonFunctionDataPackage(returnPackage);
     std::cout << returnJson["message"].getString() << '\n';

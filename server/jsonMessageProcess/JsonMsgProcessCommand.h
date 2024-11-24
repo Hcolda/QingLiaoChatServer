@@ -18,10 +18,16 @@ public:
         NeedLoginType = 2 // Use it if the function need to login.
     };
 
+    struct JsonOption
+    {
+        std::string name;
+        qjson::JValueType jsonValueType;
+    };
+
     JsonMessageCommand() = default;
     virtual ~JsonMessageCommand() = default;
 
-    virtual const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const = 0;
+    virtual std::initializer_list<JsonOption> getOption() const = 0;
     virtual int getCommandType() const = 0;
     virtual qjson::JObject execute(qjson::JObject parameters, bool& success) = 0;
 };
@@ -32,13 +38,12 @@ public:
     LoginCommand() = default;
     ~LoginCommand() = default;
 
-    const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const
+    std::initializer_list<JsonOption> getOption() const
     {
-        static std::initializer_list<std::pair<std::string, qjson::JValueType>> init_list{
+        return {
             {"user_id", qjson::JInt},
             {"password", qjson::JString},
             {"device", qjson::JString}};
-        return init_list;
     }
 
     int getCommandType() const
@@ -55,12 +60,10 @@ public:
     RegisterCommand() = default;
     ~RegisterCommand() = default;
 
-    const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const
+    std::initializer_list<JsonOption> getOption() const
     {
-        static std::initializer_list<std::pair<std::string, qjson::JValueType>> init_list{
-            {"email", qjson::JString},
+        return {{"email", qjson::JString},
             {"password", qjson::JString}};
-        return init_list;
     }
 
     int getCommandType() const
@@ -77,11 +80,9 @@ public:
     AddFriendCommand() = default;
     ~AddFriendCommand() = default;
 
-    const std::initializer_list<std::pair<std::string, qjson::JValueType>>& getOption() const
+    std::initializer_list<JsonOption> getOption() const
     {
-        static std::initializer_list<std::pair<std::string, qjson::JValueType>> init_list{
-            {"user_id", qjson::JInt}};
-        return init_list;
+        return {{"user_id", qjson::JInt}};
     }
 
     int getCommandType() const

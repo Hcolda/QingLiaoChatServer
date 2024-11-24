@@ -10,6 +10,9 @@ namespace qls
 enum class qls_errc
 {
     OK = 0,
+    
+    // system error
+    null_pointer,
 
     // package error
     incomplete_package,

@@ -128,7 +128,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     datapack = std::shared_ptr<qls::DataPackage>(
                         qls::DataPackage::stringToPackage(
                             sds->package.read()));
-                    if (datapack->type == 4) continue;
+                    if (datapack->type == DataPackage::HeartBeat) continue;
                     if (datapack->getData() != "test")
                         throw std::system_error(qls_errc::connection_test_failed);
                 }
