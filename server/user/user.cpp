@@ -41,8 +41,8 @@ struct UserImpl
     std::unordered_set<GroupID>     m_user_group_map; ///< User's group list
     std::shared_mutex               m_user_group_map_mutex; ///< Mutex for thread-safe access to group list
 
-    std::multimap<GroupID,
-        Verification::UserVerification>  m_user_group_verification_map; ///< User's group verification map
+    std::multimap<GroupID, Verification::GroupVerification>
+                                    m_user_group_verification_map; ///< User's group verification map
     std::shared_mutex               m_user_group_verification_map_mutex; ///< Mutex for thread-safe access to group verification map
 
     std::unordered_map<std::shared_ptr<Socket>, DeviceType>
@@ -291,7 +291,7 @@ void User::addFriendVerification(UserID friend_user_id, const Verification::User
     m_impl->m_user_friend_verification_map.emplace(friend_user_id, u);
 }
 
-void User::addGroupVerification(GroupID group_id, const Verification::UserVerification& u)
+void User::addGroupVerification(GroupID group_id, const Verification::GroupVerification& u)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
     m_impl->m_user_group_verification_map.insert({ group_id, u });
@@ -341,7 +341,7 @@ void User::removeGroupVerification(GroupID group_id, UserID user_id)
     }
 }
 
-std::multimap<GroupID, Verification::UserVerification> User::getGroupVerificationList() const
+std::multimap<GroupID, Verification::GroupVerification> User::getGroupVerificationList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_verification_map_mutex);
     return m_impl->m_user_group_verification_map;

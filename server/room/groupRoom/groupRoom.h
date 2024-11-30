@@ -21,7 +21,7 @@ namespace qls
 
 struct GroupRoomImpl;
 
-class GroupRoom final : public TextDataRoom
+class GroupRoom final: public TextDataRoom
 {
 public:
     struct UserDataStructure

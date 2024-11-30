@@ -5,6 +5,7 @@
 #include <mutex>
 #include <system_error>
 
+#include "definition.hpp"
 #include "qls_error.h"
 
 namespace qls
@@ -40,7 +41,7 @@ PermissionType GroupPermission::getPermissionType(std::string_view permissionNam
     return itor->second;
 }
 
-std::unordered_map<std::string, PermissionType, GroupPermission::string_hash, std::equal_to<>>
+std::unordered_map<std::string, PermissionType, string_hash, std::equal_to<>>
     GroupPermission::getPermissionList() const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);

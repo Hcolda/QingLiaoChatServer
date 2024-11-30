@@ -2,6 +2,8 @@
 
 #include <format>
 #include <unordered_set>
+#include <vector>
+
 #include <logger.hpp>
 #include "manager.h"
 #include "regexMatch.hpp"
@@ -25,7 +27,28 @@ class JsonMessageProcessImpl
 {
 public:
     JsonMessageProcessImpl(UserID user_id) :
-        m_user_id(user_id) {}
+        m_user_id(user_id)
+    {
+        addCommand("register", std::make_shared<RegisterCommand>());
+        addCommand("has_user", std::make_shared<HasUserCommand>());
+        addCommand("search_user", std::make_shared<SearchUserCommand>());
+        addCommand("add_friend", std::make_shared<AddFriendCommand>());
+        addCommand("add_group", std::make_shared<AddGroupCommand>());
+        addCommand("get_friend_list", std::make_shared<GetFriendListCommand>());
+        addCommand("get_group_list", std::make_shared<GetGroupListCommand>());
+        addCommand("send_friend_message", std::make_shared<SendFriendMessageCommand>());
+        addCommand("send_group_message", std::make_shared<SendGroupMessageCommand>());
+        addCommand("accept_friend_verification", std::make_shared<AcceptFriendVerificationCommand>());
+        addCommand("get_friend_verification_list", std::make_shared<GetFriendVerificationListCommand>());
+        addCommand("accept_group_verification", std::make_shared<AcceptGroupVerificationCommand>());
+        addCommand("get_group_verification_list", std::make_shared<GetGroupVerificationListCommand>());
+        addCommand("reject_friend_verification", std::make_shared<RejectFriendVerificationCommand>());
+        addCommand("reject_group_verification", std::make_shared<RejectGroupVerificationCommand>());
+        addCommand("create_group", std::make_shared<CreateGroupCommand>());
+        addCommand("remove_group", std::make_shared<RemoveGroupCommand>());
+        addCommand("leave_group", std::make_shared<LeaveGroupCommand>());
+        addCommand("remove_friend", std::make_shared<RemoveFriendCommand>());
+    }
 
     static qjson::JObject getUserPublicInfo(UserID user_id);
 
@@ -34,38 +57,36 @@ public:
 
     UserID getLocalUserID() const;
 
+    bool addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand> command_ptr);
+    bool hasCommand(std::string_view function_name) const;
+    std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name) const;
+    const std::vector<JsonMessageCommand::JsonOption>& getCommandOptions(std::string_view function_name) const;
+    bool removeCommand(std::string_view function_name);
+
     qjson::JObject processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
     qjson::JObject login(UserID user_id, std::string_view password, std::string_view device, const SocketService& sf);
     qjson::JObject login(std::string_view email, std::string_view password, std::string_view device);
 
-    qjson::JObject registerUser(std::string_view email, std::string_view password);
-
-    qjson::JObject addFriend(UserID friend_id);
-    qjson::JObject acceptFriendVerification(UserID user_id);
-    qjson::JObject rejectFriendVerification(UserID user_id);
-    qjson::JObject getFriendList();
-    qjson::JObject getFriendVerificationList();
-    qjson::JObject removeFriend(UserID user_id);
-
-    qjson::JObject addGroup(GroupID group_id);
-    qjson::JObject acceptGroupVerification(GroupID group_id, UserID user_id);
-    qjson::JObject rejectGroupVerification(GroupID group_id, UserID user_id);
-    qjson::JObject getGroupList();
-    qjson::JObject getGroupVerificationList();
-    qjson::JObject createGroup();
-    qjson::JObject removeGroup(GroupID group_id);
-    qjson::JObject leaveGroup(GroupID group_id);
-
-    qjson::JObject sendFriendMessage(UserID friend_id, std::string_view msg);
-    qjson::JObject sendGroupMessage(GroupID group_id, std::string_view msg);
-
 private:
+    UserID                      m_user_id;
+    mutable std::shared_mutex   m_user_id_mutex;
 
-    UserID m_user_id;
-    mutable std::shared_mutex m_user_id_mutex;
+    struct JsonMessageCommandInfomation
+    {
+        std::shared_ptr<JsonMessageCommand> command_ptr;
+        std::vector<JsonMessageCommand::JsonOption> json_options;
+    };
 
-    static const std::multimap<std::string, long long> m_function_map;
+    std::unordered_map<std::string, JsonMessageCommandInfomation, string_hash, std::equal_to<>>
+                                m_function_map;
+    mutable std::shared_mutex   m_function_map_mutex;
+    std::unordered_set<std::string, string_hash, std::equal_to<>>
+                                m_normal_function_set;
+    mutable std::shared_mutex   m_normal_function_set_mutex;
+    std::unordered_set<std::string, string_hash, std::equal_to<>>
+                                m_login_function_set;
+    mutable std::shared_mutex   m_login_function_set_mutex;
 };
 
 JsonMessageProcess::JsonMessageProcess(UserID user_id) :
@@ -96,82 +117,116 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
     return this->m_user_id;
 }
 
+bool JsonMessageProcessImpl::addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand> command_ptr)
+{
+    if (hasCommand(function_name) || !command_ptr)
+        return false;
+    
+    std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex, std::defer_lock),
+                                        unique_lock2(m_normal_function_set_mutex, std::defer_lock),
+                                        unique_lock3(m_login_function_set_mutex, std::defer_lock);
+    std::lock(unique_lock1, unique_lock2, unique_lock3);
+
+    m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
+    int function_type = command_ptr->getCommandType();
+    if (function_type | JsonMessageCommand::NormalType)
+        m_normal_function_set.emplace(function_name);
+    else if (function_type | JsonMessageCommand::LoginType)
+        m_normal_function_set.emplace(function_name);
+    return true;
+}
+
+bool JsonMessageProcessImpl::hasCommand(std::string_view function_name) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    return m_function_map.find(function_name) != m_function_map.cend();
+}
+
+std::shared_ptr<JsonMessageCommand> JsonMessageProcessImpl::getCommand(std::string_view function_name) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    auto iter = m_function_map.find(function_name);
+    if (iter == m_function_map.cend())
+        throw std::system_error(make_error_code(qls_errc::null_pointer));
+    return iter->second.command_ptr;
+}
+
+const std::vector<JsonMessageCommand::JsonOption> &JsonMessageProcessImpl::getCommandOptions(std::string_view function_name) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    auto iter = m_function_map.find(function_name);
+    if (iter == m_function_map.cend())
+        throw std::system_error(make_error_code(qls_errc::null_pointer));
+    return iter->second.json_options;
+}
+
+bool JsonMessageProcessImpl::removeCommand(std::string_view function_name)
+{
+    if (!hasCommand(function_name))
+        return false;
+
+    std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex, std::defer_lock),
+                                        unique_lock2(m_normal_function_set_mutex, std::defer_lock),
+                                        unique_lock3(m_login_function_set_mutex, std::defer_lock);
+    std::lock(unique_lock1, unique_lock2, unique_lock3);
+
+    auto [_, info] = *(m_function_map.find(function_name));
+    m_function_map.erase(function_name);
+    int function_type = info.command_ptr->getCommandType();
+    if (function_type | JsonMessageCommand::NormalType)
+        m_normal_function_set.erase(function_name);
+    else if (function_type | JsonMessageCommand::LoginType)
+        m_normal_function_set.erase(function_name);
+
+    return true;
+}
+
 qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
     try {
+        if (json["function"].getType() != qjson::JString)
+            return makeErrorMessage("\"function\" must be string type!");
+        if (json["parameters"].getType() != qjson::JDict)
+            return makeErrorMessage("\"parameters\" must be dictory type!");
         std::string function_name = json["function"].getString();
-        const qjson::JObject& param = json["parameters"];
+        qjson::JObject param = json["parameters"];
 
+        // check if user has logined
         {
-            std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
+            std::shared_lock<std::shared_mutex> shared_lock1(m_user_id_mutex, std::defer_lock),
+                shared_lock2(m_normal_function_set_mutex, std::defer_lock);
+            std::lock(shared_lock1, shared_lock2);
             // Check if userid == -1
             if (m_user_id == UserID(-1) &&
                 function_name != "login" &&
-                function_name != "register") {
+                m_normal_function_set.find(function_name) == m_normal_function_set.cend()) {
                 return makeErrorMessage("You haven't logged in!");
             }
         }
-        
-        auto itor = m_function_map.find(function_name);
-        if (itor == m_function_map.cend())
-            return makeErrorMessage("There isn't a function that matches the name!");
 
-        switch (m_function_map.find(function_name)->second)
-        {
-        case 0:
-            // login
+        if (function_name == "login")
             return login(UserID(param["user_id"].getInt()), param["password"].getString(), param["device"].getString(), sf);
-        case 1:
-            // register
-            return registerUser(param["email"].getString(), param["password"].getString());
-        case 2:
-            // has user
-            return hasUser(UserID(param["user_id"].getInt()));
-        case 3:
-            // search friend
-            return searchUser(param["user_name"].getString());
-        case 4:
-            // add friend
-            return addFriend(UserID(param["user_id"].getInt()));
-        case 5:
-            // add group
-            return addGroup(GroupID(param["group_id"].getInt()));
-        case 6:
-            // get friend list
-            return getFriendList();
-        case 7:
-            // get group list
-            return getGroupList();
-        case 8:
-            // send friend message
-            return sendFriendMessage(UserID(param["user_id"].getInt()), param["message"].getString());
-        case 9:
-            // send group message
-            return sendGroupMessage(GroupID(param["group_id"].getInt()), param["message"].getString());
-        case 10:
-            // accept friend verification
-            return acceptFriendVerification(UserID(param["user_id"].getInt()));
-        case 11:
-            // get friend verification list
-            return getFriendVerificationList();
-        case 12:
-            // accept group verification
-            return acceptGroupVerification(GroupID(param["group_id"].getInt()), UserID(param["user_id"].getInt()));
-        case 13:
-            // get group verification list
-            return getGroupVerificationList();
-        case 14:
-            // reject friend verification
-            return rejectFriendVerification(UserID(param["user_id"].getInt()));
-        case 15:
-            // reject group verification
-            return rejectGroupVerification(GroupID(param["group_id"].getInt()), UserID(param["user_id"].getInt()));
-        default:
-            return makeErrorMessage("There isn't a function that matches your request.");
+        
+        std::shared_lock<std::shared_mutex> m_function_map_lock(m_function_map_mutex, std::defer_lock),
+            id_lock(m_user_id_mutex, std::defer_lock);
+        std::lock(m_function_map_mutex, id_lock);
+        auto iter = m_function_map.find(function_name);
+        if (iter == m_function_map.cend())
+            return makeErrorMessage("There isn't a function that matches the name!");
+        
+        const qjson::dict_t& param_dict = param.getDict();
+        for (const auto& [name, type]: std::as_const(iter->second.json_options)) {
+            auto local_iter = param_dict.find(name);
+            if (local_iter == param_dict.cend())
+                return makeErrorMessage(std::format("Lost a parameter: {}.", name));
+            if (local_iter->second.getType() != type)
+                return makeErrorMessage(std::format("Wrong parameter type: {}.", name));
         }
+
+        return iter->second.command_ptr->execute(m_user_id, std::move(param));
     }
-    catch (const std::exception& e) {
-        return makeErrorMessage(e.what());
+    catch (...) {
+        return makeErrorMessage("Unknown error occured!");
     }
 }
 
@@ -211,241 +266,8 @@ qjson::JObject JsonMessageProcessImpl::login(std::string_view email, std::string
         return makeErrorMessage("Email is invalid");
 
     // Not completed
-    return qjson::JObject();
+    return makeErrorMessage("This function is incomplete.");
 }
-
-qjson::JObject JsonMessageProcessImpl::registerUser(std::string_view email, std::string_view password)
-{
-    if (!qls::RegexMatch::emailMatch(email))
-        return makeErrorMessage("Email is invalid");
-
-    auto ptr = serverManager.addNewUser();
-    ptr->firstUpdateUserPassword(password);
-    ptr->updateUserEmail(email);
-
-    qjson::JObject returnJson = makeSuccessMessage("Successfully created a new user!");
-    UserID id = ptr->getUserID();
-    returnJson["user_id"] = id.getOriginValue();
-
-    serverLogger.debug("Registered new user: ", id.getOriginValue());
-
-    return returnJson;
-}
-
-qjson::JObject JsonMessageProcessImpl::addFriend(UserID friend_id)
-{
-    if (!serverManager.hasUser(friend_id))
-        return makeErrorMessage("UserID is invalid!");
-
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    if (serverManager.getUser(this->m_user_id)->addFriend(friend_id))
-    {
-        serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a friend request to user ", friend_id.getOriginValue());
-        return makeSuccessMessage("Successfully sent application!");
-    }
-    else return makeErrorMessage("Can't send application");
-}
-
-qjson::JObject JsonMessageProcessImpl::acceptFriendVerification(UserID user_id)
-{
-    if (!serverManager.hasUser(user_id))
-        return makeErrorMessage("UserID is invalid!");
-
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    if (serverManager.getServerVerificationManager().setFriendVerified(this->m_user_id, user_id, this->m_user_id))
-        serverLogger.debug("User ", this->m_user_id.getOriginValue(), " apply user \"", user_id.getOriginValue(), "\"'s friend request");
-    return makeSuccessMessage("Successfully added a friend!");
-}
-
-qjson::JObject JsonMessageProcessImpl::rejectFriendVerification(UserID user_id)
-{
-    if (!serverManager.hasUser(user_id))
-        return makeErrorMessage("UserID is invalid!");
-
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    serverManager.getServerVerificationManager().removeFriendRoomVerification(this->m_user_id, user_id);
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " reject user \"", user_id.getOriginValue(), "\"'s friend request");
-    return makeSuccessMessage("Successfully rejected a friend verification!");
-}
-
-qjson::JObject JsonMessageProcessImpl::getFriendList()
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    auto set = std::move(serverManager.getUser(this->m_user_id)->getFriendList());
-    qjson::JObject returnJson = makeSuccessMessage("Successfully obtained friend list!");
-
-    for (auto i : set) {
-        returnJson["friend_list"].push_back(i.getOriginValue());
-    }
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " get a friend list");
-
-    return returnJson;
-}
-
-qjson::JObject JsonMessageProcessImpl::getFriendVerificationList()
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    auto map = serverManager.getUser(this->m_user_id)->getFriendVerificationList();
-    qjson::JObject localVector;
-    for (const auto& [user_id, user_struct] : map) {
-        qjson::JObject localJson;
-        localJson["user_id"] = user_id.getOriginValue();
-        localJson["verification_type"] = (int)user_struct.verification_type;
-        localJson["message"] = user_struct.message;
-
-        localVector.push_back(std::move(localJson));
-    }
-
-    auto returnJson = makeSuccessMessage("Successfully obtained verification list!");
-    returnJson["result"] = localVector;
-
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " get a friend verification list");
-
-    return returnJson;
-}
-
-qjson::JObject JsonMessageProcessImpl::removeFriend(UserID user_id)
-{
-    if (!serverManager.hasUser(user_id))
-        return makeErrorMessage("UserID is invalid!");
-
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    return qjson::JObject();
-}
-
-qjson::JObject JsonMessageProcessImpl::addGroup(GroupID group_id)
-{
-    if (!serverManager.hasGroupRoom(group_id))
-        return makeErrorMessage("GroupID is invalid!");
-        
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    if (serverManager.getUser(this->m_user_id)->addGroup(group_id))
-    {
-        serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a group request to group ", group_id.getOriginValue());
-        return makeSuccessMessage("Successfully sent application!");
-    }
-    else return makeErrorMessage("Can't send application");
-}
-
-qjson::JObject JsonMessageProcessImpl::acceptGroupVerification(GroupID group_id, UserID user_id)
-{
-    if (serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id))
-        serverLogger.debug("User ", this->m_user_id.getOriginValue(), " accept user \"", user_id.getOriginValue(), "\"'s group request");
-    return makeSuccessMessage("Successfully added a group!");
-}
-
-qjson::JObject JsonMessageProcessImpl::rejectGroupVerification(GroupID group_id, UserID user_id)
-{
-    serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " reject user \"", user_id.getOriginValue(), "\"'s group request");
-    return makeSuccessMessage("Successfully reject a group verfication!");
-}
-
-qjson::JObject JsonMessageProcessImpl::getGroupList()
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    auto set = std::move(serverManager.getUser(this->m_user_id)->getGroupList());
-    qjson::JObject returnJson = makeSuccessMessage("Successfully obtained group list!");
-
-    for (auto i : set) {
-        returnJson["friend_list"].push_back(i.getOriginValue());
-    }
-
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " get a group list");
-
-    return returnJson;
-}
-
-qjson::JObject JsonMessageProcessImpl::getGroupVerificationList()
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    auto map = std::move(serverManager.getUser(this->m_user_id)->getGroupVerificationList());
-    auto returnJson = makeSuccessMessage("Successfully obtained verification list!");
-    for (const auto& [group_id, user_struct] : map) {
-        auto group = std::to_string(group_id.getOriginValue());
-        returnJson["result"][group.c_str()]["user_id"] = user_struct.user_id.getOriginValue();
-        returnJson["result"][group.c_str()]["verification_type"] = (int)user_struct.verification_type;
-        returnJson["result"][group.c_str()]["message"] = user_struct.message;
-    }
-
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " get a group verification list");
-
-    return returnJson;
-}
-
-qjson::JObject JsonMessageProcessImpl::createGroup()
-{
-    return qjson::JObject();
-}
-
-qjson::JObject JsonMessageProcessImpl::removeGroup(GroupID group_id)
-{
-    return qjson::JObject();
-}
-
-qjson::JObject JsonMessageProcessImpl::leaveGroup(GroupID group_id)
-{
-    return qjson::JObject();
-}
-
-qjson::JObject JsonMessageProcessImpl::sendFriendMessage(UserID friend_id, std::string_view msg)
-{
-    if (!serverManager.hasUser(friend_id))
-        return makeErrorMessage("UserID is invalid!");
-
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    if (!serverManager.getUser(this->m_user_id)->userHasFriend(friend_id))
-        return makeErrorMessage("You don't have this friend!");
-
-    // sending a message
-    serverManager.getPrivateRoom(
-            serverManager.getPrivateRoomId(
-                this->m_user_id, friend_id))->sendMessage(msg, this->m_user_id);
-
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a message to user ", friend_id.getOriginValue());
-
-    return makeSuccessMessage("Successfully sent a message!");
-}
-
-qjson::JObject JsonMessageProcessImpl::sendGroupMessage(GroupID group_id, std::string_view msg)
-{
-    if (!serverManager.hasGroupRoom(group_id))
-        return makeErrorMessage("GroupID is invalid!");
-        
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
-    if (!serverManager.getUser(this->m_user_id)->userHasGroup(group_id))
-        return makeErrorMessage("You don't have this group!");
-
-    serverManager.getGroupRoom(group_id)->sendMessage(this->m_user_id, msg);
-    serverLogger.debug("User ", this->m_user_id.getOriginValue(), " sent a message to group ", group_id.getOriginValue());
-
-    return makeSuccessMessage("Successfully sent a message!");
-}
-
-const std::multimap<std::string, long long> JsonMessageProcessImpl::m_function_map(
-    {
-        {"login", 0},
-        {"register", 1},
-        {"has_user", 2},
-        {"search_user", 3},
-        {"add_friend", 4},
-        {"add_group", 5},
-        {"get_friend_list", 6},
-        {"get_group_list", 7},
-        {"send_friend_message", 8},
-        {"send_group_message", 9},
-        {"accept_friend_verification", 10},
-        {"get_friend_verification_list", 11},
-        {"accept_group_verification", 12},
-        {"get_group_verification_list", 13},
-        {"reject_friend_verification", 14},
-        {"reject_group_verification", 15},
-        {"create_group", 16},
-        {"remove_group", 17},
-        {"leave_group", 18},
-        {"remove_friend", 19}
-    }
-);
 
 // -----------------------------------------------------------------------------------------------
 // json process
@@ -453,12 +275,12 @@ const std::multimap<std::string, long long> JsonMessageProcessImpl::m_function_m
 
 UserID JsonMessageProcess::getLocalUserID() const
 {
-    return this->m_process->getLocalUserID();
+    return m_process->getLocalUserID();
 }
 
 asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
-    co_return this->m_process->processJsonMessage(json, sf);
+    co_return m_process->processJsonMessage(json, sf);
 }
 
 } // namespace qls

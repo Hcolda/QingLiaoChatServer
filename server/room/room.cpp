@@ -62,8 +62,7 @@ void BaseRoom::sendData(std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userMap_mutex);
 
-    for (auto& [user_id, user_ptr]: m_impl->m_userMap)
-    {
+    for (auto& [user_id, user_ptr]: m_impl->m_userMap) {
         user_ptr->notifyAll(data);
     }
 }
@@ -71,7 +70,6 @@ void BaseRoom::sendData(std::string_view data)
 void BaseRoom::sendData(std::string_view data, UserID user_id)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userMap_mutex);
-
     m_impl->m_userMap.find(user_id)->second->notifyAll(data);
 }
 

@@ -208,11 +208,11 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
 
     // 用户发送请求
     {
-        qls::Verification::UserVerification uv;
+        qls::Verification::GroupVerification uv;
 
-        uv.user_id = group_id;
-        uv.verification_type =
-            qls::Verification::Sent;
+        uv.group_id = group_id;
+        uv.user_id = user_id;
+        uv.verification_type = qls::Verification::Sent;
 
         auto ptr = serverManager.getUser(user_id);
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -220,11 +220,11 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
 
     // 群聊拥有者接收请求
     {
-        qls::Verification::UserVerification uv;
+        qls::Verification::GroupVerification uv;
 
+        uv.group_id = group_id;
         uv.user_id = user_id;
-        uv.verification_type =
-            qls::Verification::Received;
+        uv.verification_type = qls::Verification::Received;
 
         auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
         ptr->addGroupVerification(group_id, std::move(uv));

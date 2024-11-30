@@ -110,7 +110,6 @@ int init()
                     | asio::ssl::context::no_tlsv1
                     | asio::ssl::context::no_tlsv1_1
                     | asio::ssl::context::no_tlsv1_2
-                    | asio::ssl::context::single_dh_use
                 );
 
                 // Configure SSL context

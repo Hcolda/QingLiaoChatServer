@@ -22,6 +22,12 @@ namespace qls
 
 struct Verification
 {
+    /**
+     * @brief 验证类型:
+     * @brief {Unknown:  无状态}
+     * @brief {Sent:     发出的申请}
+     * @brief {Received: 接收的申请}
+     */
     enum VerificationType
     {
         Unknown = 0,
@@ -32,12 +38,6 @@ struct Verification
     struct UserVerification
     {
         UserID user_id = UserID(0ll);
-        /*
-        * @brief 验证类型:
-        * @brief {Unknown:  无状态}
-        * @brief {Sent:     发出的申请}
-        * @brief {Received: 接收的申请}
-        */
         VerificationType verification_type = Unknown;
         std::string message;
     };
@@ -46,12 +46,6 @@ struct Verification
     {
         UserID user_id = UserID(0ll);
         GroupID group_id = GroupID(0ll);
-        /*
-        * @brief 验证类型:
-        * @brief {Unknown:  无状态}
-        * @brief {Sent:     发出的申请}
-        * @brief {Received: 接收的申请}
-        */
         VerificationType verification_type = Unknown;
         std::string message;
     };
@@ -61,6 +55,7 @@ class JsonMessageProcess;
 class JsonMessageProcessImpl;
 class Manager;
 class VerificationManager;
+class RegisterCommand;
 struct UserImpl;
 
 /**
@@ -125,7 +120,7 @@ public:
      * @return multimap containing group verification entries.
      */
     std::multimap<GroupID,
-        Verification::UserVerification> getGroupVerificationList() const;
+        Verification::GroupVerification> getGroupVerificationList() const;
 
     /**
      * @brief Checks if the user has a specific socket.
@@ -159,6 +154,7 @@ protected:
     friend class JsonMessageProcessImpl;
     friend class Manager;
     friend class VerificationManager;
+    friend class RegisterCommand;
 
     // Methods to update user information
 
@@ -194,7 +190,7 @@ protected:
      * @param group_id The ID of the group.
      * @param u Verification::UserVerification to add.
      */
-    void addGroupVerification(GroupID group_id, const Verification::UserVerification& u);
+    void addGroupVerification(GroupID group_id, const Verification::GroupVerification& u);
 
     /**
      * @brief Removes a group verification entry.
