@@ -33,16 +33,8 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
         throw std::system_error(make_error_code(qls_errc::user_not_existed), "the id of user2 is invalid");
 
     // check if they are friends
-    {
-        bool error = false;
-        try {
-            serverManager.getPrivateRoomId(user_id_1, user_id_2);
-            error = true;
-        }
-        catch (...) {}
-        if (error)
-            throw std::system_error(make_error_code(qls_errc::private_room_existed));
-    }
+    if (serverManager.hasPrivateRoom(user_id_1, user_id_2))
+        throw std::system_error(make_error_code(qls_errc::private_room_existed));
 
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
@@ -82,6 +74,7 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
         qjson::JObject json(qjson::JValueType::JDict);
         json["userid"] = user_id_1.getOriginValue();
         json["type"] = "added_friend_verfication";
+        json["message"] = "";
         sendToUser(user_id_2, json);
     }
 }
@@ -226,8 +219,16 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
         uv.user_id = user_id;
         uv.verification_type = qls::Verification::Received;
 
-        auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
+        UserID adminID = serverManager.getGroupRoom(group_id)->getAdministrator();
+        auto ptr = serverManager.getUser(adminID);
         ptr->addGroupVerification(group_id, std::move(uv));
+
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["groupid"] = group_id.getOriginValue();
+        json["userid"] = user_id.getOriginValue();
+        json["type"] = "added_group_verification";
+        json["message"] = "";
+        sendToUser(adminID, json);
     }
 }
 
@@ -264,8 +265,11 @@ bool VerificationManager::setGroupRoomGroupVerified(GroupID group_id, UserID use
             set.insert(group_id);
         });
 
-        // 未完成 通知另一方
-        // m_globalRoom->baseSendData()
+        // notify the other successfully adding a group
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["groupid"] = group_id.getOriginValue();
+        json["type"] = "added_group";
+        sendToUser(user_id, json);
     }
     return result;
 }
@@ -315,9 +319,27 @@ void VerificationManager::removeGroupRoomVerification(GroupID group_id, UserID u
 
         m_GroupVerification_map.erase(itor);
     }
-    serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator())
+    UserID adminID = serverManager.getGroupRoom(group_id)->getAdministrator();
+    serverManager.getUser(adminID)
         ->removeGroupVerification(group_id, user_id);
     serverManager.getUser(user_id)->removeGroupVerification(group_id, user_id);
+
+    {
+        // user
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["groupid"] = group_id.getOriginValue();
+        json["type"] = "rejected_to_add_group";
+        sendToUser(user_id, json);
+    }
+    {
+        // group admin
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["groupid"] = group_id.getOriginValue();
+        json["userid"] = user_id.getOriginValue();
+        json["type"] = "rejected_to_add_member_to_group";
+        json["message"] = "";
+        sendToUser(adminID, json);
+    }
 }
 
 void VerificationManager::sendToUser(qls::UserID user_id, const qjson::JObject& json)

@@ -122,6 +122,18 @@ bool Manager::hasPrivateRoom(GroupID private_room_id) const
         private_room_id) != m_impl->m_basePrivateRoom_map.cend();
 }
 
+bool Manager::hasPrivateRoom(UserID user1_id, UserID user2_id) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_userID_to_privateRoomID_map_mutex);
+    if (m_impl->m_userID_to_privateRoomID_map.find(
+        { user1_id , user2_id }) != m_impl->m_userID_to_privateRoomID_map.cend())
+        return true;
+    else if (m_impl->m_userID_to_privateRoomID_map.find(
+        { user2_id , user1_id }) != m_impl->m_userID_to_privateRoomID_map.cend())
+        return true;
+    else return false;
+}
+
 std::shared_ptr<PrivateRoom> Manager::getPrivateRoom(GroupID private_room_id) const
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_basePrivateRoom_map_mutex);
@@ -146,9 +158,7 @@ void Manager::removePrivateRoom(GroupID private_room_id)
         * 这里有申请sql 删除私聊房间等命令
         */
     }
-    auto [origin_user1_id, origin_user2_id] = itor->second->getUserID();
-    UserID user1_id(origin_user1_id);
-    UserID user2_id(origin_user2_id);
+    auto [user1_id, user2_id] = itor->second->getUserID();
 
     if (m_impl->m_userID_to_privateRoomID_map.find(
         { user1_id , user2_id }) != m_impl->m_userID_to_privateRoomID_map.cend())

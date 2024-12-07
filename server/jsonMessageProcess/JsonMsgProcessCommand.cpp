@@ -146,7 +146,7 @@ qjson::JObject AddGroupCommand::execute(UserID executor, qjson::JObject paramete
         serverLogger.debug("User ", executor.getOriginValue(), " sent a group request to group ", group_id.getOriginValue());
         return makeSuccessMessage("Successfully sent application!");
     }
-    else return makeErrorMessage("Can't send application");
+    else return makeErrorMessage("Could not send a group application!");
 }
 
 qjson::JObject AcceptGroupVerificationCommand::execute(UserID executor, qjson::JObject parameters)
@@ -156,7 +156,7 @@ qjson::JObject AcceptGroupVerificationCommand::execute(UserID executor, qjson::J
 
     if (serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id))
         serverLogger.debug("User ", executor.getOriginValue(), " accept user \"", user_id.getOriginValue(), "\"'s group request");
-    return makeSuccessMessage("Successfully added a group!");
+    return makeSuccessMessage("Successfully accepted a group application!");
 }
 
 qjson::JObject RejectGroupVerificationCommand::execute(UserID executor, qjson::JObject parameters)
