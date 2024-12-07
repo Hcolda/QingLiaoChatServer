@@ -253,33 +253,33 @@ INIObject INIParser::parse(std::string_view data)
         {
             i++;
             if (!skipSpace(i, data, error_line))
-                throw std::logic_error(get_logic_error_string(error_line));
+                throw std::logic_error(getLogicErrorString(error_line));
 
             localSection = getString(i, data, error_line);
 
             if (!skipSpace(i, data, error_line))
-                throw std::logic_error(get_logic_error_string(error_line));
+                throw std::logic_error(getLogicErrorString(error_line));
 
             if (*i == ']')
                 i++;
             else
-                throw std::logic_error(get_logic_error_string(error_line));
+                throw std::logic_error(getLogicErrorString(error_line));
         }
         else if (*i == '=')
         {
-            throw std::logic_error(get_logic_error_string(error_line));
+            throw std::logic_error(getLogicErrorString(error_line));
         }
         else
         {
             if (localSection.empty())
-                throw std::logic_error(get_logic_error_string(error_line));
+                throw std::logic_error(getLogicErrorString(error_line));
 
             std::string localKey = getString(i, data, error_line);
 
             if (*i == '=')
                 i++;
             else
-                throw std::logic_error(get_logic_error_string(error_line));
+                throw std::logic_error(getLogicErrorString(error_line));
 
             localObject.m_sections[localSection][localKey] = getString(i, data, error_line);
         }
@@ -336,9 +336,9 @@ std::string INIParser::getString(std::string_view::iterator& i, std::string_view
     return localString;
 }
 
-std::string qini::INIParser::get_logic_error_string(long long error_line)
+std::string qini::INIParser::getLogicErrorString(long long error_line)
 {
-    return std::format("Invalid Input, in line {}", error_line);
+    return "Invalid Input, in line " + std::to_string(error_line);
 }
 
 std::string INIWriter::write(const INIObject& ob)
@@ -346,10 +346,10 @@ std::string INIWriter::write(const INIObject& ob)
     std::string localString;
     for (const auto& [section, keys] : ob.m_sections)
     {
-        localString += std::format("[{}]\n", section);
+        localString += "[" + section + "]";
         for (const auto& [key, value] : keys)
         {
-            localString += std::format("{}={}\n", key, value);
+            localString += key + "=" + value;
         }
     }
     return localString;
@@ -363,10 +363,10 @@ bool INIWriter::write(const INIObject& ob, std::ofstream& file)
     file.clear();
     for (const auto& [section, keys] : ob.m_sections)
     {
-        file << std::format("[{}]\n", section);
+        file << "[" + section + "]";
         for (const auto& [key, value] : keys)
         {
-            file << std::format("{}={}\n", key, value);
+            file << key + "=" + value;
         }
     }
     file << std::endl;

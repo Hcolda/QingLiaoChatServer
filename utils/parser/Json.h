@@ -8,7 +8,7 @@
 #include <string_view>
 #include <fstream>
 #include <sstream>
-#include <format>
+#include <memory>
 
 namespace qjson
 {
@@ -35,6 +35,7 @@ namespace qjson
     using string_t = std::string;
     using list_t = std::vector<JObject>;
     using dict_t = std::unordered_map<std::string, JObject>;
+    using value_t = std::variant<int_t, bool_t, double_t, string_t, list_t, dict_t>;
 
     /**
      * @brief Class representing a JSON object.
@@ -92,12 +93,9 @@ namespace qjson
         const std::string& getString() const;
         std::string& getString();
 
-    public:
-        using value_t = std::variant<int_t, bool_t, double_t, string_t, list_t, dict_t>;
-
     private:
-        mutable value_t* m_value; ///< The value of the JSON object.
-        mutable JValueType m_type; ///< The type of the JSON value.
+        std::unique_ptr<value_t> m_value; ///< The value of the JSON object.
+        JValueType m_type; ///< The type of the JSON value.
     };
 
     /**
@@ -136,7 +134,7 @@ namespace qjson
         JObject getNumber(std::string_view data, size_t& itor, long long error_line);
         JObject getBool(std::string_view data, size_t& itor, long long error_line);
         JObject getNull(std::string_view data, size_t& itor, long long error_line);
-        std::string get_logic_error_string(long long error_line);
+        std::string getLogicErrorString(long long error_line);
     };
 
     /**
