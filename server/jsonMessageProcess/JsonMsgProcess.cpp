@@ -29,25 +29,42 @@ public:
     JsonMessageProcessImpl(UserID user_id) :
         m_user_id(user_id)
     {
-        addCommand("register", std::make_shared<RegisterCommand>());
-        addCommand("has_user", std::make_shared<HasUserCommand>());
-        addCommand("search_user", std::make_shared<SearchUserCommand>());
-        addCommand("add_friend", std::make_shared<AddFriendCommand>());
-        addCommand("add_group", std::make_shared<AddGroupCommand>());
-        addCommand("get_friend_list", std::make_shared<GetFriendListCommand>());
-        addCommand("get_group_list", std::make_shared<GetGroupListCommand>());
-        addCommand("send_friend_message", std::make_shared<SendFriendMessageCommand>());
-        addCommand("send_group_message", std::make_shared<SendGroupMessageCommand>());
-        addCommand("accept_friend_verification", std::make_shared<AcceptFriendVerificationCommand>());
-        addCommand("get_friend_verification_list", std::make_shared<GetFriendVerificationListCommand>());
-        addCommand("accept_group_verification", std::make_shared<AcceptGroupVerificationCommand>());
-        addCommand("get_group_verification_list", std::make_shared<GetGroupVerificationListCommand>());
-        addCommand("reject_friend_verification", std::make_shared<RejectFriendVerificationCommand>());
-        addCommand("reject_group_verification", std::make_shared<RejectGroupVerificationCommand>());
-        addCommand("create_group", std::make_shared<CreateGroupCommand>());
-        addCommand("remove_group", std::make_shared<RemoveGroupCommand>());
-        addCommand("leave_group", std::make_shared<LeaveGroupCommand>());
-        addCommand("remove_friend", std::make_shared<RemoveFriendCommand>());
+        auto init_command = [&](std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr) -> bool {
+            if (m_function_map.find(function_name) != m_function_map.cend() || !command_ptr)
+                return false;
+
+            m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
+            int function_type = command_ptr->getCommandType();
+            if (function_type & JsonMessageCommand::NormalType)
+                m_normal_function_set.emplace(function_name);
+            else if (function_type & JsonMessageCommand::LoginType)
+                m_normal_function_set.emplace(function_name);
+            return true;
+        };
+
+        try {
+            init_command("register", std::make_shared<RegisterCommand>());
+            init_command("has_user", std::make_shared<HasUserCommand>());
+            init_command("search_user", std::make_shared<SearchUserCommand>());
+            init_command("add_friend", std::make_shared<AddFriendCommand>());
+            init_command("add_group", std::make_shared<AddGroupCommand>());
+            init_command("get_friend_list", std::make_shared<GetFriendListCommand>());
+            init_command("get_group_list", std::make_shared<GetGroupListCommand>());
+            init_command("send_friend_message", std::make_shared<SendFriendMessageCommand>());
+            init_command("send_group_message", std::make_shared<SendGroupMessageCommand>());
+            init_command("accept_friend_verification", std::make_shared<AcceptFriendVerificationCommand>());
+            init_command("get_friend_verification_list", std::make_shared<GetFriendVerificationListCommand>());
+            init_command("accept_group_verification", std::make_shared<AcceptGroupVerificationCommand>());
+            init_command("get_group_verification_list", std::make_shared<GetGroupVerificationListCommand>());
+            init_command("reject_friend_verification", std::make_shared<RejectFriendVerificationCommand>());
+            init_command("reject_group_verification", std::make_shared<RejectGroupVerificationCommand>());
+            init_command("create_group", std::make_shared<CreateGroupCommand>());
+            init_command("remove_group", std::make_shared<RemoveGroupCommand>());
+            init_command("leave_group", std::make_shared<LeaveGroupCommand>());
+            init_command("remove_friend", std::make_shared<RemoveFriendCommand>());
+        } catch(const std::exception& e) {
+            serverLogger.critical(std::string(e.what()), ", m_function_map size: ", m_function_map.size());
+        }
     }
 
     static qjson::JObject getUserPublicInfo(UserID user_id);
@@ -57,7 +74,7 @@ public:
 
     UserID getLocalUserID() const;
 
-    bool addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand> command_ptr);
+    bool addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr);
     bool hasCommand(std::string_view function_name) const;
     std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name) const;
     const std::vector<JsonMessageCommand::JsonOption>& getCommandOptions(std::string_view function_name) const;
@@ -117,7 +134,7 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
     return this->m_user_id;
 }
 
-bool JsonMessageProcessImpl::addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand> command_ptr)
+bool JsonMessageProcessImpl::addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr)
 {
     if (hasCommand(function_name) || !command_ptr)
         return false;
@@ -132,7 +149,7 @@ bool JsonMessageProcessImpl::addCommand(std::string_view function_name, const st
     if (function_type | JsonMessageCommand::NormalType)
         m_normal_function_set.emplace(function_name);
     else if (function_type | JsonMessageCommand::LoginType)
-        m_normal_function_set.emplace(function_name);
+        m_login_function_set.emplace(function_name);
     return true;
 }
 
@@ -173,9 +190,9 @@ bool JsonMessageProcessImpl::removeCommand(std::string_view function_name)
     auto [_, info] = *(m_function_map.find(function_name));
     m_function_map.erase(function_name);
     int function_type = info.command_ptr->getCommandType();
-    if (function_type | JsonMessageCommand::NormalType)
+    if (function_type & JsonMessageCommand::NormalType)
         m_normal_function_set.erase(function_name);
-    else if (function_type | JsonMessageCommand::LoginType)
+    else if (function_type & JsonMessageCommand::LoginType)
         m_normal_function_set.erase(function_name);
 
     return true;
@@ -194,13 +211,14 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
         // check if user has logined
         {
             std::shared_lock<std::shared_mutex> shared_lock1(m_user_id_mutex, std::defer_lock),
-                shared_lock2(m_normal_function_set_mutex, std::defer_lock);
+                shared_lock2(m_function_map_mutex, std::defer_lock);
             std::lock(shared_lock1, shared_lock2);
             // Check if userid == -1
+            auto iter = m_function_map.find(function_name);
             if (m_user_id == UserID(-1) &&
                 function_name != "login" &&
-                m_normal_function_set.find(function_name) == m_normal_function_set.cend()) {
-                return makeErrorMessage("You haven't logged in!");
+                (iter == m_function_map.cend() || iter->second.command_ptr->getCommandType() & JsonMessageCommand::NormalType)) {
+                    return makeErrorMessage("You haven't logged in!");
             }
         }
 

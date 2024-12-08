@@ -52,7 +52,7 @@ struct string_hash
 
     std::size_t operator()(const char* str) const        { return hash_type{}(str); }
     std::size_t operator()(std::string_view str) const   { return hash_type{}(str); }
-    std::size_t operator()(std::string const& str) const { return hash_type{}(str); }
+    std::size_t operator()(const std::string& str) const { return hash_type{}(str); }
 };
 
 struct PrivateRoomIDStruct
@@ -79,9 +79,7 @@ public:
     ~PrivateRoomIDStructHasher() = default;
 
     template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        PrivateRoomIDStruct>>>
+        std::enable_if_t<std::is_same_v<std::decay_t<T>, PrivateRoomIDStruct>>>
     size_t operator()(T&& s) const
     {
         std::hash<long long> hasher;
@@ -112,9 +110,7 @@ public:
     ~GroupVerificationStructHasher() = default;
 
     template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        GroupVerificationStruct>>>
+        std::enable_if_t<std::is_same_v<std::decay_t<T>, GroupVerificationStruct>>>
     size_t operator()(T&& g) const
     {
         std::hash<long long> hasher;

@@ -104,9 +104,6 @@ public:
     void removeGroupRoomVerification(GroupID group_id, UserID user_id);
 
 private:
-    void sendToUser(qls::UserID user_id, const qjson::JObject& json);
-
-private:
     /**
      * @brief Map of friend room verification requests.
      */

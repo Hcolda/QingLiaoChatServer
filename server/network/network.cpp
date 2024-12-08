@@ -32,7 +32,6 @@ qls::Network::Network() :
     m_thread_num((12 > static_cast<int>(std::thread::hardware_concurrency())
         ? 12 : static_cast<int>(std::thread::hardware_concurrency())))
     {
-        // Only after thread_num is initialized can we allocate memory for threads
         m_threads = std::unique_ptr<std::thread[]>(
             new std::thread[static_cast<size_t>(m_thread_num) + 1]{});
     }
@@ -131,8 +130,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     if (datapack->type == DataPackage::HeartBeat) continue;
                     if (datapack->getData() != "test")
                         throw std::system_error(qls_errc::connection_test_failed);
-                }
-                catch (const std::exception& e) {
+                } catch (const std::exception& e) {
                     serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
                     std::error_code ignore_error;
                     socket_ptr->shutdown(ignore_error);
@@ -152,18 +150,16 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                         }
                         throw std::system_error(make_error_code(std::errc::timed_out));
                     };
-                    std::chrono::steady_clock::time_point deadline;
+                    std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::time_point::max();
                     try {
                         co_await (SocketService::echo(socket_ptr, std::move(sds), deadline) && watchdog(deadline));
-                    }
-                    catch (const std::system_error& e) {
+                    } catch (const std::system_error& e) {
                         const auto& errc = e.code();
                         if (errc.message() == "End of file")
                             serverLogger.info(std::format("[{}] disconnected from the server", addr));
                         else
                             serverLogger.error('[', errc.category().name(), ']', errc.message());
-                    }
-                    catch (const std::exception& e) {
+                    } catch (const std::exception& e) {
                         serverLogger.error(std::string(e.what()));
                     }
                     serverManager.removeSocket(socket_ptr);
@@ -192,7 +188,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 asio::awaitable<void> qls::Network::listener()
 {
     auto executor = co_await this_coro::executor;
-    tcp::acceptor acceptor(executor, { asio::ip::address::from_string(m_host), m_port });
+    tcp::acceptor acceptor(executor, { asio::ip::make_address(m_host), m_port });
     for (;;) {
         tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
         co_spawn(executor, echo(std::move(socket)), detached);

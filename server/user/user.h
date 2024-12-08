@@ -100,6 +100,9 @@ public:
      * @return true if adding friend was successful, false otherwise.
      */
     bool addFriend(UserID friend_user_id);
+    bool acceptFriend(UserID friend_user_id);
+    bool rejectFriend(UserID friend_user_id);
+    bool removeFriend(UserID friend_user_id);
 
     /**
      * @brief Retrieves the list of friend verification entries.
@@ -114,6 +117,10 @@ public:
      * @return true if adding group was successful, false otherwise.
      */
     bool addGroup(GroupID group_id);
+    GroupID createGroup();
+    bool acceptGroup(GroupID group_id, UserID user_id);
+    bool rejectGroup(GroupID group_id, UserID user_id);
+    bool removeGroup(GroupID group_id);
 
     /**
      * @brief Retrieves the list of group verification entries.

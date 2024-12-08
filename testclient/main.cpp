@@ -49,7 +49,6 @@ int main() {
 
     network.add_connected_error_callback("connected_error_callback", [](std::error_code ec) {
         std::cerr << "Connected error: " << ec.message() << '\n';
-        exit(-1);
     });
     network.add_connected_callback("connected_callback", [&](){
         std::cout << "Connected to server successfully!\n";
@@ -88,8 +87,7 @@ int main() {
             opt::Option opt = command->getOption();
             opt.parse(std::vector<std::string>{++vec.begin(), vec.end()});
             command->execute(opt);
-        }
-        catch(const std::exception& e) {
+        } catch(const std::exception& e) {
             std::cerr << e.what() << '\n';
         }
     }

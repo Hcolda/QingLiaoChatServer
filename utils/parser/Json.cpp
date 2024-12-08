@@ -274,7 +274,7 @@ const JObject& JObject::operator[](size_t itor) const
     list_t* local = std::get_if<list_t>(m_value.get());
     if (itor >= local->size())
         throw std::logic_error("The size is smaller than itor.");
-    return (*local)[itor];
+    return (*local).at(itor);
 }
 
 JObject& JObject::operator[](size_t itor)
@@ -286,12 +286,12 @@ JObject& JObject::operator[](size_t itor)
         m_type = JValueType::JList;
         *m_value = list_t();
         std::get_if<list_t>(m_value.get())->resize(itor + 1);
-        return (*std::get_if<list_t>(m_value.get()))[itor];
+        return (*std::get_if<list_t>(m_value.get())).at(itor);
     }
     list_t* local = std::get_if<list_t>(m_value.get());
     if (itor >= local->size())
         local->resize(itor + 1);
-    return (*local)[itor];
+    return (*local).at(itor);
 }
 
 const JObject& JObject::operator[](int itor) const
@@ -323,9 +323,9 @@ JObject& JObject::operator[](const char* str)
     {
         m_type = JValueType::JDict;
         *m_value = dict_t();
-        return (*std::get_if<dict_t>(m_value.get())).at(str);
+        return (*std::get_if<dict_t>(m_value.get()))[str];
     }
-    return (*std::get_if<dict_t>(m_value.get())).at(str);
+    return (*std::get_if<dict_t>(m_value.get()))[str];
 }
 
 void JObject::push_back(const JObject& jo)

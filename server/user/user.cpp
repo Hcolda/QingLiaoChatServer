@@ -7,6 +7,9 @@
 #include "manager.h"
 #include "logger.hpp"
 #include "qls_error.h"
+#include "dataPackage.h"
+#include "userid.hpp"
+#include "groupid.hpp"
 
 // 服务器log系统
 extern Log::Logger serverLogger;
@@ -24,7 +27,7 @@ struct UserImpl
     int         age; ///< User's age
     std::string email; ///< User's email
     std::string phone; ///< User's phone number
-    std::string     profile; ///< User profile
+    std::string profile; ///< User profile
 
     std::string password; ///< User's hashed password
     std::string salt; ///< Salt used in password hashing
@@ -34,8 +37,8 @@ struct UserImpl
     std::unordered_set<UserID>      m_user_friend_map; ///< User's friend list
     std::shared_mutex               m_user_friend_map_mutex; ///< Mutex for thread-safe access to friend list
 
-    std::unordered_map<UserID,
-        Verification::UserVerification>  m_user_friend_verification_map; ///< User's friend verification map
+    std::unordered_map<UserID, Verification::UserVerification>
+                                    m_user_friend_verification_map; ///< User's friend verification map
     std::shared_mutex               m_user_friend_verification_map_mutex; ///< Mutex for thread-safe access to friend verification map
 
     std::unordered_set<GroupID>     m_user_group_map; ///< User's group list
@@ -48,7 +51,25 @@ struct UserImpl
     std::unordered_map<std::shared_ptr<Socket>, DeviceType>
                                     m_socket_map; ///< Map of sockets associated with the user
     std::shared_mutex               m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
+
+    bool removeFriend(UserID friend_user_id)
+    {
+        std::unique_lock<std::shared_mutex> ul(m_user_friend_map_mutex);
+        auto iter = m_user_friend_map.find(friend_user_id);
+        if (iter == m_user_friend_map.cend())
+            return false;
+
+        m_user_friend_map.erase(iter);
+        return true;
+    }
 };
+
+static inline void sendToUser(qls::UserID user_id, const qjson::JObject& json)
+{
+    auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+    pack->type = DataPackage::Text;
+    serverManager.getUser(user_id)->notifyAll(pack->packageToString());
+}
 
 User::User(UserID user_id, bool is_create):
     m_impl(std::make_unique<UserImpl>())
@@ -240,31 +261,95 @@ std::unordered_set<GroupID> User::getGroupList() const
 
 bool User::addFriend(UserID friend_user_id)
 {
-    if (this->getUserID() == friend_user_id)
-        throw std::system_error(qls_errc::invalid_verification, "you can not add yourself as a friend");
-    if (!serverManager.hasUser(friend_user_id))
-        throw std::system_error(qls_errc::user_not_existed);
+    UserID self_id = this->getUserID();
+    if (self_id == friend_user_id || !serverManager.hasUser(friend_user_id))
+        return false;
 
     // check if they are friends
-    {
-        bool error = false;
-        try {
-            serverManager.getPrivateRoomId(this->getUserID(), friend_user_id);
-            error = true;
-        }
-        catch(...) {}
-        if (error)
-            throw std::system_error(qls_errc::invalid_verification, "they are already friends");
-    }
+    if (!serverManager.hasPrivateRoom(self_id, friend_user_id))
+        return false;
 
     auto& ver = serverManager.getServerVerificationManager();
-    if (!ver.hasFriendRoomVerification(m_impl->user_id, friend_user_id)) {
-        ver.addFriendRoomVerification(m_impl->user_id, friend_user_id);
-        ver.setFriendVerified(m_impl->user_id, friend_user_id, m_impl->user_id);
+    if (!ver.hasFriendRoomVerification(self_id, friend_user_id)) {
+        ver.addFriendRoomVerification(self_id, friend_user_id);
+        ver.setFriendVerified(self_id, friend_user_id, self_id);
+
+        // notify the other successfully adding a friend
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["userid"] = self_id.getOriginValue();
+        json["type"] = "added_friend_verfication";
+        json["message"] = "";
+        sendToUser(friend_user_id, json);
         return true;
     }
     else
         return false;
+}
+
+bool User::acceptFriend(UserID friend_user_id)
+{
+    UserID self_id = this->getUserID();
+    if (self_id == friend_user_id ||
+        !serverManager.hasUser(friend_user_id) ||
+        !serverManager.getServerVerificationManager()
+            .hasFriendRoomVerification(self_id, friend_user_id))
+        return false;
+
+    if (serverManager.getServerVerificationManager().setFriendVerified(self_id, friend_user_id, self_id))
+        return false;
+
+    // notify the other successfully adding a friend
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["userid"] = self_id.getOriginValue();
+    json["type"] = "added_friend";
+    sendToUser(friend_user_id, json);
+    return true;
+}
+
+bool User::rejectFriend(UserID friend_user_id)
+{
+    UserID self_id = this->getUserID();
+    if (self_id == friend_user_id ||
+        !serverManager.hasUser(friend_user_id) ||
+        !serverManager.getServerVerificationManager()
+            .hasFriendRoomVerification(self_id, friend_user_id))
+        return false;
+
+    try {
+        serverManager.getServerVerificationManager()
+            .removeFriendRoomVerification(self_id, friend_user_id);
+    } catch(...) {
+        return false;
+    }
+
+    // notify them to remove the friend verification
+    // (someone reject to add a friend)
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["userid"] = self_id.getOriginValue();
+    json["type"] = "rejected_to_add_friend";
+    sendToUser(friend_user_id, json);
+    return true;
+}
+
+bool User::removeFriend(UserID friend_user_id)
+{
+    UserID self_id = this->getUserID();
+    if (self_id == friend_user_id || !serverManager.hasUser(friend_user_id))
+        return false;
+
+    if (!this->userHasFriend(friend_user_id))
+        return false;
+
+    m_impl->removeFriend(friend_user_id);
+    serverManager.getUser(friend_user_id)->m_impl->removeFriend(friend_user_id);
+    
+    // notify them to remove the friend verification
+    // (someone reject to add a friend)
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["userid"] = self_id.getOriginValue();
+    json["type"] = "removed_friend";
+    sendToUser(friend_user_id, json);
+    return true;
 }
 
 void User::updateFriendList(std::function<void(std::unordered_set<UserID>&)> callback_function)
@@ -314,16 +399,89 @@ std::unordered_map<UserID, Verification::UserVerification> User::getFriendVerifi
 
 bool User::addGroup(GroupID group_id)
 {
-    if (!serverManager.hasGroupRoom(group_id))
-        throw std::system_error(qls_errc::group_room_not_existed);
+    UserID self_id = this->getUserID();
+    if (!serverManager.hasGroupRoom(group_id) ||
+        serverManager.getGroupRoom(group_id)->hasMember(self_id))
+        return false;
 
     auto& ver = serverManager.getServerVerificationManager();
-    if (!ver.hasGroupRoomVerification(group_id, m_impl->user_id)) {
-        ver.addGroupRoomVerification(group_id, m_impl->user_id);
-        ver.setGroupRoomUserVerified(group_id, m_impl->user_id);
+    if (!ver.hasGroupRoomVerification(group_id, self_id)) {
+        ver.addGroupRoomVerification(group_id, self_id);
+        ver.setGroupRoomUserVerified(group_id, self_id);
+
+        UserID adminID = serverManager.getGroupRoom(group_id)->getAdministrator();
+        qjson::JObject json(qjson::JValueType::JDict);
+        json["groupid"] = group_id.getOriginValue();
+        json["userid"] = self_id.getOriginValue();
+        json["type"] = "added_group_verification";
+        json["message"] = "";
+        sendToUser(adminID, json);
         return true;
     }
     else return false;
+}
+
+GroupID User::createGroup()
+{
+    return serverManager.addGroupRoom(this->getUserID());
+}
+
+bool User::acceptGroup(GroupID group_id, UserID user_id)
+{
+    UserID self_id = this->getUserID();
+    if (!serverManager.hasGroupRoom(group_id) ||
+        !serverManager.getGroupRoom(group_id)->hasMember(user_id) ||
+        self_id != serverManager.getGroupRoom(group_id)->getAdministrator())
+        return false;
+
+    if (!serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id))
+        return false;
+
+    // notify the other successfully adding a group
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["groupid"] = group_id.getOriginValue();
+    json["type"] = "added_group";
+    sendToUser(user_id, json);
+    return true;
+}
+
+bool User::rejectGroup(GroupID group_id, UserID user_id)
+{
+    UserID self_id = this->getUserID();
+    if (!serverManager.hasGroupRoom(group_id) ||
+        !serverManager.getGroupRoom(group_id)->hasMember(user_id) ||
+        self_id != serverManager.getGroupRoom(group_id)->getAdministrator())
+        return false;
+
+    try {
+        serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);
+    } catch(...) {
+        return false;
+    }
+    
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["groupid"] = group_id.getOriginValue();
+    json["type"] = "rejected_to_add_group";
+    sendToUser(user_id, json);
+    return true;
+}
+
+bool User::removeGroup(GroupID group_id)
+{
+    UserID self_id = this->getUserID();
+    if (!serverManager.hasGroupRoom(group_id) ||
+        self_id != serverManager.getGroupRoom(group_id)->getAdministrator())
+        return false;
+
+    auto user_list = serverManager.getGroupRoom(group_id)->getUserList();
+    // notify all users in the room...
+
+    try {
+        serverManager.removeGroupRoom(group_id);
+    } catch(...) {
+        return false;
+    }
+    return true;
 }
 
 void User::removeGroupVerification(GroupID group_id, UserID user_id)
