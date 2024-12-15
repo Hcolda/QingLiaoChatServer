@@ -102,7 +102,7 @@ namespace qls
     struct NetworkImpl
     {
 #ifdef _DEBUG
-        std::string host = "localhost";
+        std::string host = "127.0.0.1";
 #else
         std::string host = "hcolda.qqof.top";
 #endif // DEBUG
@@ -215,8 +215,7 @@ namespace qls
                     lock.unlock();
                     start_connect();
                     m_network_impl->io_context.run();
-                }
-                catch (...) {}
+                } catch (...) {}
             }
         });
     }
@@ -516,12 +515,7 @@ namespace qls
         std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running)
             return;
-        if (!m_network_impl->socket_ptr->lowest_layer().is_open()) {
-            lock.unlock();
-            call_connected_error(error);
-            std::this_thread::sleep_for(10s);
-            start_connect();
-        } else if (error) {
+        if (error) {
             std::error_code ec;
             m_network_impl->socket_ptr->lowest_layer().close(ec);
             lock.unlock();
@@ -610,7 +604,7 @@ namespace qls
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
             return;
         auto pack = DataPackage::makePackage("heartbeat");
-        pack->type = 4;
+        pack->type = DataPackage::HeartBeat;
         auto wrapper = std::make_shared<StringWrapper>(pack->packageToString());
         asio::async_write(*(m_network_impl->socket_ptr), asio::buffer(wrapper->data),
             std::bind(&Network::handle_heart_beat_write, this, _1, wrapper));

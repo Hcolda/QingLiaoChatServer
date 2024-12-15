@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <shared_mutex>
+#include <Json.h>
 
 #include "userid.hpp"
 #include "groupid.hpp"

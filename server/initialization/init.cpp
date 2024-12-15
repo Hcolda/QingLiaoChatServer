@@ -66,8 +66,7 @@ int init()
     try {
         serverLogger.info("Reading configuration file...");
         serverIni = Init::readConfig();
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
         Init::createConfig();
         serverLogger.error("Please modify the configuration file");
@@ -96,7 +95,7 @@ int init()
             serverLogger.info("Certificate file path: ", serverIni["ssl"]["certificate_file"]);
             serverLogger.info("Password: ", (serverIni["ssl"]["password"].empty() ? "empty" : serverIni["ssl"]["password"]));
             serverLogger.info("Key file path: ", serverIni["ssl"]["key_file"]);
-            serverLogger.info("DH file path: ", serverIni["ssl"]["dh_file"]);
+            serverLogger.info("DH file path: ", (serverIni["ssl"]["dh_file"].empty() ? "empty" : serverIni["ssl"]["dh_file"]));
 
             serverNetwork.setTlsConfig([](){
                 std::shared_ptr<asio::ssl::context> ssl_context =
@@ -124,8 +123,7 @@ int init()
         }
         
         serverLogger.info("Configuration file read successfully!");
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
         // Init::createConfig();
         serverLogger.error("Please modify the configuration file");
@@ -138,8 +136,7 @@ int init()
         serverManager.init();
 
         serverLogger.info("serverManager loaded successfully!");
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.critical(std::string(e.what()));
         serverLogger.critical("serverManager failed to load!");
         return -1;
@@ -163,8 +160,7 @@ int init()
         serverLogger.info("Server listener starting at address: ", serverIni["server"]["host"], ":", serverIni["server"]["port"]);
         serverNetwork.run(serverIni["server"]["host"], std::stoi(serverIni["server"]["port"]));
         
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
         return -1;
     }

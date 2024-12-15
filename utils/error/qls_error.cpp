@@ -16,7 +16,10 @@ std::string qls_error_category::message(int Errval) const
     using qls::qls_errc;
     switch (static_cast<qls::qls_errc>(Errval))
     {
-    //  package error
+    // system error
+    case qls_errc::null_pointer:
+        return "pointer is null";
+    // package error
     case qls_errc::incomplete_package:
         return "packge is incomplete";
     case qls_errc::empty_length:

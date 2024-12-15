@@ -23,10 +23,13 @@
     #else
         #define ERROR_WITH_STACKTRACE(errmsg) std::format("error: {}\nin file \"{}\" line {}\n", \
             errmsg, std::filesystem::path(__FILE__).filename().string(), __LINE__)
-    #endif // !_HAS_CXX23
+    #endif // !defined(__cplusplus) && __cplusplus >= 202011L && defined(__cpp_lib_stacktrace)
 #endif // !MSC_VER
 
 #include <unordered_map>
+#include <string>
+#include <string_view>
+#include <utility>
 
 #include "groupid.hpp"
 #include "userid.hpp"
@@ -40,6 +43,16 @@ enum class DeviceType
     PersonalComputer,
     Phone,
     Web
+};
+
+struct string_hash
+{
+    using hash_type = std::hash<std::string_view>;
+    using is_transparent = void;
+
+    std::size_t operator()(const char* str) const        { return hash_type{}(str); }
+    std::size_t operator()(std::string_view str) const   { return hash_type{}(str); }
+    std::size_t operator()(const std::string& str) const { return hash_type{}(str); }
 };
 
 struct PrivateRoomIDStruct
@@ -66,9 +79,7 @@ public:
     ~PrivateRoomIDStructHasher() = default;
 
     template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        PrivateRoomIDStruct>>>
+        std::enable_if_t<std::is_same_v<std::decay_t<T>, PrivateRoomIDStruct>>>
     size_t operator()(T&& s) const
     {
         std::hash<long long> hasher;
@@ -99,9 +110,7 @@ public:
     ~GroupVerificationStructHasher() = default;
 
     template<class T, class Y =
-        std::enable_if_t<std::is_same_v<
-        std::remove_const_t<std::remove_reference_t<T>>,
-        GroupVerificationStruct>>>
+        std::enable_if_t<std::is_same_v<std::decay_t<T>, GroupVerificationStruct>>>
     size_t operator()(T&& g) const
     {
         std::hash<long long> hasher;
@@ -109,6 +118,6 @@ public:
     }
 };
 
-}
+} // namespace qls
 
 #endif // !DEFINITION_HPP

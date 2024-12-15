@@ -2,10 +2,14 @@
 
 #include <mutex>
 #include <shared_mutex>
+#include <functional>
+#include <utility>
 #include <Json.h>
 #include <dataPackage.h>
 
 #include "user.h"
+#include "groupid.hpp"
+#include "userid.hpp"
 #include "manager.h"
 
 // manager
@@ -23,18 +27,14 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
 {
     if (user_id_1 == user_id_2)
         throw std::system_error(make_error_code(qls_errc::invalid_verification));
+    if (!serverManager.hasUser(user_id_1))
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "the id of user1 is invalid");
+    if (!serverManager.hasUser(user_id_2))
+        throw std::system_error(make_error_code(qls_errc::user_not_existed), "the id of user2 is invalid");
 
     // check if they are friends
-    {
-        bool error = false;
-        try {
-            serverManager.getPrivateRoomId(user_id_1, user_id_2);
-            error = true;
-        }
-        catch (...) {}
-        if (error)
-            throw std::system_error(make_error_code(qls_errc::private_room_existed));
-    }
+    if (!serverManager.hasPrivateRoom(user_id_1, user_id_2))
+        throw std::system_error(make_error_code(qls_errc::private_room_existed));
 
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
@@ -49,11 +49,11 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
     
     // user1
     {
-        qls::UserVerificationStructure uv;
+        qls::Verification::UserVerification uv;
 
         uv.user_id = user_id_2;
         uv.verification_type =
-            qls::UserVerificationStructure::VerificationType::Sent;
+            qls::Verification::VerificationType::Sent;
 
         auto ptr = serverManager.getUser(user_id_1);
         ptr->addFriendVerification(user_id_2, std::move(uv));
@@ -61,34 +61,25 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
 
     // user2
     {
-        qls::UserVerificationStructure uv;
+        qls::Verification::UserVerification uv;
 
         uv.user_id = user_id_1;
         uv.verification_type =
-            qls::UserVerificationStructure::VerificationType::Received;
+            qls::Verification::VerificationType::Received;
 
         auto ptr = serverManager.getUser(user_id_2);
         ptr->addFriendVerification(user_id_1, std::move(uv));
-
-        // notify the other successfully adding a friend
-        qjson::JObject json(qjson::JValueType::JDict);
-        json["userid"] = user_id_1.getOriginValue();
-        json["type"] = "added_friend_verfication";
-        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
-        pack->type = 1;
-        serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
     }
 }
 
 bool VerificationManager::hasFriendRoomVerification(UserID user_id_1, UserID user_id_2) const
 {
     if (user_id_1 == user_id_2)
-        throw std::system_error(make_error_code(qls_errc::invalid_verification));
+        return false;
 
     std::shared_lock<std::shared_mutex> local_shared_lock(m_FriendRoomVerification_map_mutex);
-    
     return m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
-        m_FriendRoomVerification_map.end();
+        m_FriendRoomVerification_map.cend();
 }
 
 bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
@@ -102,7 +93,7 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
         std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
-        if (itor == m_FriendRoomVerification_map.end())
+        if (itor == m_FriendRoomVerification_map.cend())
             throw std::system_error(make_error_code(qls_errc::verification_not_existed));
 
         auto& ver = itor->second;
@@ -119,37 +110,23 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
 
         // update the 1st user's friend list
         {
-            if (!serverManager.hasUser(user_id_1))
-                throw std::system_error(make_error_code(qls_errc::user_not_existed),
-                    "The first user doesn't exist!");
             auto ptr = serverManager.getUser(user_id_1);
-            auto set = std::move(ptr->getFriendList());
-            set.insert(user_id_2);
-            ptr->updateFriendList(std::move(set));
+            ptr->updateFriendList([user_id_2](std::unordered_set<qls::UserID>& set){
+                set.insert(user_id_2);
+            });
 
             ptr->removeFriendVerification(user_id_2);
         }
         
         // update the 2nd user's friend list
         {
-            if (!serverManager.hasUser(user_id_2))
-                throw std::system_error(make_error_code(qls_errc::user_not_existed),
-                    "The second user doesn't exist!");
             auto ptr = serverManager.getUser(user_id_2);
-            auto set = std::move(ptr->getFriendList());
-            set.insert(user_id_1);
-            ptr->updateFriendList(std::move(set));
+            ptr->updateFriendList([user_id_1](std::unordered_set<qls::UserID>& set){
+                set.insert(user_id_1);
+            });
 
             ptr->removeFriendVerification(user_id_1);
         }
-
-        // notify the other successfully adding a friend
-        qjson::JObject json(qjson::JValueType::JDict);
-        json["userid"] = user_id_1.getOriginValue();
-        json["type"] = "added_friend";
-        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
-        pack->type = 1;
-        serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
     }
 
     return result;
@@ -172,31 +149,15 @@ void VerificationManager::removeFriendRoomVerification(UserID user_id_1, UserID 
 
     serverManager.getUser(user_id_1)->removeFriendVerification(user_id_2);
     serverManager.getUser(user_id_2)->removeFriendVerification(user_id_1);
-
-    // notify them to remove the friend verification
-    // (someone reject to add a friend)
-    // user1
-    {
-        qjson::JObject json(qjson::JValueType::JDict);
-        json["userid"] = user_id_2.getOriginValue();
-        json["type"] = "rejected_to_add_friend";
-        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
-        pack->type = 1;
-        serverManager.getUser(user_id_1)->notifyAll(pack->packageToString());
-    }
-    // user2
-    {
-        qjson::JObject json(qjson::JValueType::JDict);
-        json["userid"] = user_id_1.getOriginValue();
-        json["type"] = "rejected_to_add_friend";
-        auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
-        pack->type = 1;
-        serverManager.getUser(user_id_2)->notifyAll(pack->packageToString());
-    }
 }
 
 void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user_id)
 {
+    if (!serverManager.hasGroupRoom(group_id))
+            throw std::system_error(make_error_code(qls_errc::group_room_not_existed));
+    if (!serverManager.hasUser(user_id))
+            throw std::system_error(make_error_code(qls_errc::user_not_existed));
+
     {
         std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
 
@@ -210,11 +171,11 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
 
     // 用户发送请求
     {
-        qls::UserVerificationStructure uv;
+        qls::Verification::GroupVerification uv;
 
-        uv.user_id = group_id;
-        uv.verification_type =
-            qls::UserVerificationStructure::VerificationType::Sent;
+        uv.group_id = group_id;
+        uv.user_id = user_id;
+        uv.verification_type = qls::Verification::Sent;
 
         auto ptr = serverManager.getUser(user_id);
         ptr->addGroupVerification(group_id, std::move(uv));
@@ -222,18 +183,16 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
 
     // 群聊拥有者接收请求
     {
-        qls::UserVerificationStructure uv;
+        qls::Verification::GroupVerification uv;
 
+        uv.group_id = group_id;
         uv.user_id = user_id;
-        uv.verification_type =
-            qls::UserVerificationStructure::VerificationType::Received;
+        uv.verification_type = qls::Verification::Received;
 
-        auto ptr = serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator());
+        UserID adminID = serverManager.getGroupRoom(group_id)->getAdministrator();
+        auto ptr = serverManager.getUser(adminID);
         ptr->addGroupVerification(group_id, std::move(uv));
     }
-
-    // 未完成 通知另一方
-    // m_globalRoom->baseSendData()
 }
 
 bool VerificationManager::hasGroupRoomVerification(GroupID group_id, UserID user_id) const
@@ -261,20 +220,13 @@ bool VerificationManager::setGroupRoomGroupVerified(GroupID group_id, UserID use
 
     if (result)
     {
-        if (!serverManager.hasGroupRoom(group_id))
-            throw std::system_error(make_error_code(qls_errc::group_room_not_existed));
         serverManager.getGroupRoom(group_id)->addMember(user_id);
 
         // 更新user的groupList
-        if (!serverManager.hasUser(user_id))
-            throw std::system_error(make_error_code(qls_errc::user_not_existed));
         auto ptr = serverManager.getUser(user_id);
-        auto set = std::move(ptr->getGroupList());
-        set.insert(group_id);
-        ptr->updateGroupList(std::move(set));
-
-        // 未完成 通知另一方
-        // m_globalRoom->baseSendData()
+        ptr->updateGroupList([group_id](std::unordered_set<qls::GroupID>& set){
+            set.insert(group_id);
+        });
     }
     return result;
 }
@@ -296,19 +248,14 @@ bool VerificationManager::setGroupRoomUserVerified(GroupID group_id, UserID user
 
     if (result)
     {
-        if (!serverManager.hasGroupRoom(group_id))
-            throw std::system_error(make_error_code(qls_errc::group_room_not_existed));
         serverManager.getGroupRoom(group_id)->addMember(user_id);
 
         // 更新user的friendlist
-        if (!serverManager.hasUser(user_id))
-            throw std::system_error(make_error_code(qls_errc::user_not_existed));
-
         {
             auto ptr = serverManager.getUser(user_id);
-            auto set = std::move(ptr->getGroupList());
-            set.insert(group_id);
-            ptr->updateGroupList(std::move(set));
+            ptr->updateGroupList([group_id](std::unordered_set<qls::GroupID>& set){
+                set.insert(group_id);
+            });
 
             ptr->removeGroupVerification(group_id, user_id);
         }
@@ -329,7 +276,8 @@ void VerificationManager::removeGroupRoomVerification(GroupID group_id, UserID u
 
         m_GroupVerification_map.erase(itor);
     }
-    serverManager.getUser(serverManager.getGroupRoom(group_id)->getAdministrator())
+    UserID adminID = serverManager.getGroupRoom(group_id)->getAdministrator();
+    serverManager.getUser(adminID)
         ->removeGroupVerification(group_id, user_id);
     serverManager.getUser(user_id)->removeGroupVerification(group_id, user_id);
 }

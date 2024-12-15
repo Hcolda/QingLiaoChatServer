@@ -95,7 +95,7 @@ asio::awaitable<std::shared_ptr<qls::DataPackage>>
     co_return datapack;
 }
 
-asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, int type, int sequence)
+asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, DataPackage::DataPackageType type, int sequence)
 {
     std::string out(data);
     auto pack = qls::DataPackage::makePackage(out);
@@ -112,28 +112,28 @@ asio::awaitable<void> SocketService::process(
     std::string_view data,
     std::shared_ptr<qls::DataPackage> pack)
 {
-    if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != 1) {
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")), pack->requestID, 1);
+    if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != DataPackage::Text) {
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")), pack->requestID, DataPackage::Text);
         co_return;
     }
 
     switch (pack->type) {
-    case 1:
+    case DataPackage::Text:
         // json data type
         co_await async_send(qjson::JWriter::fastWrite(
-            co_await m_impl->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data), *this)), pack->requestID, 1);
+            co_await m_impl->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data), *this)), pack->requestID, DataPackage::Text);
         co_return;
-    case 2:
+    case DataPackage::FileStream:
         // file stream type
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1); // Temporarily return an error
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, DataPackage::Text); // Temporarily return an error
         co_return;
-    case 3:
+    case DataPackage::Binary:
         // binary stream type
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1); // Temporarily return an error
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, DataPackage::Text); // Temporarily return an error
         co_return;
     default:
         // unknown type
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, 1);
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, DataPackage::Text);
         co_return;
     }
     co_return;
@@ -171,7 +171,7 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
                 socket_ptr->shutdown(ignore_error);
                 co_return;
             }
-            else if (pack->type == 4) {
+            else if (pack->type == DataPackage::HeartBeat) {
                 // Heartbeat package
                 heart_beat_times++;
                 if (std::chrono::steady_clock::now() - heart_beat_time_point >= std::chrono::seconds(10))

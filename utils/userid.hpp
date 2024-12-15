@@ -81,7 +81,6 @@ namespace std
         {
             return hash<long long>()(u.getOriginValue());
         }
-        
     };
     
     template<>

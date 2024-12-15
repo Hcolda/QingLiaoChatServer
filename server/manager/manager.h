@@ -70,6 +70,8 @@ public:
      */
     bool hasPrivateRoom(GroupID private_room_id) const;
 
+    bool hasPrivateRoom(UserID user1_id, UserID user2_id) const;
+
     /**
      * @brief Retrieves a private room.
      * 

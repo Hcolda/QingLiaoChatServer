@@ -61,10 +61,10 @@ public:
     * @return size Actual length sent
     */
     asio::awaitable<size_t> async_send(
-        std::string_view data,
-        long long  requestID = 0,
-        int        type = 0,
-        int        sequence = -1);
+        std::string_view                data,
+        long long                       requestID = 0,
+        DataPackage::DataPackageType    type = DataPackage::Unknown,
+        int                             sequence = -1);
 
     /**
     * @brief Process function

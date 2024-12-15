@@ -5,7 +5,6 @@
 #include <string>
 #include <string_view>
 #include <fstream>
-#include <format>
 #include <stdexcept>
 
 namespace qini
@@ -223,7 +222,7 @@ namespace qini
 
         std::string getString(std::string_view::iterator& i, std::string_view data, long long error_line);
 
-        std::string get_logic_error_string(long long error_line);
+        std::string getLogicErrorString(long long error_line);
     };
 
     /**
