@@ -1,5 +1,6 @@
 #include "network.h"
 
+#include <memory_resource>
 #include <asio/experimental/awaitable_operators.hpp>
 #include <logger.hpp>
 #include <system_error>
@@ -32,8 +33,7 @@ qls::Network::Network() :
     m_thread_num((12 > static_cast<int>(std::thread::hardware_concurrency())
         ? 12 : static_cast<int>(std::thread::hardware_concurrency())))
     {
-        m_threads = std::unique_ptr<std::thread[]>(
-            new std::thread[static_cast<size_t>(m_thread_num) + 1]{});
+        m_threads = std::make_unique<std::thread[]>(static_cast<size_t>(m_thread_num));
     }
 
 qls::Network::~Network()
@@ -90,12 +90,16 @@ void qls::Network::stop()
     m_io_context.stop();
 }
 
+static std::pmr::synchronized_pool_resource socket_sync_pool;
+
 asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 {
     auto executor = co_await asio::this_coro::executor;
 
     // Load SSL socket pointer
-    std::shared_ptr<Socket> socket_ptr = std::make_shared<Socket>(std::move(origin_socket), *m_ssl_context_ptr);
+    std::shared_ptr<Socket> socket_ptr = std::allocate_shared<Socket>(
+        std::pmr::polymorphic_allocator<Socket>(&socket_sync_pool),
+        std::move(origin_socket), *m_ssl_context_ptr);
     // Socket encrypted structure
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
     // String address for data processing

@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <format>
 #include <cstring>
+#include <memory_resource>
 
 #include "networkEndianness.hpp"
 #include "qls_error.h"
@@ -10,11 +11,14 @@
 namespace qls
 {
 
+static std::pmr::synchronized_pool_resource sync_pool;
+
 std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
 {
     std::hash<std::string_view> hash;
-    std::shared_ptr<DataPackage> package(reinterpret_cast<DataPackage*>(
-        new char[sizeof(DataPackage) + data.size()] { 0 }),
+    void* mem = sync_pool.allocate(sizeof(DataPackage) + data.size());
+    std::memset(mem, 0, sizeof(DataPackage) + data.size());
+    std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
         deleteDataPackage);
     package->length = int(sizeof(DataPackage) + data.size());
     std::memcpy(package->data, data.data(), data.size());
@@ -44,7 +48,9 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
     else if (data[size_t(size - 1)] || data[size_t(size - 2)])
         throw std::system_error(qls_errc::invalid_data);
 
-    std::shared_ptr<DataPackage> package(reinterpret_cast<DataPackage*>(new char[size] { 0 }),
+    void* mem = sync_pool.allocate(size);
+    std::memset(mem, 0, size);
+    std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
         deleteDataPackage);
     std::memcpy(package.get(), data.data(), size);
 
@@ -109,7 +115,8 @@ std::string DataPackage::getData()
 
 void DataPackage::deleteDataPackage(DataPackage* dp)
 {
-    delete[] reinterpret_cast<char*>(dp);
+    int lenth = dp->length;
+    sync_pool.deallocate(dp, static_cast<size_t>(lenth));
 }
 
 } // namespace qls
