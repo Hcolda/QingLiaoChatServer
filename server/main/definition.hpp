@@ -1,7 +1,7 @@
 #ifndef DEFINITION_HPP
 #define DEFINITION_HPP
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
     #include <format>
     #include <filesystem>
     #ifdef _HAS_CXX23
@@ -13,7 +13,7 @@
             errmsg, std::filesystem::path(__FILE__).filename().string(), __LINE__)
     #endif // !_HAS_CXX23
 
-#else // !MSC_VER
+#else // !_MSC_VER
     #include <format>
     #include <filesystem>
     #include <stacktrace>
@@ -24,7 +24,7 @@
         #define ERROR_WITH_STACKTRACE(errmsg) std::format("error: {}\nin file \"{}\" line {}\n", \
             errmsg, std::filesystem::path(__FILE__).filename().string(), __LINE__)
     #endif // !defined(__cplusplus) && __cplusplus >= 202011L && defined(__cpp_lib_stacktrace)
-#endif // !MSC_VER
+#endif // !_MSC_VER
 
 #include <unordered_map>
 #include <string>

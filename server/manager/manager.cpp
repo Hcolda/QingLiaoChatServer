@@ -1,5 +1,6 @@
 #include "manager.h"
 
+#include <memory_resource>
 #include <system_error>
 #include <Ini.h>
 
@@ -21,11 +22,15 @@ struct ManagerImpl
     std::unordered_map<GroupID, std::shared_ptr<GroupRoom>>
                             m_baseRoom_map; ///< Map of group room IDs to group rooms.
     std::shared_mutex       m_baseRoom_map_mutex; ///< Mutex for group room map.
+    std::pmr::synchronized_pool_resource
+                            m_baseRoom_sync_pool;
 
     // Private room map
     std::unordered_map<GroupID, std::shared_ptr<PrivateRoom>>
                             m_basePrivateRoom_map; ///< Map of private room IDs to private rooms.
     std::shared_mutex       m_basePrivateRoom_map_mutex; ///< Mutex for private room map.
+    std::pmr::synchronized_pool_resource
+                            m_basePrivateRoom_sync_pool;
 
     // Map of user IDs to private room IDs
     std::unordered_map<PrivateRoomIDStruct, GroupID, PrivateRoomIDStructHasher>
@@ -36,6 +41,8 @@ struct ManagerImpl
     std::unordered_map<UserID, std::shared_ptr<User>>
                             m_user_map; ///< Map of user IDs to users.
     std::shared_mutex       m_user_map_mutex; ///< Mutex for user map.
+    std::pmr::synchronized_pool_resource
+                            m_user_sync_pool;
 
     std::unordered_map<std::shared_ptr<Socket>, UserID>
                             m_socket_map; ///< Map of socket pointers to user IDs.
@@ -96,8 +103,8 @@ GroupID Manager::addPrivateRoom(UserID user1_id, UserID user2_id)
         */
     }
 
-    m_impl->m_basePrivateRoom_map[privateRoom_id] = std::make_shared<PrivateRoom>(
-        user1_id, user2_id, true);
+    m_impl->m_basePrivateRoom_map[privateRoom_id] = std::allocate_shared<PrivateRoom>(
+        std::pmr::polymorphic_allocator<PrivateRoom>(&m_impl->m_basePrivateRoom_sync_pool), user1_id, user2_id, true);
     m_impl->m_userID_to_privateRoomID_map[{user1_id, user2_id}] = privateRoom_id;
 
     return privateRoom_id;
@@ -181,7 +188,8 @@ GroupID Manager::addGroupRoom(UserID opreator_user_id)
         */
     }
 
-    m_impl->m_baseRoom_map[group_room_id] = std::make_shared<GroupRoom>(
+    m_impl->m_baseRoom_map[group_room_id] = std::allocate_shared<GroupRoom>(
+        std::pmr::polymorphic_allocator<GroupRoom>(&m_impl->m_baseRoom_sync_pool),
         group_room_id, opreator_user_id, true);
 
     return group_room_id;
@@ -227,7 +235,8 @@ std::shared_ptr<User> Manager::addNewUser()
         // sql处理数据
     }
 
-    m_impl->m_user_map[newUserId] = std::make_shared<User>(newUserId, true);
+    m_impl->m_user_map[newUserId] = std::allocate_shared<User>(
+        std::pmr::polymorphic_allocator<User>(&m_impl->m_user_sync_pool), newUserId, true);
 
     return m_impl->m_user_map[newUserId];
 }
