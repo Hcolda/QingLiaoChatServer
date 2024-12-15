@@ -29,7 +29,7 @@ public:
     JsonMessageCommand() = default;
     virtual ~JsonMessageCommand() = default;
 
-    virtual std::initializer_list<JsonOption> getOption() const = 0;
+    virtual std::vector<JsonOption> getOption() const = 0;
     virtual int getCommandType() const = 0;
     virtual qjson::JObject execute(UserID executor, qjson::JObject parameters) = 0;
 };
@@ -40,7 +40,7 @@ public:
     RegisterCommand() = default;
     ~RegisterCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"email", qjson::JString},
             {"password", qjson::JString}};
@@ -60,7 +60,7 @@ public:
     HasUserCommand() = default;
     ~HasUserCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"user_id", qjson::JInt}};
     }
@@ -79,7 +79,7 @@ public:
     SearchUserCommand() = default;
     ~SearchUserCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"user_id", qjson::JInt}};
     }
@@ -98,7 +98,7 @@ public:
     AddFriendCommand() = default;
     ~AddFriendCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"user_id", qjson::JInt}};
     }
@@ -117,7 +117,7 @@ public:
     AcceptFriendVerificationCommand() = default;
     ~AcceptFriendVerificationCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"user_id", qjson::JInt}};
     }
@@ -136,7 +136,7 @@ public:
     RejectFriendVerificationCommand() = default;
     ~RejectFriendVerificationCommand() = default;
     
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"user_id", qjson::JInt}};
     }
@@ -155,7 +155,7 @@ public:
     GetFriendListCommand() = default;
     ~GetFriendListCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {};
     }
@@ -174,7 +174,7 @@ public:
     GetFriendVerificationListCommand() = default;
     ~GetFriendVerificationListCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {};
     }
@@ -193,7 +193,7 @@ public:
     RemoveFriendCommand() = default;
     ~RemoveFriendCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"user_id", qjson::JInt}};
     }
@@ -212,7 +212,7 @@ public:
     AddGroupCommand() = default;
     ~AddGroupCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"group_id", qjson::JInt}};
     }
@@ -231,7 +231,7 @@ public:
     AcceptGroupVerificationCommand() = default;
     ~AcceptGroupVerificationCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"group_id", qjson::JInt},
                 {"user_id", qjson::JInt}};
@@ -251,7 +251,7 @@ public:
     RejectGroupVerificationCommand() = default;
     ~RejectGroupVerificationCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"group_id", qjson::JInt},
                 {"user_id", qjson::JInt}};
@@ -271,7 +271,7 @@ public:
     GetGroupListCommand() = default;
     ~GetGroupListCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {};
     }
@@ -290,7 +290,7 @@ public:
     GetGroupVerificationListCommand() = default;
     ~GetGroupVerificationListCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {};
     }
@@ -309,7 +309,7 @@ public:
     CreateGroupCommand() = default;
     ~CreateGroupCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {};
     }
@@ -328,7 +328,7 @@ public:
     RemoveGroupCommand() = default;
     ~RemoveGroupCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"group_id", qjson::JInt}};
     }
@@ -347,7 +347,7 @@ public:
     LeaveGroupCommand() = default;
     ~LeaveGroupCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"group_id", qjson::JInt}};
     }
@@ -366,7 +366,7 @@ public:
     SendFriendMessageCommand() = default;
     ~SendFriendMessageCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"friend_id", qjson::JInt},
                 {"message", qjson::JString}};
@@ -386,7 +386,7 @@ public:
     SendGroupMessageCommand() = default;
     ~SendGroupMessageCommand() = default;
 
-    std::initializer_list<JsonOption> getOption() const
+    std::vector<JsonOption> getOption() const
     {
         return {{"group_id", qjson::JInt},
                 {"message", qjson::JString}};

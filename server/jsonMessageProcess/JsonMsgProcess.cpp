@@ -20,6 +20,117 @@ namespace qls
 {
 
 // -----------------------------------------------------------------------------------------------
+// JsonMessageProcessCommandList
+// -----------------------------------------------------------------------------------------------
+
+class JsonMessageProcessCommandList
+{
+public:
+    JsonMessageProcessCommandList() {
+        auto init_command = [&](std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr) -> bool {
+            if (m_function_map.find(function_name) != m_function_map.cend() || !command_ptr)
+                return false;
+
+            m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
+            return true;
+        };
+
+        init_command("register", std::make_shared<RegisterCommand>());
+        init_command("has_user", std::make_shared<HasUserCommand>());
+        init_command("search_user", std::make_shared<SearchUserCommand>());
+        init_command("add_friend", std::make_shared<AddFriendCommand>());
+        init_command("add_group", std::make_shared<AddGroupCommand>());
+        init_command("get_friend_list", std::make_shared<GetFriendListCommand>());
+        init_command("get_group_list", std::make_shared<GetGroupListCommand>());
+        init_command("send_friend_message", std::make_shared<SendFriendMessageCommand>());
+        init_command("send_group_message", std::make_shared<SendGroupMessageCommand>());
+        init_command("accept_friend_verification", std::make_shared<AcceptFriendVerificationCommand>());
+        init_command("get_friend_verification_list", std::make_shared<GetFriendVerificationListCommand>());
+        init_command("accept_group_verification", std::make_shared<AcceptGroupVerificationCommand>());
+        init_command("get_group_verification_list", std::make_shared<GetGroupVerificationListCommand>());
+        init_command("reject_friend_verification", std::make_shared<RejectFriendVerificationCommand>());
+        init_command("reject_group_verification", std::make_shared<RejectGroupVerificationCommand>());
+        init_command("create_group", std::make_shared<CreateGroupCommand>());
+        init_command("remove_group", std::make_shared<RemoveGroupCommand>());
+        init_command("leave_group", std::make_shared<LeaveGroupCommand>());
+        init_command("remove_friend", std::make_shared<RemoveFriendCommand>());
+    }
+    ~JsonMessageProcessCommandList() = default;
+
+    bool addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr);
+    bool hasCommand(std::string_view function_name) const;
+    std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name);
+    const std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name) const;
+    const std::vector<JsonMessageCommand::JsonOption>& getCommandOptions(std::string_view function_name) const;
+    bool removeCommand(std::string_view function_name);
+
+private:
+    struct JsonMessageCommandInfomation
+    {
+        std::shared_ptr<JsonMessageCommand> command_ptr;
+        std::vector<JsonMessageCommand::JsonOption> json_options;
+    };
+
+    std::unordered_map<std::string, JsonMessageCommandInfomation, string_hash, std::equal_to<>>
+                                m_function_map;
+    mutable std::shared_mutex   m_function_map_mutex;
+};
+
+bool JsonMessageProcessCommandList::addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr)
+{
+    if (hasCommand(function_name) || !command_ptr)
+        return false;
+    
+    std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex);
+    m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
+    return true;
+}
+
+bool JsonMessageProcessCommandList::hasCommand(std::string_view function_name) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    return m_function_map.find(function_name) != m_function_map.cend();
+}
+
+std::shared_ptr<JsonMessageCommand> JsonMessageProcessCommandList::getCommand(std::string_view function_name)
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    auto iter = m_function_map.find(function_name);
+    if (iter == m_function_map.cend())
+        throw std::system_error(make_error_code(qls_errc::null_pointer));
+    return iter->second.command_ptr;
+}
+
+const std::shared_ptr<JsonMessageCommand> JsonMessageProcessCommandList::getCommand(std::string_view function_name) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    auto iter = m_function_map.find(function_name);
+    if (iter == m_function_map.cend())
+        throw std::system_error(make_error_code(qls_errc::null_pointer));
+    return iter->second.command_ptr;
+}
+
+const std::vector<JsonMessageCommand::JsonOption> &JsonMessageProcessCommandList::getCommandOptions(std::string_view function_name) const
+{
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    auto iter = m_function_map.find(function_name);
+    if (iter == m_function_map.cend())
+        throw std::system_error(make_error_code(qls_errc::null_pointer));
+    return iter->second.json_options;
+}
+
+bool JsonMessageProcessCommandList::removeCommand(std::string_view function_name)
+{
+    if (!hasCommand(function_name))
+        return false;
+
+    std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex);
+    auto [_, info] = *(m_function_map.find(function_name));
+    m_function_map.erase(function_name);
+    return true;
+}
+
+// -----------------------------------------------------------------------------------------------
 // JsonMessageProcessImpl
 // -----------------------------------------------------------------------------------------------
 
@@ -27,45 +138,7 @@ class JsonMessageProcessImpl
 {
 public:
     JsonMessageProcessImpl(UserID user_id) :
-        m_user_id(user_id)
-    {
-        auto init_command = [&](std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr) -> bool {
-            if (m_function_map.find(function_name) != m_function_map.cend() || !command_ptr)
-                return false;
-
-            m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
-            int function_type = command_ptr->getCommandType();
-            if (function_type & JsonMessageCommand::NormalType)
-                m_normal_function_set.emplace(function_name);
-            else if (function_type & JsonMessageCommand::LoginType)
-                m_normal_function_set.emplace(function_name);
-            return true;
-        };
-
-        try {
-            init_command("register", std::make_shared<RegisterCommand>());
-            init_command("has_user", std::make_shared<HasUserCommand>());
-            init_command("search_user", std::make_shared<SearchUserCommand>());
-            init_command("add_friend", std::make_shared<AddFriendCommand>());
-            init_command("add_group", std::make_shared<AddGroupCommand>());
-            init_command("get_friend_list", std::make_shared<GetFriendListCommand>());
-            init_command("get_group_list", std::make_shared<GetGroupListCommand>());
-            init_command("send_friend_message", std::make_shared<SendFriendMessageCommand>());
-            init_command("send_group_message", std::make_shared<SendGroupMessageCommand>());
-            init_command("accept_friend_verification", std::make_shared<AcceptFriendVerificationCommand>());
-            init_command("get_friend_verification_list", std::make_shared<GetFriendVerificationListCommand>());
-            init_command("accept_group_verification", std::make_shared<AcceptGroupVerificationCommand>());
-            init_command("get_group_verification_list", std::make_shared<GetGroupVerificationListCommand>());
-            init_command("reject_friend_verification", std::make_shared<RejectFriendVerificationCommand>());
-            init_command("reject_group_verification", std::make_shared<RejectGroupVerificationCommand>());
-            init_command("create_group", std::make_shared<CreateGroupCommand>());
-            init_command("remove_group", std::make_shared<RemoveGroupCommand>());
-            init_command("leave_group", std::make_shared<LeaveGroupCommand>());
-            init_command("remove_friend", std::make_shared<RemoveFriendCommand>());
-        } catch(const std::exception& e) {
-            serverLogger.critical(std::string(e.what()), ", m_function_map size: ", m_function_map.size());
-        }
-    }
+        m_user_id(user_id) {}
 
     static qjson::JObject getUserPublicInfo(UserID user_id);
 
@@ -73,12 +146,6 @@ public:
     static qjson::JObject searchUser(std::string_view user_name);
 
     UserID getLocalUserID() const;
-
-    bool addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr);
-    bool hasCommand(std::string_view function_name) const;
-    std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name) const;
-    const std::vector<JsonMessageCommand::JsonOption>& getCommandOptions(std::string_view function_name) const;
-    bool removeCommand(std::string_view function_name);
 
     qjson::JObject processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
@@ -89,22 +156,10 @@ private:
     UserID                      m_user_id;
     mutable std::shared_mutex   m_user_id_mutex;
 
-    struct JsonMessageCommandInfomation
-    {
-        std::shared_ptr<JsonMessageCommand> command_ptr;
-        std::vector<JsonMessageCommand::JsonOption> json_options;
-    };
-
-    std::unordered_map<std::string, JsonMessageCommandInfomation, string_hash, std::equal_to<>>
-                                m_function_map;
-    mutable std::shared_mutex   m_function_map_mutex;
-    std::unordered_set<std::string, string_hash, std::equal_to<>>
-                                m_normal_function_set;
-    mutable std::shared_mutex   m_normal_function_set_mutex;
-    std::unordered_set<std::string, string_hash, std::equal_to<>>
-                                m_login_function_set;
-    mutable std::shared_mutex   m_login_function_set_mutex;
+    static JsonMessageProcessCommandList m_jmpc_list;
 };
+
+JsonMessageProcessCommandList JsonMessageProcessImpl::m_jmpc_list;
 
 JsonMessageProcess::JsonMessageProcess(UserID user_id) :
     m_process(std::make_unique<JsonMessageProcessImpl>(user_id)) {}
@@ -134,70 +189,6 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
     return this->m_user_id;
 }
 
-bool JsonMessageProcessImpl::addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr)
-{
-    if (hasCommand(function_name) || !command_ptr)
-        return false;
-    
-    std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex, std::defer_lock),
-                                        unique_lock2(m_normal_function_set_mutex, std::defer_lock),
-                                        unique_lock3(m_login_function_set_mutex, std::defer_lock);
-    std::lock(unique_lock1, unique_lock2, unique_lock3);
-
-    m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
-    int function_type = command_ptr->getCommandType();
-    if (function_type | JsonMessageCommand::NormalType)
-        m_normal_function_set.emplace(function_name);
-    else if (function_type | JsonMessageCommand::LoginType)
-        m_login_function_set.emplace(function_name);
-    return true;
-}
-
-bool JsonMessageProcessImpl::hasCommand(std::string_view function_name) const
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
-    return m_function_map.find(function_name) != m_function_map.cend();
-}
-
-std::shared_ptr<JsonMessageCommand> JsonMessageProcessImpl::getCommand(std::string_view function_name) const
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
-    auto iter = m_function_map.find(function_name);
-    if (iter == m_function_map.cend())
-        throw std::system_error(make_error_code(qls_errc::null_pointer));
-    return iter->second.command_ptr;
-}
-
-const std::vector<JsonMessageCommand::JsonOption> &JsonMessageProcessImpl::getCommandOptions(std::string_view function_name) const
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
-    auto iter = m_function_map.find(function_name);
-    if (iter == m_function_map.cend())
-        throw std::system_error(make_error_code(qls_errc::null_pointer));
-    return iter->second.json_options;
-}
-
-bool JsonMessageProcessImpl::removeCommand(std::string_view function_name)
-{
-    if (!hasCommand(function_name))
-        return false;
-
-    std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex, std::defer_lock),
-                                        unique_lock2(m_normal_function_set_mutex, std::defer_lock),
-                                        unique_lock3(m_login_function_set_mutex, std::defer_lock);
-    std::lock(unique_lock1, unique_lock2, unique_lock3);
-
-    auto [_, info] = *(m_function_map.find(function_name));
-    m_function_map.erase(function_name);
-    int function_type = info.command_ptr->getCommandType();
-    if (function_type & JsonMessageCommand::NormalType)
-        m_normal_function_set.erase(function_name);
-    else if (function_type & JsonMessageCommand::LoginType)
-        m_normal_function_set.erase(function_name);
-
-    return true;
-}
-
 qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
     try {
@@ -210,30 +201,25 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
 
         // check if user has logined
         {
-            std::shared_lock<std::shared_mutex> shared_lock1(m_user_id_mutex, std::defer_lock),
-                shared_lock2(m_function_map_mutex, std::defer_lock);
-            std::lock(shared_lock1, shared_lock2);
+            std::shared_lock<std::shared_mutex> shared_lock1(m_user_id_mutex);
             // Check if userid == -1
-            auto iter = m_function_map.find(function_name);
             if (m_user_id == UserID(-1) &&
                 function_name != "login" &&
-                (iter == m_function_map.cend() || iter->second.command_ptr->getCommandType() & JsonMessageCommand::NormalType)) {
+                (!m_jmpc_list.hasCommand(function_name) ||
+                    m_jmpc_list.getCommand(function_name)->getCommandType() & JsonMessageCommand::NormalType)) {
                     return makeErrorMessage("You haven't logged in!");
             }
         }
 
         if (function_name == "login")
             return login(UserID(param["user_id"].getInt()), param["password"].getString(), param["device"].getString(), sf);
-        
-        std::shared_lock<std::shared_mutex> m_function_map_lock(m_function_map_mutex, std::defer_lock),
-            id_lock(m_user_id_mutex, std::defer_lock);
-        std::lock(m_function_map_mutex, id_lock);
-        auto iter = m_function_map.find(function_name);
-        if (iter == m_function_map.cend())
+
+        if (!m_jmpc_list.hasCommand(function_name))
             return makeErrorMessage("There isn't a function that matches the name!");
         
+        auto command_ptr = m_jmpc_list.getCommand(function_name);
         const qjson::dict_t& param_dict = param.getDict();
-        for (const auto& [name, type]: std::as_const(iter->second.json_options)) {
+        for (const auto& [name, type]: m_jmpc_list.getCommandOptions(function_name)) {
             auto local_iter = param_dict.find(name);
             if (local_iter == param_dict.cend())
                 return makeErrorMessage(std::format("Lost a parameter: {}.", name));
@@ -241,7 +227,12 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
                 return makeErrorMessage(std::format("Wrong parameter type: {}.", name));
         }
 
-        return iter->second.command_ptr->execute(m_user_id, std::move(param));
+        UserID user_id;
+        {
+            std::shared_lock<std::shared_mutex> id_lock(m_user_id_mutex);
+            user_id = m_user_id;
+        }
+        return command_ptr->execute(user_id, std::move(param));
     }
     catch (...) {
         return makeErrorMessage("Unknown error occured!");
