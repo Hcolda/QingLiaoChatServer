@@ -14,8 +14,8 @@ struct SessionImpl
     bool has_login = false;
 };
 
-static qjson::JObject makeJsonFunctionDataPackage(std::string_view functionName,
-    std::initializer_list<std::pair<std::string, qjson::JObject>> list)
+static inline qjson::JObject makeJsonFunctionDataPackage(std::string_view functionName,
+    std::vector<std::pair<std::string, qjson::JObject>> list)
 {
     qjson::JObject json(qjson::JValueType::JDict);
     json["function"] = functionName;
@@ -27,7 +27,15 @@ static qjson::JObject makeJsonFunctionDataPackage(std::string_view functionName,
     return json;
 }
 
-static qjson::JObject readJsonFunctionDataPackage(const std::shared_ptr<qls::DataPackage>& package)
+static inline qjson::JObject makeJsonFunctionDataPackage(std::string_view functionName)
+{
+    qjson::JObject json(qjson::JValueType::JDict);
+    json["function"] = std::string(functionName);
+    json["parameters"] = qjson::JObject(qjson::JValueType::JDict);
+    return json;
+}
+
+static inline qjson::JObject readJsonFunctionDataPackage(const std::shared_ptr<qls::DataPackage>& package)
 {
     return qjson::JParser::fastParse(package->getData());
 }
@@ -113,6 +121,20 @@ bool Session::rejectFriendApplication(UserID user_id)
     return returnJson["state"].getString() == "success";
 }
 
+bool Session::createGroup()
+{
+    if (!m_impl->has_login)
+        return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("create_group")),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << "-- group id: " << returnJson["group_id"].getInt() << '\n';
+    return returnJson["state"].getString() == "success";
+}
+
 bool Session::createGroupApplication(GroupID group_id)
 {
     if (!m_impl->has_login)
@@ -127,46 +149,96 @@ bool Session::createGroupApplication(GroupID group_id)
     return returnJson["state"].getString() == "success";
 }
 
-bool Session::applyGroupApplication(GroupID groupid, UserID userid)
+bool Session::applyGroupApplication(GroupID group_id, UserID user_id)
 {
     if (!m_impl->has_login)
         return false;
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("accept_group_verification",
+            {{"group_id", group_id.getOriginValue()},
+             {"user_id", user_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::rejectGroupApplication(GroupID groupid, UserID userid)
+bool Session::rejectGroupApplication(GroupID group_id, UserID user_id)
 {
     if (!m_impl->has_login)
         return false;
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("reject_group_verification",
+            {{"group_id", group_id.getOriginValue()},
+             {"user_id", user_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::sendFriendMessage(UserID userid, std::string_view message)
+bool Session::sendFriendMessage(UserID user_id, std::string_view message)
 {
     if (!m_impl->has_login)
         return false;
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("send_friend_message",
+        {{"user_id", user_id.getOriginValue()},
+         {"message", message}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::sendGroupMessage(GroupID groupid, std::string_view message)
+bool Session::sendGroupMessage(GroupID group_id, std::string_view message)
 {
     if (!m_impl->has_login)
         return false;
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("send_group_message",
+        {{"group_id", group_id.getOriginValue()},
+         {"message", message}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::removeFriend(UserID userid)
+bool Session::removeFriend(UserID user_id)
 {
     if (!m_impl->has_login)
         return false;
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("remove_friend", {{"user_id", user_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
-bool Session::leaveGroup(GroupID groupid)
+bool Session::leaveGroup(GroupID group_id)
 {
     if (!m_impl->has_login)
         return false;
-    return false;
+    auto returnPackage = m_impl->network.send_data_with_result_n_option(qjson::JWriter::fastWrite(
+        makeJsonFunctionDataPackage("leave_group", {{"group_id", group_id.getOriginValue()}})),
+        [](std::shared_ptr<qls::DataPackage>& package){
+            package->type = DataPackage::Text;
+        }).get();
+    auto returnJson = readJsonFunctionDataPackage(returnPackage);
+    std::cout << returnJson["message"].getString() << '\n';
+    return returnJson["state"].getString() == "success";
 }
 
 } // namespace qls

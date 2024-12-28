@@ -265,19 +265,19 @@ bool operator==(const JObject& jo, JValueType type)
     return false;
 }
 
-const JObject& JObject::operator[](size_t itor) const
+const JObject& JObject::operator[](size_t iter) const
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
     if (m_type == JValueType::JNull)
         throw std::logic_error("The type is JNull.");
     list_t* local = std::get_if<list_t>(m_value.get());
-    if (itor >= local->size())
-        throw std::logic_error("The size is smaller than itor.");
-    return (*local).at(itor);
+    if (iter >= local->size())
+        throw std::logic_error("The size is smaller than iter.");
+    return (*local).at(iter);
 }
 
-JObject& JObject::operator[](size_t itor)
+JObject& JObject::operator[](size_t iter)
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
@@ -285,23 +285,23 @@ JObject& JObject::operator[](size_t itor)
     {
         m_type = JValueType::JList;
         *m_value = list_t();
-        std::get_if<list_t>(m_value.get())->resize(itor + 1);
-        return (*std::get_if<list_t>(m_value.get())).at(itor);
+        std::get_if<list_t>(m_value.get())->resize(iter + 1);
+        return (*std::get_if<list_t>(m_value.get())).at(iter);
     }
     list_t* local = std::get_if<list_t>(m_value.get());
-    if (itor >= local->size())
-        local->resize(itor + 1);
-    return (*local).at(itor);
+    if (iter >= local->size())
+        local->resize(iter + 1);
+    return (*local).at(iter);
 }
 
-const JObject& JObject::operator[](int itor) const
+const JObject& JObject::operator[](int iter) const
 {
-    return operator[](static_cast<size_t>(itor));
+    return operator[](static_cast<size_t>(iter));
 }
 
-JObject& JObject::operator[](int itor)
+JObject& JObject::operator[](int iter)
 {
-    return operator[](static_cast<size_t>(itor));
+    return operator[](static_cast<size_t>(iter));
 }
 
 const JObject& JObject::operator[](const char* str) const
@@ -468,8 +468,8 @@ std::string& JObject::getString()
 
 JObject JParser::parse(std::string_view data)
 {
-    size_t itor = 0;
-    return std::move(_parse(data, itor));
+    size_t iter = 0;
+    return std::move(_parse(data, iter));
 }
 
 JObject JParser::fastParse(std::ifstream& infile)
@@ -488,125 +488,106 @@ JObject JParser::fastParse(std::ifstream& infile)
 JObject JParser::fastParse(const std::string_view data)
 {
     static JParser jp;
-    size_t itor = 0;
-    return std::move(jp._parse(data, itor));
+    size_t iter = 0;
+    return std::move(jp._parse(data, iter));
 }
 
-JObject JParser::_parse(std::string_view data, size_t& itor)
+JObject JParser::_parse(std::string_view data, size_t& iter)
 {
     long long error_line = 0;
 
     if (data.empty())
         throw std::logic_error(getLogicErrorString(error_line));
-    skipSpace(data, itor, error_line);
-    if (data.size() <= itor)
+    skipSpace(data, iter, error_line);
+    if (data.size() <= iter)
         throw std::logic_error(getLogicErrorString(error_line));
 
-    if (data[itor] == '{')
-    {
+    if (data[iter] == '{') {
         JObject localJO(JValueType::JDict);
-        itor++;
-        while (itor < data.size() && data[itor] != '}')
-        {
-            skipSpace(data, itor, error_line);
-            if (data[itor] == '}')
+        iter++;
+        while (iter < data.size() && data[iter] != '}') {
+            skipSpace(data, iter, error_line);
+            if (data[iter] == '}')
                 return localJO;
-            std::string key(getString(data, itor, error_line));
-            skipSpace(data, itor, error_line);
-            if (data[itor] == ':')
-                itor++;
+            std::string key(getString(data, iter, error_line));
+            skipSpace(data, iter, error_line);
+            if (data[iter] == ':')
+                iter++;
             else
                 throw std::logic_error(getLogicErrorString(error_line));
-            skipSpace(data, itor, error_line);
-            localJO[key.c_str()] = _parse(data, itor);
-            skipSpace(data, itor, error_line);
-            if (data[itor] != ',' && data[itor] != '}')
+            skipSpace(data, iter, error_line);
+            localJO[key.c_str()] = _parse(data, iter);
+            skipSpace(data, iter, error_line);
+            if (data[iter] != ',' && data[iter] != '}')
                 throw std::logic_error(getLogicErrorString(error_line));
-            else if (data[itor] == '}')
-            {
-                itor++;
+            else if (data[iter] == '}') {
+                iter++;
                 return localJO;
             }
-            itor++;
-            skipSpace(data, itor, error_line);
+            iter++;
+            skipSpace(data, iter, error_line);
         }
-        if (data[itor] == '}')
+        if (data[iter] == '}') {
+            iter++;
             return localJO;
-        else
+        } else
             throw std::logic_error(getLogicErrorString(error_line));
-    }
-    else if (data[itor] == '[')
-    {
+    } else if (data[iter] == '[') {
         JObject localJO(JValueType::JList);
-        itor++;
-        while (itor < data.size() && data[itor] != ']')
-        {
-            skipSpace(data, itor, error_line);
-            if (data[itor] == ']')
+        iter++;
+        while (iter < data.size() && data[iter] != ']') {
+            skipSpace(data, iter, error_line);
+            if (data[iter] == ']')
                 return localJO;
-            localJO.push_back(_parse(data, itor));
-            skipSpace(data, itor, error_line);
-            if (data[itor] != ',' && data[itor] != ']')
+            localJO.push_back(_parse(data, iter));
+            skipSpace(data, iter, error_line);
+            if (data[iter] != ',' && data[iter] != ']')
                 throw std::logic_error(getLogicErrorString(error_line));
-            else if (data[itor] == ']')
-            {
-                itor++;
+            else if (data[iter] == ']') {
+                iter++;
                 return localJO;
             }
-            itor++;
-            skipSpace(data, itor, error_line);
+            iter++;
+            skipSpace(data, iter, error_line);
         }
-        if (data[itor] == ']')
+        if (data[iter] == ']')
             return localJO;
         else
             throw std::logic_error(getLogicErrorString(error_line));
-    }
-    else if (data[itor] == '\"')
-    {
-        return std::move(getString(data, itor, error_line));
-    }
-    else if (data[itor] == 'n')
-    {
-        return std::move(getNull(data, itor, error_line));
-    }
-    else if (data[itor] == 't' || data[itor] == 'f')
-    {
-        return std::move(getBool(data, itor, error_line));
-    }
-    else if ((data[itor] >= '0' && data[itor] <= '9') || data[itor] == '-')
-    {
-        return std::move(getNumber(data, itor, error_line));
-    }
+    } else if (data[iter] == '\"')
+        return std::move(getString(data, iter, error_line));
+    else if (data[iter] == 'n')
+        return std::move(getNull(data, iter, error_line));
+    else if (data[iter] == 't' || data[iter] == 'f')
+        return std::move(getBool(data, iter, error_line));
+    else if ((data[iter] >= '0' && data[iter] <= '9') || data[iter] == '-')
+        return std::move(getNumber(data, iter, error_line));
     else
         throw std::logic_error(getLogicErrorString(error_line));
 }
 
-void JParser::skipSpace(std::string_view data, size_t& itor, long long& error_line)
+void JParser::skipSpace(std::string_view data, size_t& iter, long long& error_line)
 {
     auto size = data.size();
-    while (itor < size && (data[itor] == ' ' || data[itor] == '\t' || data[itor] == '\n'))
+    while (iter < size && (data[iter] == ' ' || data[iter] == '\t' || data[iter] == '\n'))
     {
-        if (data[itor] == '\n')
+        if (data[iter] == '\n')
         {
             error_line++;
         }
-        itor++;
+        iter++;
     }
 }
 
-std::string JParser::getString(std::string_view data, size_t& itor, long long error_line)
+std::string JParser::getString(std::string_view data, size_t& iter, long long error_line)
 {
-    if (data[itor] == '\"')
-    {
+    if (data[iter] == '\"') {
         std::string str;
-        itor++;
-        while (itor < data.size() && data[itor] != '\"')
-        {
-            if (data[itor] == '\\')
-            {
-                itor++;
-                switch (data[itor])
-                {
+        iter++;
+        while (iter < data.size() && data[iter] != '\"') {
+            if (data[iter] == '\\') {
+                iter++;
+                switch (data[iter]) {
                 case 'n':
                     str += '\n';
                     break;
@@ -635,63 +616,54 @@ std::string JParser::getString(std::string_view data, size_t& itor, long long er
                     throw std::logic_error(getLogicErrorString(error_line));
                     break;
                 }
+            } else {
+                str += data[iter];
             }
-            else
-            {
-                str += data[itor];
-            }
-            itor++;
+            iter++;
         }
-        if (itor >= data.size())
+        if (iter >= data.size())
             throw std::logic_error(getLogicErrorString(error_line));
-        itor++;
+        iter++;
         return std::move(str);
     }
     else
         throw std::logic_error(getLogicErrorString(error_line));
 }
 
-JObject JParser::getNumber(std::string_view data, size_t& itor, long long error_line)
+JObject JParser::getNumber(std::string_view data, size_t& iter, long long error_line)
 {
     bool isDouble = false;
     bool firstNum = false;
     bool isNegative = false;
-    if (data[itor] == '-')
-    {
+    if (data[iter] == '-') {
         isNegative = true;
-        itor++;
+        iter++;
     }
     size_t count = 0;
-    size_t start = itor;
+    size_t start = iter;
 
-    while (itor < data.size() &&
-           ((data[itor] >= '0' && data[itor] <= '9') || data[itor] == '.'))
-    {
-        if (!firstNum && data[itor] >= '0' && data[itor] <= '9')
-        {
+    while (iter < data.size() &&
+           ((data[iter] >= '0' && data[iter] <= '9') || data[iter] == '.')) {
+        if (!firstNum && data[iter] >= '0' && data[iter] <= '9') {
             firstNum = true;
         }
-        else if (isDouble)
-        {
+        else if (isDouble) {
             count++;
         }
-        else if (data[itor] == '.')
-        {
+        else if (data[iter] == '.') {
             if (!firstNum)
                 throw std::logic_error(getLogicErrorString(error_line));
             isDouble = true;
-            itor++;
+            iter++;
             continue;
         }
-        itor++;
+        iter++;
     }
 
-    if (isDouble)
-    {
-        long double number = data[itor - 1] - '0';
+    if (isDouble) {
+        long double number = data[iter - 1] - '0';
         size_t single = 10;
-        for (long long i = itor - 2; i >= static_cast<long long>(start); --i, single *= 10)
-        {
+        for (long long i = iter - 2; i >= static_cast<long long>(start); --i, single *= 10) {
             if (data[i] == '.')
                 continue;
             number += single * (data[i] - '0');
@@ -699,13 +671,10 @@ JObject JParser::getNumber(std::string_view data, size_t& itor, long long error_
         if (isNegative)
             number *= -1;
         return number / std::pow(10, count);
-    }
-    else
-    {
-        long long number = data[itor - 1] - '0';
+    } else {
+        long long number = data[iter - 1] - '0';
         size_t single = 10;
-        for (long long i = itor - 2; i >= static_cast<long long>(start); --i, single *= 10)
-        {
+        for (long long i = iter - 2; i >= static_cast<long long>(start); --i, single *= 10) {
             number += single * (data[i] - '0');
         }
         if (isNegative)
@@ -714,40 +683,36 @@ JObject JParser::getNumber(std::string_view data, size_t& itor, long long error_
     }
 }
 
-JObject JParser::getBool(std::string_view data, size_t& itor, long long error_line)
+JObject JParser::getBool(std::string_view data, size_t& iter, long long error_line)
 {
-    if (data.size() >= itor + 4 &&
-        data[itor] == 't' &&
-        data[itor + 1] == 'r' &&
-        data[itor + 2] == 'u' &&
-        data[itor + 3] == 'e')
-    {
-        itor += 4;
+    if (data.size() >= iter + 4 &&
+        data[iter] == 't' &&
+        data[iter + 1] == 'r' &&
+        data[iter + 2] == 'u' &&
+        data[iter + 3] == 'e') {
+        iter += 4;
         return true;
-    }
-    else if (data.size() >= itor + 5 &&
-             data[itor] == 'f' &&
-             data[itor + 1] == 'a' &&
-             data[itor + 2] == 'l' &&
-             data[itor + 3] == 's' &&
-             data[itor + 4] == 'e')
-    {
-        itor += 5;
+    } else if (data.size() >= iter + 5 &&
+               data[iter] == 'f' &&
+               data[iter + 1] == 'a' &&
+               data[iter + 2] == 'l' &&
+               data[iter + 3] == 's' &&
+               data[iter + 4] == 'e') {
+        iter += 5;
         return false;
     }
     throw std::logic_error(getLogicErrorString(error_line));
 }
 
-JObject JParser::getNull(std::string_view data, size_t& itor, long long error_line)
+JObject JParser::getNull(std::string_view data, size_t& iter, long long error_line)
 {
-    if (data.size() >= itor + 4 &&
-        data[itor] == 'n' &&
-        data[itor + 1] == 'u' &&
-        data[itor + 2] == 'l' &&
-        data[itor + 3] == 'l')
-    {
-        itor += 4;
-        return JObject();
+    if (data.size() >= iter + 4 &&
+        data[iter] == 'n' &&
+        data[iter + 1] == 'u' &&
+        data[iter + 2] == 'l' &&
+        data[iter + 3] == 'l') {
+            iter += 4;
+            return JObject();
     }
     throw std::logic_error(getLogicErrorString(error_line));
 }
@@ -760,9 +725,7 @@ std::string JParser::getLogicErrorString(long long error_line)
 std::string JWriter::write(const JObject& jo)
 {
     std::string str;
-
-    switch (jo.getType())
-    {
+    switch (jo.getType()) {
     case JValueType::JNull:
         str += "null";
         break;
@@ -778,20 +741,14 @@ std::string JWriter::write(const JObject& jo)
         else
             str += "false";
         break;
-    case JValueType::JString:
-    {
+    case JValueType::JString: {
         std::string localString(jo.getString());
-        if (localString.empty())
-        {
+        if (localString.empty()) {
             str += "\"\"";
-        }
-        else
-        {
+        } else {
             str += '\"';
-            for (auto i = localString.begin(); i != localString.end(); ++i)
-            {
-                switch (*i)
-                {
+            for (auto i = localString.begin(); i != localString.end(); ++i) {
+                switch (*i) {
                 case 0:
                     throw std::logic_error("Invalid string");
                 case '\n':
@@ -827,18 +784,13 @@ std::string JWriter::write(const JObject& jo)
     case JValueType::JList:
     {
         const list_t& list = jo.getList();
-        if (list.empty())
-        {
+        if (list.empty()) {
             str += "[]";
-        }
-        else
-        {
+        } else {
             str += '[';
-            for (auto itor = list.begin(); itor != list.end(); itor++)
-            {
-                str += write(*itor);
-                if (itor + 1 != list.end())
-                {
+            for (auto iter = list.begin(); iter != list.end(); iter++) {
+                str += write(*iter);
+                if (iter + 1 != list.end()) {
                     str += ',';
                 }
             }
@@ -846,8 +798,7 @@ std::string JWriter::write(const JObject& jo)
         }
         break;
     }
-    case JValueType::JDict:
-    {
+    case JValueType::JDict: {
         const dict_t& dict = jo.getDict();
         if (dict.empty())
         {
@@ -856,11 +807,11 @@ std::string JWriter::write(const JObject& jo)
         else
         {
             str += '{';
-            for (auto itor = dict.begin(), itor2 = dict.begin(); itor != dict.end(); itor++)
+            for (auto iter = dict.begin(), iter2 = dict.begin(); iter != dict.end(); iter++)
             {
-                str += '\"' + itor->first + "\":" + write(itor->second);
-                itor2 = itor;
-                if (++itor2 != dict.end())
+                str += '\"' + iter->first + "\":" + write(iter->second);
+                iter2 = iter;
+                if (++iter2 != dict.end())
                 {
                     str += ',';
                 }
@@ -880,8 +831,7 @@ std::string JWriter::formatWrite(const JObject& jo, size_t n)
 {
     std::string str;
 
-    switch (jo.getType())
-    {
+    switch (jo.getType()) {
     case JValueType::JNull:
         str += "null";
         break;
@@ -892,8 +842,7 @@ std::string JWriter::formatWrite(const JObject& jo, size_t n)
         str += std::to_string(jo.getDouble());
         break;
     case JValueType::JBool:
-        if (jo.getBool())
-        {
+        if (jo.getBool()) {
             str += "true";
             break;
         }
@@ -903,10 +852,8 @@ std::string JWriter::formatWrite(const JObject& jo, size_t n)
     {
         std::string localString(jo.getString());
         str += '\"';
-        for (auto i = localString.begin(); i != localString.end(); ++i)
-        {
-            switch (*i)
-            {
+        for (auto i = localString.begin(); i != localString.end(); ++i) {
+            switch (*i) {
             case 0:
                 throw std::logic_error("Invalid string");
             case '\n':
@@ -938,50 +885,40 @@ std::string JWriter::formatWrite(const JObject& jo, size_t n)
         str += '\"';
         break;
     }
-    case JValueType::JList:
-    {
+    case JValueType::JList: {
         const list_t& list = jo.getList();
         str += "[\n";
-        for (auto itor = list.begin(); itor != list.end(); itor++)
-        {
-            for (size_t i = 0; i < n; i++)
-            {
+        for (auto iter = list.begin(); iter != list.end(); iter++) {
+            for (size_t i = 0; i < n; i++) {
                 str += "    ";
             }
-            str += formatWrite(*itor, n + 1);
-            if (itor + 1 != list.end())
-            {
+            str += formatWrite(*iter, n + 1);
+            if (iter + 1 != list.end()) {
                 str += ",\n";
             }
         }
         str += '\n';
-        for (size_t i = 0; i < n - 1; i++)
-        {
+        for (size_t i = 0; i < n - 1; i++) {
             str += "    ";
         }
         str += "]";
         break;
     }
-    case JValueType::JDict:
-    {
+    case JValueType::JDict: {
         const dict_t& dict = jo.getDict();
         str += "{\n";
-        for (auto itor = dict.begin(), itor2 = dict.begin(); itor != dict.end(); itor++)
-        {
-            for (size_t i = 0; i < n; i++)
-            {
+        for (auto iter = dict.begin(), iter2 = dict.begin(); iter != dict.end(); iter++) {
+            for (size_t i = 0; i < n; i++) {
                 str += "    ";
             }
-            str += '\"' + itor->first + "\": " + formatWrite(itor->second, n + 1);
-            itor2 = itor;
-            if (++itor2 != dict.end())
-            {
+            str += '\"' + iter->first + "\": " + formatWrite(iter->second, n + 1);
+            iter2 = iter;
+            if (++iter2 != dict.end()) {
                 str += ",\n";
             }
         }
         str += '\n';
-        for (size_t i = 0; i < n - 1; i++)
-        {
+        for (size_t i = 0; i < n - 1; i++) {
             str += "    ";
         }
         str += "}";

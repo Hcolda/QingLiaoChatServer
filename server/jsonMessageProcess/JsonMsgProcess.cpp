@@ -192,9 +192,16 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
 qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
     try {
-        if (json["function"].getType() != qjson::JString)
+        serverLogger.debug("Json body: ", qjson::JWriter::fastWrite(json));
+        if (json.getType() != qjson::JDict)
+            return makeErrorMessage("The data body must be json dictory type!");
+        else if (!json.hasMember("function"))
+            return makeErrorMessage("\"function\" must be included in json dictory!");
+        else if (!json.hasMember("parameters"))
+            return makeErrorMessage("\"function\" must be included in json dictory!");
+        else if (json["function"].getType() != qjson::JString)
             return makeErrorMessage("\"function\" must be string type!");
-        if (json["parameters"].getType() != qjson::JDict)
+        else if (json["parameters"].getType() != qjson::JDict)
             return makeErrorMessage("\"parameters\" must be dictory type!");
         std::string function_name = json["function"].getString();
         qjson::JObject param = json["parameters"];
@@ -233,9 +240,12 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
             user_id = m_user_id;
         }
         return command_ptr->execute(user_id, std::move(param));
-    }
-    catch (...) {
+    } catch (const std::exception& e) {
+#ifndef _DEBUG
         return makeErrorMessage("Unknown error occured!");
+#else
+        return makeErrorMessage(std::string("Unknown error occured: ") + e.what());
+#endif
     }
 }
 

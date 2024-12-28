@@ -53,7 +53,7 @@ qjson::JObject SearchUserCommand::execute(UserID executor, qjson::JObject parame
 
 qjson::JObject AddFriendCommand::execute(UserID executor, qjson::JObject parameters)
 {
-    UserID friend_id = UserID(parameters["friend_id"].getInt());
+    UserID friend_id = UserID(parameters["user_id"].getInt());
 
     if (!serverManager.hasUser(friend_id))
         return makeErrorMessage("UserID is invalid!");

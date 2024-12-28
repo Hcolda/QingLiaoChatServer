@@ -364,11 +364,14 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# build
-build/
+# Build - build folder
+[Bb]uild/
 mariadb-connector-cpp/
 vcpkg/
 vcpkg_installed/
 enc_temp_folder/
 .vs/
 .vscode/
+
+# Pem - pem-key file
+*.pem

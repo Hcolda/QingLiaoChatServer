@@ -29,7 +29,7 @@ public:
     CommandManager();
     ~CommandManager() = default;
 
-    bool addCommand(std::string_view commandName, const std::shared_ptr<Command>& command_ptr);
+    bool addCommand(std::string_view commandName, const std::shared_ptr<Command>& commandPtr);
     bool removeCommand(std::string_view commandName);
     bool canFindCommand(std::string_view commandName) const;
     std::shared_ptr<Command> getCommand(std::string_view commandName) const;
