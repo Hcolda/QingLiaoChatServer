@@ -399,11 +399,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->disconnectedCallbackFunction_map_mutex);
-
         auto iter = m_network_impl->disconnectedCallbackFunction_map.find(name);
         if (iter == m_network_impl->disconnectedCallbackFunction_map.end())
             return false;
-
         m_network_impl->disconnectedCallbackFunction_map.erase(iter);
         return true;
     }
@@ -412,11 +410,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->connectedErrorCallbackFunction_map_mutex);
-
         auto iter = m_network_impl->connectedErrorCallbackFunction_map.find(name);
         if (iter != m_network_impl->connectedErrorCallbackFunction_map.end())
             return false;
-
         m_network_impl->connectedErrorCallbackFunction_map[name] = std::move(func);
         return true;
     }
@@ -425,11 +421,9 @@ namespace qls
     {
         std::unique_lock<std::shared_mutex> lock(
             m_network_impl->connectedErrorCallbackFunction_map_mutex);
-
         auto iter = m_network_impl->connectedErrorCallbackFunction_map.find(name);
         if (iter == m_network_impl->connectedErrorCallbackFunction_map.end())
             return false;
-
         m_network_impl->connectedErrorCallbackFunction_map.erase(iter);
         return true;
     }
@@ -479,8 +473,7 @@ namespace qls
                         m_network_impl->requestID_set.erase(iter);
                     }
                 }
-                if (need_moving_data)
-                {
+                if (need_moving_data) {
                     auto iter = m_network_impl->requestID2Function_map.find(requestID);
                     if (iter != m_network_impl->requestID2Function_map.cend())
                         iter->second(std::move(pack));
@@ -488,8 +481,7 @@ namespace qls
                     return;
                 }
             }
-        }
-        catch (...) {
+        } catch (...) {
             return;
         }
         std::shared_lock<std::shared_mutex> lock(m_network_impl->revceiveStdStringFunction_map_mutex);

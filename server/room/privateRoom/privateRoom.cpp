@@ -23,6 +23,9 @@ PrivateRoom::PrivateRoom(UserID user_id_1, UserID user_id_2, bool is_create) :
         // sql 读取private room
         m_can_be_used = true;
     }
+
+    TextDataRoom::joinRoom(user_id_1);
+    TextDataRoom::joinRoom(user_id_2);
 }
 
 void PrivateRoom::sendMessage(std::string_view message, UserID sender_user_id)

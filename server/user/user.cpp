@@ -402,7 +402,7 @@ bool User::addGroup(GroupID group_id)
     UserID self_id = this->getUserID();
     if (!serverManager.hasGroupRoom(group_id) ||
         serverManager.getGroupRoom(group_id)->hasMember(self_id))
-        return false;
+            return false;
 
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasGroupRoomVerification(group_id, self_id)) {
@@ -430,9 +430,9 @@ bool User::acceptGroup(GroupID group_id, UserID user_id)
 {
     UserID self_id = this->getUserID();
     if (!serverManager.hasGroupRoom(group_id) ||
-        !serverManager.getGroupRoom(group_id)->hasMember(user_id) ||
+        serverManager.getGroupRoom(group_id)->hasMember(user_id) ||
         self_id != serverManager.getGroupRoom(group_id)->getAdministrator())
-        return false;
+            return false;
 
     if (!serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id))
         return false;
@@ -449,9 +449,9 @@ bool User::rejectGroup(GroupID group_id, UserID user_id)
 {
     UserID self_id = this->getUserID();
     if (!serverManager.hasGroupRoom(group_id) ||
-        !serverManager.getGroupRoom(group_id)->hasMember(user_id) ||
+        serverManager.getGroupRoom(group_id)->hasMember(user_id) ||
         self_id != serverManager.getGroupRoom(group_id)->getAdministrator())
-        return false;
+            return false;
 
     try {
         serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);

@@ -4,6 +4,7 @@
 #include <format>
 #include <cstring>
 #include <memory_resource>
+#include <functional>
 
 #include "networkEndianness.hpp"
 #include "qls_error.h"
@@ -16,11 +17,14 @@ static std::pmr::synchronized_pool_resource sync_pool;
 std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
 {
     std::hash<std::string_view> hash;
-    void* mem = sync_pool.allocate(sizeof(DataPackage) + data.size());
-    std::memset(mem, 0, sizeof(DataPackage) + data.size());
+    const int lenth = static_cast<int>(sizeof(DataPackage) + data.size());
+    void* mem = sync_pool.allocate(lenth);
+    std::memset(mem, 0, lenth);
     std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
-        deleteDataPackage);
-    package->length = int(sizeof(DataPackage) + data.size());
+        [lenth](DataPackage* dp) {
+            sync_pool.deallocate(dp, static_cast<size_t>(lenth));
+        });
+    package->length = lenth;
     std::memcpy(package->data, data.data(), data.size());
     package->verifyCode = hash(data);
     return package;
@@ -51,7 +55,9 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
     void* mem = sync_pool.allocate(size);
     std::memset(mem, 0, size);
     std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
-        deleteDataPackage);
+        [lenth = size](DataPackage* dp) {
+            sync_pool.deallocate(dp, static_cast<size_t>(lenth));
+        });
     std::memcpy(package.get(), data.data(), size);
 
     // Endianness conversion
@@ -111,12 +117,6 @@ std::string DataPackage::getData()
     data.resize(size);
     std::memcpy(data.data(), this->data, size);
     return data;
-}
-
-void DataPackage::deleteDataPackage(DataPackage* dp)
-{
-    int lenth = dp->length;
-    sync_pool.deallocate(dp, static_cast<size_t>(lenth));
 }
 
 } // namespace qls

@@ -27,6 +27,7 @@ public:
     bool applyFriendApplication(UserID userid);
     bool rejectFriendApplication(UserID userid);
 
+    bool createGroup();
     bool createGroupApplication(GroupID groupid);
     bool applyGroupApplication(GroupID groupid, UserID userid);
     bool rejectGroupApplication(GroupID groupid, UserID userid);

@@ -38,7 +38,7 @@ public:
 
         std::shared_lock<std::shared_mutex> local_shared_lock(m_command_manager.m_command_map_mutex);
         std::cout << "help [--name=(function name)]\n";
-        for (const auto& [commandName, command_ptr]: std::as_const(m_command_manager.m_command_map))
+        for (const auto& [commandName, commandPtr]: std::as_const(m_command_manager.m_command_map))
         {
             std::cout << commandName << '\n';
         }
@@ -112,11 +112,11 @@ public:
     }
 };
 
-class CreateFriendApplication: public Command
+class CreateFriendApplicationCommand: public Command
 {
 public:
-    CreateFriendApplication() = default;
-    ~CreateFriendApplication() = default;
+    CreateFriendApplicationCommand() = default;
+    ~CreateFriendApplicationCommand() = default;
 
     opt::Option getOption() const
     {
@@ -128,17 +128,17 @@ public:
     void execute(const opt::Option& opt)
     {
         if (session.createFriendApplication(qls::UserID(opt.get_int("userid"))))
-            std::cout << "Successfully send a application to the user!\n";
+            std::cout << "Successfully sent a application to the user!\n";
         else
             std::cout << "Failed to send a application to the user!\n";
     }
 };
 
-class ApplyFriendApplication: public Command
+class ApplyFriendApplicationCommand: public Command
 {
 public:
-    ApplyFriendApplication() = default;
-    ~ApplyFriendApplication() = default;
+    ApplyFriendApplicationCommand() = default;
+    ~ApplyFriendApplicationCommand() = default;
 
     opt::Option getOption() const
     {
@@ -150,17 +150,17 @@ public:
     void execute(const opt::Option& opt)
     {
         if (session.applyFriendApplication(qls::UserID(opt.get_int("userid"))))
-            std::cout << "Successfully apply a application to the user!\n";
+            std::cout << "Successfully applied a application to the user!\n";
         else
             std::cout << "Failed to apply a application to the user!\n";
     }
 };
 
-class RejectFriendApplication: public Command
+class RejectFriendApplicationCommand: public Command
 {
 public:
-    RejectFriendApplication() = default;
-    ~RejectFriendApplication() = default;
+    RejectFriendApplicationCommand() = default;
+    ~RejectFriendApplicationCommand() = default;
 
     opt::Option getOption() const
     {
@@ -172,17 +172,34 @@ public:
     void execute(const opt::Option& opt)
     {
         if (session.rejectFriendApplication(qls::UserID(opt.get_int("userid"))))
-            std::cout << "Successfully reject a application to the user!\n";
+            std::cout << "Successfully rejected a application to the user!\n";
         else
             std::cout << "Failed to reject a application to the user!\n";
     }
 };
 
-class CreateGroupApplication: public Command
+class CreateGroupCommand: public Command
 {
 public:
-    CreateGroupApplication() = default;
-    ~CreateGroupApplication() = default;
+    CreateGroupCommand() = default;
+    ~CreateGroupCommand() = default;
+
+    opt::Option getOption() const { return {}; }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.createGroup())
+            std::cout << "Successfully created a group!\n";
+        else
+            std::cout << "Failed to create a group!\n";
+    }
+};
+
+class CreateGroupApplicationCommand: public Command
+{
+public:
+    CreateGroupApplicationCommand() = default;
+    ~CreateGroupApplicationCommand() = default;
 
     opt::Option getOption() const
     {
@@ -194,9 +211,145 @@ public:
     void execute(const opt::Option& opt)
     {
         if (session.createGroupApplication(qls::GroupID(opt.get_int("groupid"))))
-            std::cout << "Successfully send a application to the group!\n";
+            std::cout << "Successfully sent a application to the group!\n";
         else
             std::cout << "Failed to send a application to the group!\n";
+    }
+};
+
+class ApplyGroupApplicationCommand: public Command
+{
+public:
+    ApplyGroupApplicationCommand() = default;
+    ~ApplyGroupApplicationCommand() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("groupid", opt::Option::OptionType::OPT_REQUIRED);
+        opt.add("userid", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.applyGroupApplication(qls::GroupID(opt.get_int("groupid")), qls::UserID(opt.get_int("userid"))))
+            std::cout << "Successfully applied a application to the group!\n";
+        else
+            std::cout << "Failed to apply a application to the group!\n";
+    }
+};
+
+class RejectGroupApplicationCommand: public Command
+{
+public:
+    RejectGroupApplicationCommand() = default;
+    ~RejectGroupApplicationCommand() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("groupid", opt::Option::OptionType::OPT_REQUIRED);
+        opt.add("userid", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.rejectGroupApplication(qls::GroupID(opt.get_int("groupid")), qls::UserID(opt.get_int("userid"))))
+            std::cout << "Successfully applied a application to the group!\n";
+        else
+            std::cout << "Failed to apply a application to the group!\n";
+    }
+};
+
+class SendFriendMessageCommand: public Command
+{
+public:
+    SendFriendMessageCommand() = default;
+    ~SendFriendMessageCommand() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("userid", opt::Option::OptionType::OPT_REQUIRED);
+        opt.add("message", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.sendFriendMessage(qls::UserID(opt.get_int("userid")), opt.get_string("message")))
+            std::cout << "Successfully sent a message to your friend!\n";
+        else
+            std::cout << "Failed to send a message to your friend!\n";
+    }
+};
+
+class SendGroupMessageCommand: public Command
+{
+public:
+    SendGroupMessageCommand() = default;
+    ~SendGroupMessageCommand() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("groupid", opt::Option::OptionType::OPT_REQUIRED);
+        opt.add("message", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.sendGroupMessage(qls::GroupID(opt.get_int("groupid")), opt.get_string("message")))
+            std::cout << "Successfully sent a message to the group!\n";
+        else
+            std::cout << "Failed to send a message to the group!\n";
+    }
+};
+
+class RemoveFriendCommand: public Command
+{
+public:
+    RemoveFriendCommand() = default;
+    ~RemoveFriendCommand() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("userid", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.removeFriend(qls::UserID(opt.get_int("userid"))))
+            std::cout << "Successfully removed a friend!\n";
+        else
+            std::cout << "Failed to remove a friend!\n";
+    }
+};
+
+class LeaveGroupCommand: public Command
+{
+public:
+    LeaveGroupCommand() = default;
+    ~LeaveGroupCommand() = default;
+
+    opt::Option getOption() const
+    {
+        opt::Option opt;
+        opt.add("groupid", opt::Option::OptionType::OPT_REQUIRED);
+        return opt;
+    }
+
+    void execute(const opt::Option& opt)
+    {
+        if (session.leaveGroup(qls::GroupID(opt.get_int("groupid"))))
+            std::cout << "Successfully left a group!\n";
+        else
+            std::cout << "Failed to leave a group!\n";
     }
 };
 
@@ -206,19 +359,30 @@ CommandManager::CommandManager()
     addCommand("help", std::make_shared<HelpCommand>(*this));
     addCommand("registerUser", std::make_shared<RegisterUserCommand>());
     addCommand("loginUser", std::make_shared<LoginUserCommand>());
-    addCommand("createFriendApplication", std::make_shared<CreateFriendApplication>());
-    addCommand("applyFriendApplication", std::make_shared<ApplyFriendApplication>());
-    addCommand("rejectFriendApplication", std::make_shared<RejectFriendApplication>());
-    addCommand("createGroupApplication", std::make_shared<CreateGroupApplication>());
+
+    addCommand("createFriendApplication", std::make_shared<CreateFriendApplicationCommand>());
+    addCommand("applyFriendApplication", std::make_shared<ApplyFriendApplicationCommand>());
+    addCommand("rejectFriendApplication", std::make_shared<RejectFriendApplicationCommand>());
+    
+    addCommand("createGroup", std::make_shared<CreateGroupCommand>());
+    addCommand("createGroupApplication", std::make_shared<CreateGroupApplicationCommand>());
+    addCommand("applyGroupApplication", std::make_shared<ApplyGroupApplicationCommand>());
+    addCommand("rejectGroupApplication", std::make_shared<RejectGroupApplicationCommand>());
+
+    addCommand("sendFriendMessage", std::make_shared<SendFriendMessageCommand>());
+    addCommand("sendGroupMessage", std::make_shared<SendGroupMessageCommand>());
+
+    addCommand("removeFriend", std::make_shared<RemoveFriendCommand>());
+    addCommand("leaveGroup", std::make_shared<LeaveGroupCommand>());
 }
 
-bool CommandManager::addCommand(std::string_view commandName, const std::shared_ptr<Command> &command_ptr)
+bool CommandManager::addCommand(std::string_view commandName, const std::shared_ptr<Command> &commandPtr)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_command_map_mutex);
     if (m_command_map.find(commandName) != m_command_map.cend()) {
         return false;
     }
-    m_command_map.emplace(commandName, command_ptr);
+    m_command_map.emplace(commandName, commandPtr);
     return true;
 }
 

@@ -18,7 +18,7 @@ namespace qls
 /*
 * @brief 私聊房间基类
 */
-class PrivateRoom: public TextDataRoom
+class PrivateRoom: protected TextDataRoom
 {
 public:
     PrivateRoom(UserID user_id_1, UserID user_id_2, bool is_create);

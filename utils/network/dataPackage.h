@@ -82,12 +82,6 @@ public:
      * @return Original data in this data package.
      */
     std::string getData();
-
-    /**
-     * @brief Deletes a data package.
-     * @param dp Pointer to the data package to be deleted.
-     */
-    static void deleteDataPackage(DataPackage* dp);
 };
 
 } // namespace qls
