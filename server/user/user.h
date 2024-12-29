@@ -57,6 +57,10 @@ class Manager;
 class VerificationManager;
 class RegisterCommand;
 struct UserImpl;
+struct UserImplDeleter
+{
+    void operator()(UserImpl* up);
+};
 
 /**
  * @brief Class representing a User.
@@ -220,7 +224,7 @@ protected:
     void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
 
 private:
-    std::unique_ptr<UserImpl> m_impl;
+    std::unique_ptr<UserImpl, UserImplDeleter> m_impl;
 };
 
 } // namespace qls
