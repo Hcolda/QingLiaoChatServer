@@ -3,6 +3,7 @@
 #include <chrono>
 #include <random>
 #include <asio.hpp>
+#include <memory_resource>
 
 #include "manager.h"
 #include "logger.hpp"
@@ -11,10 +12,11 @@
 #include "userid.hpp"
 #include "groupid.hpp"
 
-// 服务器log系统
 extern Log::Logger serverLogger;
-// 服务器manager
 extern qls::Manager serverManager;
+
+// memory resource
+static std::pmr::synchronized_pool_resource local_user_sync_pool;
 
 namespace qls
 {
@@ -72,7 +74,7 @@ static inline void sendToUser(qls::UserID user_id, const qjson::JObject& json)
 }
 
 User::User(UserID user_id, bool is_create):
-    m_impl(std::make_unique<UserImpl>())
+    m_impl(static_cast<UserImpl*>(local_user_sync_pool.allocate(sizeof(UserImpl))))
 {
     m_impl->user_id = user_id;
     m_impl->age = 0;
@@ -543,7 +545,8 @@ void User::removeSocket(const std::shared_ptr<Socket>& socket_ptr)
 void User::notifyAll(std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
-    std::shared_ptr<std::string> buffer_ptr(std::make_shared<std::string>(data));
+    std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
+        std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
     for (auto& [socket_ptr, type]: m_impl->m_socket_map) {
         asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
             [this, buffer_ptr](std::error_code ec, size_t n) {
@@ -556,7 +559,8 @@ void User::notifyAll(std::string_view data)
 void User::notifyWithType(DeviceType type, std::string_view data)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
-    std::shared_ptr<std::string> buffer_ptr(std::make_shared<std::string>(data));
+    std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
+        std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
     for (auto& [socket_ptr, dtype]: m_impl->m_socket_map) {
         if (dtype == type) {
             asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
@@ -566,6 +570,11 @@ void User::notifyWithType(DeviceType type, std::string_view data)
                 });
         }
     }
+}
+
+void UserImplDeleter::operator()(UserImpl *up)
+{
+    local_user_sync_pool.deallocate(up, sizeof(UserImpl));
 }
 
 } // namespace qls
