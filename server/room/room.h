@@ -30,8 +30,8 @@ struct BaseRoomImpl;
 class BaseRoom
 {
 public:
-    BaseRoom();
-    virtual ~BaseRoom();
+    BaseRoom() = default;
+    virtual ~BaseRoom() = default;
 
     virtual bool joinRoom(UserID user_id);
     virtual bool hasUser(UserID user_id) const;
@@ -41,7 +41,8 @@ public:
     virtual void sendData(std::string_view data, UserID user_id);
 
 private:
-    std::unique_ptr<BaseRoomImpl> m_impl;
+    std::unordered_set<UserID>  m_user_set;
+    mutable std::shared_mutex   m_user_set_mutex;
 };
 
 class TextDataRoom: public BaseRoom
