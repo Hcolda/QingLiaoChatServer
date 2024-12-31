@@ -5,6 +5,7 @@
 #include <format>
 #include <memory>
 #include <system_error>
+#include <memory_resource>
 
 #include <Json.h>
 
@@ -13,6 +14,8 @@
 #include "returnStateMessage.hpp"
 
 extern qls::Manager serverManager;
+
+static std::pmr::synchronized_pool_resource local_sync_group_room_pool;
 
 namespace qls
 {
@@ -552,6 +555,11 @@ void GroupRoom::removeThisRoom()
 bool GroupRoom::canBeUsed() const
 {
     return m_impl->m_can_be_used;
+}
+
+void GroupRoomImplDeleter::operator()(GroupRoomImpl *gri)
+{
+    local_sync_group_room_pool.deallocate(gri, sizeof(GroupRoomImpl));
 }
 
 } // namespace qls
