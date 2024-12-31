@@ -27,13 +27,13 @@ public:
     };
 
     Option() = default;
-    ~Option() = default;
+    ~Option() noexcept = default;
 
     Option(const Option& optClass):
         m_opt_map(optClass.m_opt_map),
         m_args_map(optClass.m_args_map) {}
 
-    Option(Option&& optClass):
+    Option(Option&& optClass) noexcept:
         m_opt_map(std::move(optClass.m_opt_map)),
         m_args_map(std::move(optClass.m_args_map)) {}
 
@@ -46,7 +46,7 @@ public:
         return *this;
     }
 
-    Option& operator=(Option&& optClass)
+    Option& operator=(Option&& optClass) noexcept
     {
         if (this == &optClass)
             return *this;

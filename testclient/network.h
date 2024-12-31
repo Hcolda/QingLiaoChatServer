@@ -24,7 +24,7 @@ namespace qls
     {
     public:
         Network();
-        ~Network();
+        ~Network() noexcept;
 
         void connect();
         void disconnect();

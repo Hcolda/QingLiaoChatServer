@@ -37,7 +37,7 @@ public:
     /**
      * @brief Destructor (defaulted).
      */
-    ~GroupRoomVerification() = default;
+    ~GroupRoomVerification() noexcept = default;
 
     /**
      * @brief Sets the verification status of the group chat room.

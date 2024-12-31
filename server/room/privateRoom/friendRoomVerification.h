@@ -36,7 +36,7 @@ public:
     /**
      * @brief Destructor (defaulted).
      */
-    ~FriendRoomVerification() = default;
+    ~FriendRoomVerification() noexcept = default;
 
     /**
      * @brief Sets the verification status of a user.

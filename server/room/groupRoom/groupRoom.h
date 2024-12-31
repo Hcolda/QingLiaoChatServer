@@ -37,7 +37,7 @@ public:
     GroupRoom(GroupID group_id, UserID administrator, bool is_create);
     GroupRoom(const GroupRoom&) = delete;
     GroupRoom(GroupRoom&&) = delete;
-    ~GroupRoom();
+    ~GroupRoom() noexcept;
 
     bool addMember(UserID user_id);
     bool hasMember(UserID user_id) const;

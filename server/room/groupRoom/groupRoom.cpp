@@ -65,7 +65,7 @@ GroupRoom::GroupRoom(GroupID group_id, UserID administrator, bool is_create):
     TextDataRoom::joinRoom(administrator);
 }
 
-GroupRoom::~GroupRoom() = default;
+GroupRoom::~GroupRoom() noexcept = default;
 
 bool GroupRoom::addMember(UserID user_id)
 {

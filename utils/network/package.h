@@ -14,7 +14,7 @@ class Package final
 {
 public:
     Package() = default;
-    ~Package() = default;
+    ~Package() noexcept = default;
 
     Package(const Package&) = delete;
     Package(Package&&) = delete;

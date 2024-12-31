@@ -29,14 +29,14 @@ public:
         m_value = u.m_value;
     }
 
-    UserLevel(UserLevel&& u):
+    UserLevel(UserLevel&& u) noexcept:
         m_value(MIN_Level)
     {
         std::shared_lock<std::shared_mutex> local_shared_lock(u.m_value_mutex);
         m_value = u.m_value;
     }
 
-    ~UserLevel() = default;
+    ~UserLevel() noexcept = default;
 
     UserLevel& operator=(const UserLevel& u)
     {

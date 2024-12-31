@@ -38,7 +38,7 @@ private:
 
 public:
     DataPackage() = delete;
-    ~DataPackage() = default;
+    ~DataPackage() noexcept = default;
     DataPackage(const DataPackage&) = delete;
     DataPackage(DataPackage&&) = delete;
 

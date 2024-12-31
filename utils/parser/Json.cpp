@@ -150,7 +150,7 @@ qjson::JObject::JObject(std::string_view data)
     *m_value = std::string(data);
 }
 
-JObject::JObject(std::string&& data)
+JObject::JObject(std::string&& data) noexcept
     :m_type(JValueType::JString),
     m_value(std::make_unique<value_t>())
 {
@@ -377,7 +377,7 @@ bool JObject::hasMember(const std::string& str) const
     return false;
 }
 
-JValueType JObject::getType() const
+JValueType JObject::getType() const noexcept
 {
     return m_type;
 }
