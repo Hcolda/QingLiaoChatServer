@@ -220,7 +220,7 @@ namespace qls
         });
     }
 
-    Network::~Network()
+    Network::~Network() noexcept
     {
         if (m_network_impl->has_stopped)
             return;

@@ -9,22 +9,22 @@ namespace qls
 class GroupID final
 {
 public:
-    GroupID():
+    constexpr GroupID() noexcept:
         m_group_id(0ll) {}
-    explicit GroupID(long long group_id):
+    constexpr explicit GroupID(long long group_id) noexcept:
         m_group_id(group_id) {}
-    GroupID(const GroupID& u):
+    constexpr GroupID(const GroupID& u) noexcept:
         m_group_id(u.m_group_id) {}
-    GroupID(GroupID&& u):
+    constexpr GroupID(GroupID&& u) noexcept:
         m_group_id(u.m_group_id) {}
-    ~GroupID() = default;
+    constexpr ~GroupID() noexcept = default;
 
-    long long getOriginValue() const
+    constexpr long long getOriginValue() const noexcept
     {
         return m_group_id;
     }
 
-    GroupID& operator=(const GroupID& u)
+    GroupID& operator=(const GroupID& u) noexcept
     {
         if (&u == this)
             return *this;
@@ -32,7 +32,7 @@ public:
         return *this;
     }
 
-    GroupID& operator=(GroupID&& u)
+    GroupID& operator=(GroupID&& u) noexcept
     {
         if (&u == this)
             return *this;
@@ -40,28 +40,28 @@ public:
         return *this;
     }
 
-    GroupID& operator=(long long group_id)
+    GroupID& operator=(long long group_id) noexcept
     {
         m_group_id = group_id;
         return *this;
     }
 
-    friend bool operator==(const GroupID& g1, const GroupID& g2)
+    friend bool operator==(const GroupID& g1, const GroupID& g2) noexcept
     {
         return g1.m_group_id == g1.m_group_id;
     }
 
-    friend bool operator!=(const GroupID& g1, const GroupID& g2)
+    friend bool operator!=(const GroupID& g1, const GroupID& g2) noexcept
     {
         return g1.m_group_id != g1.m_group_id;
     }
 
-    friend bool operator<(const GroupID& g1, const GroupID& g2)
+    friend bool operator<(const GroupID& g1, const GroupID& g2) noexcept
     {
         return g1.m_group_id < g1.m_group_id;
     }
 
-    operator long long() const
+    constexpr operator long long() const noexcept
     {
         return m_group_id;
     }

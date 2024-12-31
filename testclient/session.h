@@ -18,7 +18,7 @@ class Session final
 {
 public:
     Session(Network& network);
-    ~Session();
+    ~Session() noexcept;
 
     bool registerUser(std::string_view email, std::string_view password, UserID& newUserID);
     bool loginUser(UserID user_id, std::string_view password);

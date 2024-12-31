@@ -31,7 +31,12 @@ class BaseRoom
 {
 public:
     BaseRoom() = default;
-    virtual ~BaseRoom() = default;
+    BaseRoom(const BaseRoom&) = delete;
+    BaseRoom(BaseRoom&&) = delete;
+    virtual ~BaseRoom() noexcept = default;
+
+    BaseRoom& operator=(const BaseRoom&) = delete;
+    BaseRoom& operator=(BaseRoom&&) = delete;
 
     virtual bool joinRoom(UserID user_id);
     virtual bool hasUser(UserID user_id) const;
@@ -49,7 +54,7 @@ class TextDataRoom: public BaseRoom
 {
 public:
     TextDataRoom() = default;
-    virtual ~TextDataRoom() = default;
+    virtual ~TextDataRoom() noexcept = default;
 
 protected:
     virtual void sendData(std::string_view data);

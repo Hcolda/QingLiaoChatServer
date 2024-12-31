@@ -43,7 +43,7 @@ static inline qjson::JObject readJsonFunctionDataPackage(const std::shared_ptr<q
 Session::Session(Network& network):
     m_impl(std::make_unique<SessionImpl>(network)) {}
 
-Session::~Session() = default;
+Session::~Session() noexcept = default;
 
 bool Session::registerUser(std::string_view email, std::string_view password, UserID& newUserID)
 {

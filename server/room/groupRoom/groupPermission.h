@@ -29,7 +29,7 @@ class GroupPermission final
 {
 public:
     GroupPermission() = default;
-    ~GroupPermission() = default;
+    ~GroupPermission() noexcept = default;
 
     /**
      * @brief Modifies the permission type for a specific permission.

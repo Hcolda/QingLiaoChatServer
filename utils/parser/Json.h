@@ -58,7 +58,7 @@ namespace qjson
         JObject(const char* data);
         JObject(const std::string& data);
         JObject(std::string_view data);
-        JObject(std::string&& data);
+        JObject(std::string&& data) noexcept;
         ~JObject();
 
         JObject& operator=(const JObject& jo);
@@ -79,7 +79,7 @@ namespace qjson
         void pop_back();
         bool hasMember(const std::string& str) const;
 
-        JValueType getType() const;
+        JValueType getType() const noexcept;
         const list_t& getList() const;
         list_t& getList();
         const dict_t& getDict() const;

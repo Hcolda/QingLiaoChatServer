@@ -12,7 +12,7 @@ class RegexMatch
 {
 public:
     RegexMatch() = default;
-    ~RegexMatch() = default;
+    ~RegexMatch() noexcept = default;
 
     static bool emailMatch(std::string_view email)
     {

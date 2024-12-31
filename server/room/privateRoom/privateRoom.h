@@ -25,7 +25,7 @@ public:
     PrivateRoom(const PrivateRoom&) = delete;
     PrivateRoom(PrivateRoom&&) = delete;
 
-    ~PrivateRoom() = default;
+    ~PrivateRoom() noexcept = default;
 
     void sendMessage(std::string_view message, UserID sender_user_id);
     void sendTipMessage(std::string_view message, UserID sender_user_id);
