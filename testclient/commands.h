@@ -8,6 +8,7 @@
 #include <shared_mutex>
 
 #include <option.hpp>
+#include "session.h"
 
 namespace qls
 {
@@ -19,7 +20,7 @@ public:
     virtual ~Command() = default;
 
     virtual opt::Option getOption() const = 0;
-    virtual void execute(const opt::Option&) = 0;
+    virtual void execute(qls::Session&, const opt::Option&) = 0;
 };
 
 class HelpCommand;

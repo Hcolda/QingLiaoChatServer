@@ -37,13 +37,13 @@ CommandInfo stop_command::registerCommand()
 
 bool show_user_command::execute()
 {
-    std::string show;
     auto list = serverManager.getUserList();
+    serverLogger.info("User data list: \n");
     for (auto i = list.begin(); i != list.end(); i++) {
-        show += std::format("user id: {}, name: {}\n",
-            i->first.getOriginValue(), i->second->getUserName());
+        serverLogger.info(std::format("user id: {}, name: {}\n",
+            i->first.getOriginValue(), i->second->getUserName()));
     }
-    serverLogger.info("User data list: \n", show);
+    
     return true;
 }
 
