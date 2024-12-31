@@ -74,7 +74,8 @@ static inline void sendToUser(qls::UserID user_id, const qjson::JObject& json)
 }
 
 User::User(UserID user_id, bool is_create):
-    m_impl(static_cast<UserImpl*>(local_user_sync_pool.allocate(sizeof(UserImpl))))
+    m_impl([](UserImpl* ui){ new(ui) UserImpl(); return ui; }(
+        static_cast<UserImpl*>(local_user_sync_pool.allocate(sizeof(UserImpl)))))
 {
     m_impl->user_id = user_id;
     m_impl->age = 0;

@@ -40,11 +40,10 @@ static std::vector<std::string> split(std::string_view data)
 }
 
 qls::CommandManager command_manager;
-qls::Network network;
-qls::Session session(network);
 
 int main() {
-    
+    qls::Network network;
+    qls::Session session(network);
     std::atomic<bool> can_be_used = false;
 
     network.add_connected_error_callback("connected_error_callback", [](std::error_code ec) {
@@ -86,7 +85,7 @@ int main() {
             auto command = command_manager.getCommand(vec[0]);
             opt::Option opt = command->getOption();
             opt.parse(std::vector<std::string>{++vec.begin(), vec.end()});
-            command->execute(opt);
+            command->execute(session, opt);
         } catch(const std::exception& e) {
             std::cerr << e.what() << '\n';
         }

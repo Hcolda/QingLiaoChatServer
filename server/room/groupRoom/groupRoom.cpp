@@ -48,7 +48,8 @@ struct GroupRoomImpl
 
 // GroupRoom
 GroupRoom::GroupRoom(GroupID group_id, UserID administrator, bool is_create):
-    m_impl(static_cast<GroupRoomImpl*>(local_sync_group_room_pool.allocate(sizeof(GroupRoomImpl))), {})
+    m_impl([](GroupRoomImpl* gi){ new(gi) GroupRoomImpl(); return gi; }(
+        static_cast<GroupRoomImpl*>(local_sync_group_room_pool.allocate(sizeof(GroupRoomImpl)))))
 {
     m_impl->m_group_id = group_id;
     m_impl->m_administrator_user_id = administrator;
