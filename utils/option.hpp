@@ -107,7 +107,7 @@ public:
         long long begin = -1;
         long long i = 0;
 
-        for (; size_t(i) < data.size(); i++) {
+        for (; std::size_t(i) < data.size(); i++) {
             if (data[i] == ' ') {
                 if ((i - begin - 1) > 0)
                     dataList.push_back(std::string(data.substr(begin + 1, i - begin - 1)));

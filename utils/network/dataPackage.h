@@ -69,13 +69,13 @@ public:
      * @brief Gets the size of this data package.
      * @return Size of this data package.
      */
-    size_t getPackageSize() noexcept;
+    std::size_t getPackageSize() noexcept;
 
     /**
      * @brief Gets the size of the original data in this data package.
      * @return Size of the original data in this data package.
      */
-    size_t getDataSize() noexcept;
+    std::size_t getDataSize() noexcept;
 
     /**
      * @brief Gets the original data in this data package.

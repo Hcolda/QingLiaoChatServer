@@ -2,6 +2,7 @@
 #define NETWORK_ENDIANNESS_HPP
 
 #include <concepts>
+#include <cstddef>
 
 namespace qls
 {
@@ -26,7 +27,7 @@ template<typename T>
     requires std::integral<T>
 constexpr T swapEndianness(T value) {
     T result = 0;
-    for (size_t i = 0; i < sizeof(value); ++i) {
+    for (std::size_t i = 0; i < sizeof(value); ++i) {
         result = (result << 8) | ((value >> (8 * i)) & 0xFF);
     }
     return result;

@@ -25,7 +25,7 @@ bool qls::Package::canRead() const
     return true;
 }
 
-size_t qls::Package::firstMsgLength() const
+std::size_t qls::Package::firstMsgLength() const
 {
     if (m_buffer.size() < sizeof(int))
         return 0;
@@ -33,7 +33,7 @@ size_t qls::Package::firstMsgLength() const
     int length = 0;
     std::memcpy(&length, m_buffer.c_str(), sizeof(int));
     length = qls::swapNetworkEndianness(length);
-    return size_t(length);
+    return std::size_t(length);
 }
 
 std::string qls::Package::read()

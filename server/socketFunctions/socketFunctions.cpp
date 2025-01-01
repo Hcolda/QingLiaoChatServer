@@ -82,8 +82,8 @@ asio::awaitable<std::shared_ptr<qls::DataPackage>>
     // receive data
     if (!m_impl->m_package.canRead()) {
         do {
-            size_t size = co_await m_impl->m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
-            m_impl->m_package.write({ buffer, static_cast<size_t>(size) });
+            std::size_t size = co_await m_impl->m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
+            m_impl->m_package.write({ buffer, static_cast<std::size_t>(size) });
         } while (!m_impl->m_package.canRead());
     }
 
@@ -95,7 +95,7 @@ asio::awaitable<std::shared_ptr<qls::DataPackage>>
     co_return datapack;
 }
 
-asio::awaitable<size_t> SocketService::async_send(std::string_view data, long long requestID, DataPackage::DataPackageType type, int sequence)
+asio::awaitable<std::size_t> SocketService::async_send(std::string_view data, long long requestID, DataPackage::DataPackageType type, int sequence)
 {
     std::string out(data);
     auto pack = qls::DataPackage::makePackage(out);
