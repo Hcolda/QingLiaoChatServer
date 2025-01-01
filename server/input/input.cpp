@@ -13,10 +13,10 @@ extern Log::Logger serverLogger;
 
 using namespace qls;
 
-template<size_t N, size_t N2>
+template<std::size_t N, std::size_t N2>
 constexpr static void getTargetName(const char(&data)[N], char(&out)[N2])
 {
-    size_t size = std::strlen(data);
+    std::size_t size = std::strlen(data);
     for (auto i = 0ull; i < size; ++i) {
         if (data[i] == '_')
             out[i] = ' ';
@@ -122,7 +122,7 @@ private:
         long long begin = -1;
         long long i = 0;
 
-        for (; static_cast<size_t>(i) < data.size(); i++) {
+        for (; static_cast<std::size_t>(i) < data.size(); i++) {
             if (data[i] == ' ') {
                 if ((i - begin - 1) > 0)
                     dataList.emplace_back(data.begin() + (begin + 1), data.begin() + i);

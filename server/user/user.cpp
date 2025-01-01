@@ -139,7 +139,7 @@ bool User::isUserPassword(std::string_view password) const
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
     std::string localPassword = std::string(password) + m_impl->salt;
 
-    for (size_t i = 0; i < 256ull; i++) {
+    for (std::size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
     }
 
@@ -184,15 +184,15 @@ void User::firstUpdateUserPassword(std::string_view new_password)
     std::hash<std::string_view> string_hash;
     std::mt19937_64             mt(std::random_device{}());
 
-    size_t mt_temp = 0;
-    for (size_t i = 0; i < 256ull; i++) {
+    std::size_t mt_temp = 0;
+    for (std::size_t i = 0; i < 256ull; i++) {
         mt_temp = mt();
     }
 
     std::string localSalt = std::to_string(mt_temp);
     std::string localPassword = std::string(new_password) + localSalt;
 
-    for (size_t i = 0; i < 256ull; i++) {
+    for (std::size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
     }
 
@@ -214,15 +214,15 @@ void User::updateUserPassword(std::string_view old_password, std::string_view ne
     std::hash<std::string>  string_hash;
     std::mt19937_64         mt(std::random_device{}());
 
-    size_t mt_temp = 0;
-    for (size_t i = 0; i < 256ull; i++) {
+    std::size_t mt_temp = 0;
+    for (std::size_t i = 0; i < 256ull; i++) {
         mt_temp = mt();
     }
 
     std::string localSalt = std::to_string(mt_temp);
     std::string localPassword = std::string(new_password) + localSalt;
 
-    for (size_t i = 0; i < 256ull; i++) {
+    for (std::size_t i = 0; i < 256ull; i++) {
         localPassword = std::to_string(string_hash(localPassword));
     }
 
@@ -490,7 +490,7 @@ bool User::removeGroup(GroupID group_id)
 void User::removeGroupVerification(GroupID group_id, UserID user_id)
 {
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
-    size_t size = m_impl->m_user_group_verification_map.count(group_id);
+    std::size_t size = m_impl->m_user_group_verification_map.count(group_id);
     if (!size) throw std::system_error(qls_errc::verification_not_existed);
 
     auto itor = m_impl->m_user_group_verification_map.find(group_id);
@@ -550,7 +550,7 @@ void User::notifyAll(std::string_view data)
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
     for (auto& [socket_ptr, type]: m_impl->m_socket_map) {
         asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
-            [this, buffer_ptr](std::error_code ec, size_t n) {
+            [this, buffer_ptr](std::error_code ec, std::size_t n) {
                 if (ec)
                     serverLogger.error('[', ec.category().name(), ']', ec.message());
             });
@@ -565,7 +565,7 @@ void User::notifyWithType(DeviceType type, std::string_view data)
     for (auto& [socket_ptr, dtype]: m_impl->m_socket_map) {
         if (dtype == type) {
             asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
-                [this, buffer_ptr](std::error_code ec, size_t n) {
+                [this, buffer_ptr](std::error_code ec, std::size_t n) {
                     if (ec)
                         serverLogger.error('[', ec.category().name(), ']', ec.message());
                 });

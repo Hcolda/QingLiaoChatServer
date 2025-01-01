@@ -38,7 +38,7 @@ public:
      * @brief Gets the length of the first message in the package.
      * @return The length of the first message.
      */
-    size_t firstMsgLength() const;
+    std::size_t firstMsgLength() const;
 
     /**
      * @brief Reads a data package.

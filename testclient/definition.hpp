@@ -3,6 +3,7 @@
 
 #include <format>
 #include <filesystem>
+#include <cstddef>
 
 #if _HAS_CXX23
 // c++23 stacktrace

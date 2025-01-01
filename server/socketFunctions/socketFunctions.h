@@ -60,7 +60,7 @@ public:
     * @param sequence = -1
     * @return size Actual length sent
     */
-    asio::awaitable<size_t> async_send(
+    asio::awaitable<std::size_t> async_send(
         std::string_view                data,
         long long                       requestID = 0,
         DataPackage::DataPackageType    type = DataPackage::Unknown,

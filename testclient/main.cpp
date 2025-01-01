@@ -29,7 +29,7 @@ static std::vector<std::string> split(std::string_view data)
     long long begin = -1;
     long long i = 0;
 
-    for (; static_cast<size_t>(i) < data.size(); i++) {
+    for (; static_cast<std::size_t>(i) < data.size(); i++) {
         if (data[i] == ' ') {
             if ((i - begin - 1) > 0)
                 dataList.emplace_back(data.begin() + (begin + 1), data.begin() + i);

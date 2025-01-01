@@ -22,7 +22,7 @@ std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
     std::memset(mem, 0, lenth);
     std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
         [lenth](DataPackage* dp) {
-            sync_pool.deallocate(dp, static_cast<size_t>(lenth));
+            sync_pool.deallocate(dp, static_cast<std::size_t>(lenth));
         });
     package->length = lenth;
     std::memcpy(package->data, data.data(), data.size());
@@ -49,14 +49,14 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
         throw std::system_error(qls_errc::invalid_data);
     else if (size > INT32_MAX / 2)
         throw std::system_error(qls_errc::data_too_large);
-    else if (data[size_t(size - 1)] || data[size_t(size - 2)])
+    else if (data[std::size_t(size - 1)] || data[std::size_t(size - 2)])
         throw std::system_error(qls_errc::invalid_data);
 
     void* mem = sync_pool.allocate(size);
     std::memset(mem, 0, size);
     std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
         [lenth = size](DataPackage* dp) {
-            sync_pool.deallocate(dp, static_cast<size_t>(lenth));
+            sync_pool.deallocate(dp, static_cast<std::size_t>(lenth));
         });
     std::memcpy(package.get(), data.data(), size);
 
@@ -68,7 +68,7 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
     package->verifyCode = swapNetworkEndianness(package->verifyCode);
 
     std::hash<std::string_view> hash;
-    size_t gethash = hash(package->getData());
+    std::size_t gethash = hash(package->getData());
     if (gethash != package->verifyCode)
         throw std::system_error(make_error_code(qls_errc::hash_mismatched),
             std::format("hash is different, local hash: {}, pack hash: {}",
@@ -81,7 +81,7 @@ std::string DataPackage::packageToString() noexcept
 {
     using namespace qls;
 
-    size_t localLength = this->length;
+    std::size_t localLength = this->length;
 
     // Endianness conversion
     this->length = swapNetworkEndianness(this->length);
@@ -96,24 +96,24 @@ std::string DataPackage::packageToString() noexcept
     return data;
 }
 
-size_t DataPackage::getPackageSize() noexcept
+std::size_t DataPackage::getPackageSize() noexcept
 {
     int size = 0;
     std::memcpy(&size, &(this->length), sizeof(int));
-    return size_t(size);
+    return std::size_t(size);
 }
 
-size_t DataPackage::getDataSize() noexcept
+std::size_t DataPackage::getDataSize() noexcept
 {
     int size = 0;
     std::memcpy(&size, &(this->length), sizeof(int));
-    return size_t(size) - sizeof(DataPackage);
+    return std::size_t(size) - sizeof(DataPackage);
 }
 
 std::string DataPackage::getData()
 {
     std::string data;
-    size_t size = this->getDataSize();
+    std::size_t size = this->getDataSize();
     data.resize(size);
     std::memcpy(data.data(), this->data, size);
     return data;

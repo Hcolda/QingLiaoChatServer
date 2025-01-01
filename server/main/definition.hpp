@@ -30,6 +30,8 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <cstdint>
+#include <cstddef>
 
 #include "groupid.hpp"
 #include "userid.hpp"
@@ -80,7 +82,7 @@ public:
 
     template<class T, class Y =
         std::enable_if_t<std::is_same_v<std::decay_t<T>, PrivateRoomIDStruct>>>
-    size_t operator()(T&& s) const
+    std::size_t operator()(T&& s) const
     {
         std::hash<long long> hasher;
         return hasher(s.user_id_1.getOriginValue()) ^ hasher(s.user_id_2.getOriginValue());
@@ -111,7 +113,7 @@ public:
 
     template<class T, class Y =
         std::enable_if_t<std::is_same_v<std::decay_t<T>, GroupVerificationStruct>>>
-    size_t operator()(T&& g) const
+    std::size_t operator()(T&& g) const
     {
         std::hash<long long> hasher;
         return hasher(g.group_id.getOriginValue()) ^ hasher(g.user_id.getOriginValue());

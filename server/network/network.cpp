@@ -33,7 +33,7 @@ qls::Network::Network() :
     m_thread_num((12 > static_cast<int>(std::thread::hardware_concurrency())
         ? 12 : static_cast<int>(std::thread::hardware_concurrency())))
     {
-        m_threads = std::make_unique<std::thread[]>(static_cast<size_t>(m_thread_num));
+        m_threads = std::make_unique<std::thread[]>(static_cast<std::size_t>(m_thread_num));
     }
 
 qls::Network::~Network()

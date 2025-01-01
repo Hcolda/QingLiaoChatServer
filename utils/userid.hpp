@@ -77,7 +77,7 @@ namespace std
     template<>
     struct hash<qls::UserID>{
     public:
-        size_t operator()(const qls::UserID &u) const 
+        std::size_t operator()(const qls::UserID &u) const 
         {
             return hash<long long>()(u.getOriginValue());
         }
