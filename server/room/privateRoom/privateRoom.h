@@ -2,23 +2,26 @@
 #define PRIVATE_ROOM_H
 
 #include <chrono>
-#include <asio.hpp>
-#include <string>
-#include <vector>
-#include <shared_mutex>
-#include <unordered_map>
 #include <string_view>
+#include <memory_resource>
+#include <memory>
 
 #include "userid.hpp"
 #include "room.h"
 
 namespace qls
 {
+
+struct PrivateRoomImpl;
+struct PrivateRoomImplDeleter
+{
+    void operator()(PrivateRoomImpl* pri) noexcept;
+};
     
 /*
 * @brief 私聊房间基类
 */
-class PrivateRoom: protected TextDataRoom
+class PrivateRoom: public TextDataRoom
 {
 public:
     PrivateRoom(UserID user_id_1, UserID user_id_2, bool is_create);
@@ -40,14 +43,7 @@ public:
     bool canBeUsed() const;
 
 private:
-    const UserID m_user_id_1, m_user_id_2;
-
-    std::atomic<bool>               m_can_be_used;
-
-    std::vector<std::pair<std::chrono::time_point<std::chrono::system_clock,
-        std::chrono::milliseconds>,
-        MessageStructure>>          m_message_queue;
-    mutable std::shared_mutex       m_message_queue_mutex;
+    std::unique_ptr<PrivateRoomImpl, PrivateRoomImplDeleter> m_impl;
 };
 
 } // namespace qls
