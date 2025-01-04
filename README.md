@@ -1,3 +1,4 @@
+[简体中文](./doc/cn/README_CN.md)
 # QingLiao Chat Server
 This is a lightweight chat server.  
 If you want the client, see [QingLiaoChatClient](https://github.com/Hcolda/QingLiaoChatClient)
@@ -25,5 +26,4 @@ cmake --build build --config Release
 
 ## Documents
 - [FormatForDataPackage.md](./doc/FormatForDataPackage.md)
-- ~[Website.md](./doc/Website.md)~ (Out of date)
 
