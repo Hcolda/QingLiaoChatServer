@@ -125,15 +125,15 @@ namespace qjson
          * @param data The JSON data to parse.
          * @return The parsed JSON object.
          */
-        static JObject fastParse(const std::string_view data);
+        static JObject fastParse(std::string_view data);
 
     protected:
-        JObject _parse(std::string_view data, std::size_t& itor);
-        void skipSpace(std::string_view data, std::size_t& itor, long long& error_line);
-        std::string getString(std::string_view data, std::size_t& itor, long long error_line);
-        JObject getNumber(std::string_view data, std::size_t& itor, long long error_line);
-        JObject getBool(std::string_view data, std::size_t& itor, long long error_line);
-        JObject getNull(std::string_view data, std::size_t& itor, long long error_line);
+        JObject parse_(std::string_view data, std::size_t data_size, std::size_t& itor);
+        void skipSpace(std::string_view data, std::size_t data_size, std::size_t& itor, long long& error_line);
+        std::string getString(std::string_view data, std::size_t data_size, std::size_t& itor, long long error_line);
+        JObject getNumber(std::string_view data, std::size_t data_size, std::size_t& itor, long long error_line);
+        JObject getBool(std::string_view data, std::size_t data_size, std::size_t& itor, long long error_line);
+        JObject getNull(std::string_view data, std::size_t data_size, std::size_t& itor, long long error_line);
         std::string getLogicErrorString(long long error_line);
     };
 
@@ -166,22 +166,14 @@ namespace qjson
          * @param jo The JSON object to write.
          * @return The JSON data as a string.
          */
-        static std::string fastWrite(const JObject& jo)
-        {
-            static JWriter jw;
-            return std::move(jw.write(jo) + '\n');
-        }
+        static std::string fastWrite(const JObject& jo);
 
         /**
          * @brief Quickly writes a formatted JSON object to a string.
          * @param jo The JSON object to write.
          * @return The formatted JSON data as a string.
          */
-        static std::string fastFormatWrite(const JObject& jo, int indent = 4)
-        {
-            static JWriter jw;
-            return std::move(jw.formatWrite(jo, indent) + '\n');
-        }
+        static std::string fastFormatWrite(const JObject& jo, std::size_t indent = 4);
     };
 }
 

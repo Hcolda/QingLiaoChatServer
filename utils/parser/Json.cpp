@@ -18,8 +18,7 @@ JObject::JObject(const JObject& jo)
     :m_type(jo.m_type),
     m_value(std::make_unique<value_t>())
 {
-    switch (jo.m_type)
-    {
+    switch (jo.m_type) {
     case JValueType::JString:
         *m_value = *std::get_if<string_t>(jo.m_value.get());
         break;
@@ -45,8 +44,7 @@ JObject::JObject(JValueType jvt)
     :m_type(jvt),
     m_value(std::make_unique<value_t>())
 {
-    switch (jvt)
-    {
+    switch (jvt) {
     case qjson::JValueType::JNull:
         *m_value = null_t();
         break;
@@ -165,8 +163,7 @@ JObject& JObject::operator=(const JObject& jo)
         return *this;
 
     m_type = jo.m_type;
-    switch (jo.m_type)
-    {
+    switch (jo.m_type) {
     case JValueType::JString:
         *m_value = *std::get_if<string_t>(jo.m_value.get());
         break;
@@ -197,8 +194,7 @@ bool operator==(const JObject& joa, const JObject& jo)
 {
     if (joa.m_type != jo.m_type)
         return false;
-    switch (jo.m_type)
-    {
+    switch (jo.m_type) {
     case JValueType::JNull:
         return true;
     case JValueType::JInt:
@@ -217,25 +213,20 @@ bool operator==(const JObject& joa, const JObject& jo)
         if (joa.getString() == jo.getString())
             return true;
         return false;
-    case JValueType::JList:
-    {
+    case JValueType::JList: {
         const list_t& local = joa.getList();
         const list_t& jolist = jo.getList();
         if (local.empty() ^ jolist.empty())
             return false;
         if (local.size() != jolist.size())
             return false;
-        for (std::size_t i = 0; i < local.size(); i++)
-        {
+        for (std::size_t i = 0; i < local.size(); i++) {
             if (!(local[i] == jolist[i]))
-            {
                 return false;
-            }
         }
         return true;
     }
-    case JValueType::JDict:
-    {
+    case JValueType::JDict: {
         const dict_t& local = joa.getDict();
         const dict_t& joDict = jo.getDict();
         if (local.empty() && joDict.empty())
@@ -244,8 +235,7 @@ bool operator==(const JObject& joa, const JObject& jo)
             return false;
         if (local.size() != joDict.size())
             return false;
-        for (auto i = local.begin(); i != local.end(); i++)
-        {
+        for (auto i = local.begin(); i != local.end(); ++i) {
             if (joDict.find(i->first) == joDict.end())
                 return false;
             else if (!(i->second == joDict.find(i->first)->second))
@@ -281,8 +271,7 @@ JObject& JObject::operator[](std::size_t iter)
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
-    if (m_type == JValueType::JNull)
-    {
+    if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
         *m_value = list_t();
         std::get_if<list_t>(m_value.get())->resize(iter + 1);
@@ -309,9 +298,7 @@ const JObject& JObject::operator[](const char* str) const
     if (m_type != JValueType::JNull && m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
     if (m_type == JValueType::JNull)
-    {
         throw std::logic_error("The type is JNull.");
-    }
     return (*std::get_if<dict_t>(m_value.get())).at(str);
 }
 
@@ -319,8 +306,7 @@ JObject& JObject::operator[](const char* str)
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
-    if (m_type == JValueType::JNull)
-    {
+    if (m_type == JValueType::JNull) {
         m_type = JValueType::JDict;
         *m_value = dict_t();
         return (*std::get_if<dict_t>(m_value.get()))[str];
@@ -332,8 +318,7 @@ void JObject::push_back(const JObject& jo)
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
-    if (m_type == JValueType::JNull)
-    {
+    if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
         *m_value = list_t();
         std::get_if<list_t>(m_value.get())->push_back(jo);
@@ -345,8 +330,7 @@ void JObject::push_back(JObject&& jo)
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
-    if (m_type == JValueType::JNull)
-    {
+    if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
         *m_value = list_t();
         std::get_if<list_t>(m_value.get())->push_back(std::move(jo));
@@ -356,8 +340,7 @@ void JObject::push_back(JObject&& jo)
 
 void JObject::pop_back()
 {
-    if (m_type == JValueType::JList)
-    {
+    if (m_type == JValueType::JList) {
         list_t* local = std::get_if<list_t>(m_value.get());
         if (local->empty())
             throw std::logic_error("The JList is empty.");
@@ -469,7 +452,7 @@ std::string& JObject::getString()
 JObject JParser::parse(std::string_view data)
 {
     std::size_t iter = 0;
-    return std::move(_parse(data, iter));
+    return parse_(data, data.size(), iter);
 }
 
 JObject JParser::fastParse(std::ifstream& infile)
@@ -482,42 +465,41 @@ JObject JParser::fastParse(std::ifstream& infile)
     infile.read(buffer.data(), size);
     infile.close();
 
-    return std::move(JParser::fastParse(buffer));
+    return JParser::fastParse(buffer);
 }
 
-JObject JParser::fastParse(const std::string_view data)
+JObject JParser::fastParse(std::string_view data)
 {
-    static JParser jp;
-    std::size_t iter = 0;
-    return std::move(jp._parse(data, iter));
+    JParser jp;
+    return jp.parse(data);
 }
 
-JObject JParser::_parse(std::string_view data, std::size_t& iter)
+JObject JParser::parse_(std::string_view data, std::size_t data_size, std::size_t& iter)
 {
     long long error_line = 0;
 
     if (data.empty())
         throw std::logic_error(getLogicErrorString(error_line));
-    skipSpace(data, iter, error_line);
-    if (data.size() <= iter)
+    skipSpace(data, data_size, iter, error_line);
+    if (data_size <= iter)
         throw std::logic_error(getLogicErrorString(error_line));
 
     if (data[iter] == '{') {
         JObject localJO(JValueType::JDict);
         ++iter;
-        while (iter < data.size() && data[iter] != '}') {
-            skipSpace(data, iter, error_line);
+        while (iter < data_size && data[iter] != '}') {
+            skipSpace(data, data_size, iter, error_line);
             if (data[iter] == '}')
                 return localJO;
-            std::string key(getString(data, iter, error_line));
-            skipSpace(data, iter, error_line);
+            std::string key(getString(data, data_size, iter, error_line));
+            skipSpace(data, data_size, iter, error_line);
             if (data[iter] == ':')
                 ++iter;
             else
                 throw std::logic_error(getLogicErrorString(error_line));
-            skipSpace(data, iter, error_line);
-            localJO[key.c_str()] = _parse(data, iter);
-            skipSpace(data, iter, error_line);
+            skipSpace(data, data_size, iter, error_line);
+            localJO[key.c_str()] = parse_(data, data_size, iter);
+            skipSpace(data, data_size, iter, error_line);
             if (data[iter] != ',' && data[iter] != '}')
                 throw std::logic_error(getLogicErrorString(error_line));
             else if (data[iter] == '}') {
@@ -525,7 +507,7 @@ JObject JParser::_parse(std::string_view data, std::size_t& iter)
                 return localJO;
             }
             ++iter;
-            skipSpace(data, iter, error_line);
+            skipSpace(data, data_size, iter, error_line);
         }
         if (data[iter] == '}') {
             ++iter;
@@ -535,12 +517,12 @@ JObject JParser::_parse(std::string_view data, std::size_t& iter)
     } else if (data[iter] == '[') {
         JObject localJO(JValueType::JList);
         ++iter;
-        while (iter < data.size() && data[iter] != ']') {
-            skipSpace(data, iter, error_line);
+        while (iter < data_size && data[iter] != ']') {
+            skipSpace(data, data_size, iter, error_line);
             if (data[iter] == ']')
                 return localJO;
-            localJO.push_back(_parse(data, iter));
-            skipSpace(data, iter, error_line);
+            localJO.push_back(parse_(data, data_size, iter));
+            skipSpace(data, data_size, iter, error_line);
             if (data[iter] != ',' && data[iter] != ']')
                 throw std::logic_error(getLogicErrorString(error_line));
             else if (data[iter] == ']') {
@@ -548,40 +530,39 @@ JObject JParser::_parse(std::string_view data, std::size_t& iter)
                 return localJO;
             }
             ++iter;
-            skipSpace(data, iter, error_line);
+            skipSpace(data, data_size, iter, error_line);
         }
         if (data[iter] == ']')
             return localJO;
         else
             throw std::logic_error(getLogicErrorString(error_line));
     } else if (data[iter] == '\"')
-        return std::move(getString(data, iter, error_line));
+        return getString(data, data_size, iter, error_line);
     else if (data[iter] == 'n')
-        return std::move(getNull(data, iter, error_line));
+        return getNull(data, data_size, iter, error_line);
     else if (data[iter] == 't' || data[iter] == 'f')
-        return std::move(getBool(data, iter, error_line));
+        return getBool(data, data_size, iter, error_line);
     else if ((data[iter] >= '0' && data[iter] <= '9') || data[iter] == '-')
-        return std::move(getNumber(data, iter, error_line));
+        return getNumber(data, data_size, iter, error_line);
     else
         throw std::logic_error(getLogicErrorString(error_line));
 }
 
-void JParser::skipSpace(std::string_view data, std::size_t& iter, long long& error_line)
+void JParser::skipSpace(std::string_view data, std::size_t data_size, std::size_t& iter, long long& error_line)
 {
-    auto size = data.size();
-    while (iter < size && (data[iter] == ' ' || data[iter] == '\t' || data[iter] == '\n')) {
+    while (iter < data_size && (data[iter] == ' ' || data[iter] == '\t' || data[iter] == '\n')) {
         if (data[iter] == '\n')
             ++error_line;
         ++iter;
     }
 }
 
-std::string JParser::getString(std::string_view data, std::size_t& iter, long long error_line)
+std::string JParser::getString(std::string_view data, std::size_t data_size, std::size_t& iter, long long error_line)
 {
     if (data[iter] == '\"') {
         std::string str;
         ++iter;
-        while (iter < data.size() && data[iter] != '\"') {
+        while (iter < data_size && data[iter] != '\"') {
             if (data[iter] == '\\') {
                 ++iter;
                 switch (data[iter]) {
@@ -618,16 +599,16 @@ std::string JParser::getString(std::string_view data, std::size_t& iter, long lo
             }
             ++iter;
         }
-        if (iter >= data.size())
+        if (iter >= data_size)
             throw std::logic_error(getLogicErrorString(error_line));
         ++iter;
-        return std::move(str);
+        return str;
     }
     else
         throw std::logic_error(getLogicErrorString(error_line));
 }
 
-JObject JParser::getNumber(std::string_view data, std::size_t& iter, long long error_line)
+JObject JParser::getNumber(std::string_view data, std::size_t data_size, std::size_t& iter, long long error_line)
 {
     bool isDouble = false;
     bool firstNum = false;
@@ -639,7 +620,7 @@ JObject JParser::getNumber(std::string_view data, std::size_t& iter, long long e
     std::size_t count = 0;
     std::size_t start = iter;
 
-    while (iter < data.size() &&
+    while (iter < data_size &&
            ((data[iter] >= '0' && data[iter] <= '9') || data[iter] == '.')) {
         if (!firstNum && data[iter] >= '0' && data[iter] <= '9') {
             firstNum = true;
@@ -680,34 +661,24 @@ JObject JParser::getNumber(std::string_view data, std::size_t& iter, long long e
     }
 }
 
-JObject JParser::getBool(std::string_view data, std::size_t& iter, long long error_line)
+JObject JParser::getBool(std::string_view data, std::size_t data_size, std::size_t& iter, long long error_line)
 {
-    if (data.size() >= iter + 4 &&
-        data[iter] == 't' &&
-        data[iter + 1] == 'r' &&
-        data[iter + 2] == 'u' &&
-        data[iter + 3] == 'e') {
+    if (data_size >= iter + 4 &&
+        std::memcmp(data.data(), "true", 4ull)) {
         iter += 4;
         return true;
-    } else if (data.size() >= iter + 5 &&
-               data[iter] == 'f' &&
-               data[iter + 1] == 'a' &&
-               data[iter + 2] == 'l' &&
-               data[iter + 3] == 's' &&
-               data[iter + 4] == 'e') {
+    } else if (data_size >= iter + 5 &&
+               std::memcmp(data.data(), "false", 5ull)) {
         iter += 5;
         return false;
     }
     throw std::logic_error(getLogicErrorString(error_line));
 }
 
-JObject JParser::getNull(std::string_view data, std::size_t& iter, long long error_line)
+JObject JParser::getNull(std::string_view data, std::size_t data_size, std::size_t& iter, long long error_line)
 {
-    if (data.size() >= iter + 4 &&
-        data[iter] == 'n' &&
-        data[iter + 1] == 'u' &&
-        data[iter + 2] == 'l' &&
-        data[iter + 3] == 'l') {
+    if (data_size >= iter + 4 &&
+        std::memcmp(data.data(), "null", 4ull)) {
             iter += 4;
             return JObject();
     }
@@ -744,8 +715,8 @@ std::string JWriter::write(const JObject& jo)
             str += "\"\"";
         } else {
             str += '\"';
-            for (auto i = localString.begin(); i != localString.end(); ++i) {
-                switch (*i) {
+            for (const char& i: localString) {
+                switch (i) {
                 case 0:
                     throw std::logic_error("Invalid string");
                 case '\n':
@@ -770,7 +741,7 @@ std::string JWriter::write(const JObject& jo)
                     str += "\\\"";
                     break;
                 default:
-                    str += *i;
+                    str += i;
                     break;
                 }
             }
@@ -814,7 +785,7 @@ std::string JWriter::write(const JObject& jo)
         break;
     }
 
-    return std::move(str);
+    return str;
 }
 
 std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n)
@@ -844,8 +815,8 @@ std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n
     case JValueType::JString: {
         std::string localString(jo.getString());
         str += '\"';
-        for (auto i = localString.begin(); i != localString.end(); ++i) {
-            switch (*i) {
+        for (const char& i: localString) {
+            switch (i) {
             case 0:
                 throw std::logic_error("Invalid string");
             case '\n':
@@ -870,7 +841,7 @@ std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n
                 str += "\\\"";
                 break;
             default:
-                str += *i;
+                str += i;
                 break;
             }
         }
@@ -893,7 +864,7 @@ std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n
         for (std::size_t i = 0; i < n - 1; i++) {
             str += indent_space;
         }
-        str += "]";
+        str += ']';
         break;
     }
     case JValueType::JDict: {
@@ -913,14 +884,26 @@ std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n
         for (std::size_t i = 0; i < n - 1; i++) {
             str += indent_space;
         }
-        str += "}";
+        str += '}';
         break;
     }
     default:
         break;
     }
 
-    return std::move(str);
+    return str;
+}
+
+std::string qjson::JWriter::fastWrite(const JObject &jo)
+{
+    JWriter jw;
+    return jw.write(jo) + '\n';
+}
+
+std::string qjson::JWriter::fastFormatWrite(const JObject &jo, std::size_t indent)
+{
+    JWriter jw;
+    return jw.formatWrite(jo, indent) + '\n';
 }
 
 JSON_NAMESPACE_END

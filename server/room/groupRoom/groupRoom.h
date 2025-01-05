@@ -25,7 +25,7 @@ struct GroupRoomImplDeleter
     void operator()(GroupRoomImpl* gri);
 };
 
-class GroupRoom: protected TextDataRoom
+class GroupRoom: public TextDataRoom
 {
 public:
     struct UserDataStructure
