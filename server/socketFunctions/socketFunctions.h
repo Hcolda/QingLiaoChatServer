@@ -11,6 +11,7 @@
 #include "package.h"
 #include "network.h"
 #include "socket.h"
+#include "connection.hpp"
 
 namespace qls
 {
@@ -34,14 +35,14 @@ struct SocketServiceImpl;
 class SocketService final
 {
 public:
-    SocketService(std::shared_ptr<Socket> socket_ptr);
+    SocketService(std::shared_ptr<Connection> connection_ptr);
     ~SocketService();
 
     /**
     * @brief Get the socket pointer
     * @return Socket pointer
     */
-    std::shared_ptr<Socket> get_socket_ptr() const;
+    std::shared_ptr<Connection> get_connection_ptr() const;
 
     /**
     * @brief Asynchronously receive data
@@ -73,7 +74,7 @@ public:
     * @param pack Original data packet
     */
     asio::awaitable<void> process(
-        std::shared_ptr<Socket> socket_ptr,
+        std::shared_ptr<Connection> connection_ptr,
         std::string_view data, std::shared_ptr<qls::DataPackage> pack);
 
     /**
@@ -88,7 +89,7 @@ public:
     * @param sds Network::SocketDataStructure class
     * @return ASIO coroutine asio::awaitable<void>
     */
-    static asio::awaitable<void> echo(std::shared_ptr<Socket> socket_ptr,
+    static asio::awaitable<void> echo(std::shared_ptr<Connection> connection_ptr,
         std::shared_ptr<Network::SocketDataStructure> sds,
         std::chrono::steady_clock::time_point& deadline);
 

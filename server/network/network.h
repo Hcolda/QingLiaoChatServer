@@ -16,6 +16,7 @@
 #include "package.h"
 #include "dataPackage.h"
 #include "socket.h"
+#include "rateLimiter.hpp"
 
 namespace qls
 {
@@ -93,6 +94,7 @@ private:
     const int                           m_thread_num; ///< Number of threads.
     asio::io_context                    m_io_context; ///< IO context for ASIO.
     std::shared_ptr<asio::ssl::context> m_ssl_context_ptr; ///< Shared pointer to the SSL context.
+    RateLimiter                         m_rateLimiter;
 };
 
 } // namespace qls

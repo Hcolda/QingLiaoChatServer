@@ -16,6 +16,7 @@
 #include "socket.h"
 #include "definition.hpp"
 #include "qls_error.h"
+#include "connection.hpp"
 
 namespace qls
 {
@@ -135,17 +136,17 @@ public:
 
     /**
      * @brief Checks if the user has a specific socket.
-     * @param socket_ptr Pointer to the socket to check.
+     * @param connection_ptr Pointer to the socket to check.
      * @return true if user has the socket, false otherwise.
      */
-    bool hasSocket(const std::shared_ptr<qls::Socket>& socket_ptr) const;
+    bool hasConnection(const std::shared_ptr<qls::Connection>& connection_ptr) const;
 
     /**
      * @brief Modifies the type of a socket in the user's socket map.
-     * @param socket_ptr Pointer to the socket to modify.
+     * @param connection_ptr Pointer to the socket to modify.
      * @param type New DeviceType associated with the socket.
      */
-    void modifySocketType(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
+    void modifyConnectionType(const std::shared_ptr<qls::Connection>& connection_ptr, DeviceType type);
 
     /**
      * @brief Notifies all sockets associated with the user.
@@ -212,16 +213,16 @@ protected:
 
     /**
      * @brief Adds a socket to the user's socket map.
-     * @param socket_ptr Pointer to the socket to add.
+     * @param connection_ptr Pointer to the socket to add.
      * @param type DeviceType associated with the socket.
      */
-    void addSocket(const std::shared_ptr<qls::Socket>& socket_ptr, DeviceType type);
+    void addConnection(const std::shared_ptr<qls::Connection>& connection_ptr, DeviceType type);
 
     /**
      * @brief Removes a socket from the user's socket map.
-     * @param socket_ptr Pointer to the socket to remove.
+     * @param connection_ptr Pointer to the socket to remove.
      */
-    void removeSocket(const std::shared_ptr<qls::Socket>& socket_ptr);
+    void removeConnection(const std::shared_ptr<qls::Connection>& connection_ptr);
 
 private:
     std::unique_ptr<UserImpl, UserImplDeleter> m_impl;

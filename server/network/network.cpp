@@ -12,6 +12,7 @@
 #include "socket.h"
 #include "manager.h"
 #include "qls_error.h"
+#include "connection.hpp"
 
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
@@ -19,14 +20,13 @@ extern qls::Manager serverManager;
 extern qls::SocketFunction serverSocketFunction;
 extern qini::INIObject serverIni;
 
-namespace qls {
-    using asio::ip::tcp;
-    using asio::awaitable;
-    using asio::co_spawn;
-    using asio::detached;
-    using asio::use_awaitable;
-    namespace this_coro = asio::this_coro;
-}
+using asio::ip::tcp;
+using asio::awaitable;
+using asio::co_spawn;
+using asio::detached;
+using asio::use_awaitable;
+namespace this_coro = asio::this_coro;
+using namespace asio;
 
 qls::Network::Network() :
     m_port(55555),
@@ -46,7 +46,7 @@ qls::Network::~Network()
 
 void qls::Network::setTlsConfig(
     std::function<std::shared_ptr<
-        asio::ssl::context>()> callback_handle)
+        ssl::context>()> callback_handle)
 {
     if (!callback_handle)
         throw std::system_error(qls_errc::null_tls_callback_handle);
@@ -65,22 +65,21 @@ void qls::Network::run(std::string_view host, unsigned short port)
         throw std::system_error(qls_errc::null_tls_context);
 
     try {
-        asio::signal_set signals(m_io_context, SIGINT, SIGTERM);
+        signal_set signals(m_io_context, SIGINT, SIGTERM);
         signals.async_wait([&](auto, auto) { m_io_context.stop(); });
 
+        co_spawn(m_io_context, listener(), detached);
+        co_spawn(m_io_context, m_rateLimiter.auto_clean(), detached);
         for (int i = 0; i < m_thread_num; i++) {
             m_threads[i] = std::thread([&]() {
-                co_spawn(m_io_context, listener(), detached);
                 m_io_context.run();
                 });
         }
-
         for (int i = 0; i < m_thread_num; i++) {
             if (m_threads[i].joinable())
                 m_threads[i].join();
         }
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
 }
@@ -92,32 +91,40 @@ void qls::Network::stop()
 
 static std::pmr::synchronized_pool_resource socket_sync_pool;
 
-asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
+awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
 {
-    auto executor = co_await asio::this_coro::executor;
+    auto executor = co_await this_coro::executor;
+
+    // Check socket
+    if (!m_rateLimiter.allow_connection(origin_socket.remote_endpoint().address())) {
+        std::error_code ec;
+        origin_socket.close(ec);
+        // serverLogger.warning('[', origin_socket.remote_endpoint().address().to_string(), "] is seemly attacking the server!");
+        co_return;
+    }
 
     // Load SSL socket pointer
-    std::shared_ptr<Socket> socket_ptr = std::allocate_shared<Socket>(
-        std::pmr::polymorphic_allocator<Socket>(&socket_sync_pool),
+    std::shared_ptr<Connection> connection_ptr = std::allocate_shared<Connection>(
+        std::pmr::polymorphic_allocator<Connection>(&socket_sync_pool),
         std::move(origin_socket), *m_ssl_context_ptr);
+    // String address for data processing
+    std::string addr = socket2ip(connection_ptr->socket);
     // Socket encrypted structure
     std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
-    // String address for data processing
-    std::string addr = socket2ip(*socket_ptr);
-
-    // register the socket
-    serverManager.registerSocket(socket_ptr);
+    // Register the socket
+    serverManager.registerConnection(connection_ptr);
 
     try {
         serverLogger.info(std::format("[{}] connected to the server", addr));
 
         // SSL handshake
-        co_await socket_ptr->async_handshake(asio::ssl::stream_base::server, asio::use_awaitable);
+        co_await connection_ptr->socket.async_handshake(ssl::stream_base::server, use_awaitable);
 
         char data[8192] {0};
         for (;;) {
             do {
-                std::size_t n = co_await socket_ptr->async_read_some(asio::buffer(data), use_awaitable);
+                std::size_t n = co_await connection_ptr->socket.async_read_some(buffer(data),
+                    bind_executor(connection_ptr->strand, use_awaitable));
                 // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
                 sds->package.write({ data, n });
             } while (!sds->package.canRead());
@@ -136,16 +143,17 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                         throw std::system_error(qls_errc::connection_test_failed);
                 } catch (const std::exception& e) {
                     serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
-                    std::error_code ignore_error;
-                    socket_ptr->shutdown(ignore_error);
+                    std::error_code ec;
+                    connection_ptr->socket.shutdown(ec);
                     co_return;
                 }
 
-                auto executeFunction = [addr](std::shared_ptr<Socket> socket_ptr,
-                    std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
-                    using namespace asio::experimental::awaitable_operators;
-                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void> {
-                        asio::steady_timer timer(co_await this_coro::executor);
+                auto executeFunction = [addr](std::shared_ptr<Connection> connection_ptr,
+                    std::shared_ptr<Network::SocketDataStructure> sds) -> awaitable<void> {
+                    using namespace experimental::awaitable_operators;
+                    // Create a watchdog
+                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> awaitable<void> {
+                        steady_timer timer(co_await this_coro::executor);
                         auto now = std::chrono::steady_clock::now();
                         while (deadline > now) {
                             timer.expires_at(deadline);
@@ -156,7 +164,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     };
                     std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::time_point::max();
                     try {
-                        co_await (SocketService::echo(socket_ptr, std::move(sds), deadline) && watchdog(deadline));
+                        co_await (SocketService::echo(connection_ptr, std::move(sds), deadline) && watchdog(deadline));
                     } catch (const std::system_error& e) {
                         const auto& errc = e.code();
                         if (errc.message() == "End of file")
@@ -166,11 +174,11 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                     } catch (const std::exception& e) {
                         serverLogger.error(std::string(e.what()));
                     }
-                    serverManager.removeSocket(socket_ptr);
+                    serverManager.removeConnection(connection_ptr);
                     co_return;
                     };
 
-                asio::co_spawn(executor, executeFunction(std::move(socket_ptr), std::move(sds)), asio::detached);
+                co_spawn(executor, executeFunction(std::move(connection_ptr), std::move(sds)), detached);
                 co_return;
             }
         }
@@ -185,14 +193,27 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
     catch (const std::exception& e) {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
-    serverManager.removeSocket(socket_ptr);
+    serverManager.removeConnection(connection_ptr);
     co_return;
 }
 
-asio::awaitable<void> qls::Network::listener()
+awaitable<void> qls::Network::listener()
 {
     auto executor = co_await this_coro::executor;
-    tcp::acceptor acceptor(executor, { asio::ip::make_address(m_host), m_port });
+    tcp::acceptor acceptor(executor, { ip::make_address(m_host), m_port });
+
+    // SYN anti-attack & Dos anti-attack
+    acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
+    acceptor.set_option(socket_base::receive_buffer_size(1024*1024));
+    acceptor.set_option(tcp::acceptor::enable_connection_aborted(true));
+#if defined(__LINUX__) || defined(__UNIX__)
+    int fd = acceptor.native_handle();
+    int syncnt = 2;
+    setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));
+    
+    int cookie = 1;
+    setsockopt(fd, IPPROTO_TCP, TCP_SYNCOOKIE, &cookie, sizeof(cookie));
+#endif
     for (;;) {
         tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
         co_spawn(executor, echo(std::move(socket)), detached);

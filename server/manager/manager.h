@@ -18,6 +18,7 @@
 #include "socket.h"
 #include "verificationManager.h"
 #include "dataManager.h"
+#include "connection.hpp"
 
 namespace qls
 {
@@ -153,7 +154,7 @@ public:
      * 
      * @param socket_ptr A shared pointer to the socket to register.
      */
-    void registerSocket(const std::shared_ptr<Socket>& socket_ptr);
+    void registerConnection(const std::shared_ptr<Connection>& socket_ptr);
 
     /**
      * @brief Checks if a socket is registered.
@@ -161,24 +162,24 @@ public:
      * @param socket_ptr A shared pointer to the socket to check.
      * @return true if the socket is registered, false otherwise.
      */
-    bool hasSocket(const std::shared_ptr<Socket>& socket_ptr) const;
+    bool hasConnection(const std::shared_ptr<Connection>& socket_ptr) const;
 
     /**
      * @brief Checks if a socket is associated with a specific user ID.
      * 
-     * @param socket_ptr A shared pointer to the Socket object.
+     * @param socket_ptr A shared pointer to the Connection object.
      * @param user_id The user ID to check against the socket.
      * @return true if the socket is associated with the specified user ID, false otherwise.
      */
-    bool matchUserOfSocket(const std::shared_ptr<Socket>& socket_ptr, UserID user_id) const;
+    bool matchUserOfConnection(const std::shared_ptr<Connection>& socket_ptr, UserID user_id) const;
 
     /**
      * @brief Gets the user ID associated with a socket.
      * 
-     * @param socket_ptr A shared pointer to the Socket object.
+     * @param socket_ptr A shared pointer to the Connection object.
      * @return The user ID associated with the socket.
      */
-    UserID getUserIDOfSocket(const std::shared_ptr<Socket>& socket_ptr) const;
+    UserID getUserIDOfConnection(const std::shared_ptr<Connection>& socket_ptr) const;
 
     /**
      * @brief Modifies the user ID associated with a registered socket.
@@ -187,14 +188,14 @@ public:
      * @param user_id The user ID to associate with the socket.
      * @param type The type of device associated with the socket.
      */
-    void modifyUserOfSocket(const std::shared_ptr<Socket>& socket_ptr, UserID user_id, DeviceType type);
+    void modifyUserOfConnection(const std::shared_ptr<Connection>& socket_ptr, UserID user_id, DeviceType type);
 
     /**
      * @brief Removes a registered socket.
      * 
      * @param socket_ptr A shared pointer to the socket to remove.
      */
-    void removeSocket(const std::shared_ptr<Socket>& socket_ptr);
+    void removeConnection(const std::shared_ptr<Connection>& socket_ptr);
 
     /**
      * @brief Retrieves the SQL process for the server.

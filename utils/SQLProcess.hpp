@@ -68,13 +68,9 @@ public:
     ~SQLDBProcess()
     {
         m_thread_is_running = false;
-        m_thread_is_running_2 = false;
         m_cv.notify_all();
-        m_cv_2.notify_all();
         if (m_work_thread.joinable())
             m_work_thread.join();
-        if (m_work_thread_2.joinable())
-            m_work_thread_2.join();
     }
 
     /**
@@ -138,25 +134,6 @@ public:
                 func();
             }
             });
-
-        this->m_thread_is_running_2 = true;
-        this->m_work_thread_2 = std::thread([this]() -> void {
-            while (m_thread_is_running_2) {
-                std::unique_lock<std::mutex> lock(m_function_queue_mutex_2);
-                this->m_cv_2.wait(lock,
-                    [this]() { return !m_function_queue_2.empty() || !m_thread_is_running_2; });
-
-                if (!m_thread_is_running_2) return;
-                if (m_function_queue_2.empty())
-                    continue;
-
-                auto func = std::move(m_function_queue_2.front());
-                m_function_queue_2.pop();
-                lock.unlock();
-
-                func();
-            }
-            });
     }
 
     /**
@@ -170,41 +147,7 @@ public:
     template<typename Func, typename... Args>
     auto submit(Func&& func, Args&&... args) -> std::future<decltype(func(args...))>
     {
-        auto package = std::make_shared<std::packaged_task<decltype(func(args...))(Args...)>>(std::forward<Func>(func));
-
-        {
-            std::unique_lock<std::mutex> lock(m_function_queue_mutex);
-            m_function_queue.push(std::bind([package](auto&&... args) -> void {
-                (*package)(std::forward<decltype(args)>(args)...);
-                }, std::forward<Args>(args)...));
-        }
-        m_cv.notify_all();
-
-        return package->get_future();
-    }
-
-    /**
-     * @brief Submits a function to the secondary task queue and returns a future to get the result.
-     * @tparam Func Function type.
-     * @tparam Args Argument types.
-     * @param func Function to submit.
-     * @param args Arguments to pass to the function.
-     * @return std::future to get the result of the function.
-     */
-    template<typename Func, typename... Args>
-    auto submit_2(Func&& func, Args&&... args) -> std::future<decltype(func(args...))>
-    {
-        auto package = std::make_shared<std::packaged_task<decltype(func(args...))(Args...)>>(std::forward<Func>(func));
-
-        {
-            std::unique_lock<std::mutex> lock(m_function_queue_mutex_2);
-            m_function_queue_2.push(std::bind([package](auto&&... args) -> void {
-                (*package)(std::forward<decltype(args)>(args)...);
-                }, std::forward<Args>(args)...));
-        }
-        m_cv.notify_all();
-
-        return package->get_future();
+        return submit(asio::use_future, std::forward<Func>(func), std::forward<Args>(args)...);
     }
 
     /**
@@ -220,18 +163,20 @@ public:
      */
     template<typename R, typename Func, typename... Args,
         asio::completion_token_for<void(R)> CompletionToken>
-    auto awaitableSubmit(CompletionToken&& token, Func&& func, Args&&... args)
+    auto submit(CompletionToken&& token, Func&& func, Args&&... args)
     {
-        // Ideal method but not implemented
-        auto init = [this](auto completion_handler, auto&& func, auto&&... args) mutable -> void {
-            std::future<R> future = this->submit(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
-            this->submit_2([](auto completion_handler, std::future<R> future) {
-                std::move(completion_handler)(future.get());
-                }, std::move(completion_handler), std::move(future));
-            };
-
         return asio::async_initiate<CompletionToken, void(R)>(
-            init, token, std::forward<Func>(func), std::forward<Args>(args)...);
+            [](auto handle, SQLDBProcess* process, auto&& func, auto&&... args) {
+                {
+                    std::unique_lock<std::mutex> lock(process->m_function_queue_mutex);
+                    process->m_function_queue.push(std::bind(
+                        [](auto handle, auto&& func, auto&&... args) {
+                            handle(std::invoke(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...));
+                        }
+                    ), handle, std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
+                }
+                process->m_cv.notify_all();
+            }, token, this, std::forward<Func>(func), std::forward<Args>(args)...);
     }
 
     /**
@@ -321,12 +266,6 @@ private:
     std::mutex                          m_function_queue_mutex; ///< Mutex for main task queue.
     std::atomic<bool>                   m_thread_is_running; ///< Flag indicating if main worker thread is running.
     std::condition_variable             m_cv; ///< Condition variable for main task queue.
-
-    std::thread                         m_work_thread_2; ///< Secondary worker thread.
-    std::queue<std::function<void()>>   m_function_queue_2; ///< Task queue for secondary worker thread.
-    std::mutex                          m_function_queue_mutex_2; ///< Mutex for secondary task queue.
-    std::atomic<bool>                   m_thread_is_running_2; ///< Flag indicating if secondary worker thread is running.
-    std::condition_variable             m_cv_2; ///< Condition variable for secondary task queue.
 };
 
 } // namespace qls

@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <SQLProcess.hpp>
 
 #include "userid.hpp"
 

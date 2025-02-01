@@ -34,29 +34,29 @@ struct ManagerImpl
 
     // Map of user IDs to private room IDs
     std::unordered_map<PrivateRoomIDStruct, GroupID, PrivateRoomIDStructHasher>
-                            m_userID_to_privateRoomID_map; ///< Map of user ID structs to private room IDs.
-    std::shared_mutex       m_userID_to_privateRoomID_map_mutex; ///< Mutex for user to private room ID map.
+                            m_userID_to_privateRoomID_map;
+    std::shared_mutex       m_userID_to_privateRoomID_map_mutex;
 
     // User map
     std::unordered_map<UserID, std::shared_ptr<User>>
-                            m_user_map; ///< Map of user IDs to users.
-    std::shared_mutex       m_user_map_mutex; ///< Mutex for user map.
+                            m_user_map;
+    std::shared_mutex       m_user_map_mutex;
     std::pmr::synchronized_pool_resource
                             m_user_sync_pool;
 
-    std::unordered_map<std::shared_ptr<Socket>, UserID>
-                            m_socket_map; ///< Map of socket pointers to user IDs.
-    std::shared_mutex       m_socket_map_mutex; ///< Mutex for socket map.
+    std::unordered_map<std::shared_ptr<Connection>, UserID>
+                            m_connection_map;
+    std::shared_mutex       m_connection_map_mutex;
 
     // New user ID
-    std::atomic<long long>  m_newUserId; ///< Atomic counter for new user IDs.
+    std::atomic<long long>  m_newUserId;
     // New private room ID
-    std::atomic<long long>  m_newPrivateRoomId; ///< Atomic counter for new private room IDs.
+    std::atomic<long long>  m_newPrivateRoomId;
     // New group room ID
-    std::atomic<long long>  m_newGroupRoomId; ///< Atomic counter for new group room IDs.
+    std::atomic<long long>  m_newGroupRoomId;
 
     // SQL process manager
-    SQLDBProcess            m_sqlProcess; ///< SQL process instance.
+    SQLDBProcess            m_sqlProcess;
 };
 
 Manager::Manager():
@@ -263,70 +263,70 @@ std::unordered_map<UserID, std::shared_ptr<User>> Manager::getUserList() const
     return m_impl->m_user_map;
 }
 
-void Manager::registerSocket(const std::shared_ptr<Socket> &socket_ptr)
+void Manager::registerConnection(const std::shared_ptr<Connection> &connection_ptr)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
-    if (m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend())
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    if (m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend())
         throw std::system_error(make_error_code(qls_errc::socket_pointer_existed));
-    m_impl->m_socket_map.emplace(socket_ptr, -1ll);
+    m_impl->m_connection_map.emplace(connection_ptr, -1ll);
 }
 
-bool Manager::hasSocket(const std::shared_ptr<Socket> &socket_ptr) const
+bool Manager::hasConnection(const std::shared_ptr<Connection> &connection_ptr) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
-    return m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend();
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    return m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend();
 }
 
-bool Manager::matchUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, UserID user_id) const
+bool Manager::matchUserOfConnection(const std::shared_ptr<Connection> &connection_ptr, UserID user_id) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
-    auto iter = m_impl->m_socket_map.find(socket_ptr);
-    if (iter == m_impl->m_socket_map.cend()) return false;
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    auto iter = m_impl->m_connection_map.find(connection_ptr);
+    if (iter == m_impl->m_connection_map.cend()) return false;
     return iter->second == user_id;
 }
 
-UserID Manager::getUserIDOfSocket(const std::shared_ptr<Socket> &socket_ptr) const
+UserID Manager::getUserIDOfConnection(const std::shared_ptr<Connection> &connection_ptr) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
-    auto iter = m_impl->m_socket_map.find(socket_ptr);
-    if (iter == m_impl->m_socket_map.cend())
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    auto iter = m_impl->m_connection_map.find(connection_ptr);
+    if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(make_error_code(qls_errc::socket_pointer_not_existed));
     return iter->second;
 }
 
-void Manager::modifyUserOfSocket(const std::shared_ptr<Socket> &socket_ptr, UserID user_id, DeviceType type)
+void Manager::modifyUserOfConnection(const std::shared_ptr<Connection> &connection_ptr, UserID user_id, DeviceType type)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex, std::defer_lock);
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex, std::defer_lock);
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex, std::defer_lock);
     std::lock(local_unique_lock, local_shared_lock);
 
     if (m_impl->m_user_map.find(user_id) == m_impl->m_user_map.cend())
         throw std::system_error(make_error_code(qls_errc::user_not_existed));
 
-    auto iter = m_impl->m_socket_map.find(socket_ptr);
-    if (iter == m_impl->m_socket_map.cend())
+    auto iter = m_impl->m_connection_map.find(connection_ptr);
+    if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(make_error_code(qls_errc::socket_pointer_not_existed));
 
     if (iter->second != -1ll)
-        m_impl->m_user_map.find(iter->second)->second->removeSocket(socket_ptr);
-    m_impl->m_user_map.find(user_id)->second->addSocket(socket_ptr, type);
+        m_impl->m_user_map.find(iter->second)->second->removeConnection(connection_ptr);
+    m_impl->m_user_map.find(user_id)->second->addConnection(connection_ptr, type);
     iter->second = user_id;
 }
 
-void Manager::removeSocket(const std::shared_ptr<Socket> &socket_ptr)
+void Manager::removeConnection(const std::shared_ptr<Connection> &connection_ptr)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex, std::defer_lock);
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex, std::defer_lock);
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex, std::defer_lock);
     std::lock(local_unique_lock, local_shared_lock);
 
-    auto iter = m_impl->m_socket_map.find(socket_ptr);
-    if (iter == m_impl->m_socket_map.cend())
+    auto iter = m_impl->m_connection_map.find(connection_ptr);
+    if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(make_error_code(qls_errc::socket_pointer_not_existed));
 
     if (iter->second != -1l)
-        m_impl->m_user_map.find(iter->second)->second->removeSocket(socket_ptr);
+        m_impl->m_user_map.find(iter->second)->second->removeConnection(connection_ptr);
     
-    m_impl->m_socket_map.erase(iter);
+    m_impl->m_connection_map.erase(iter);
 }
 
 SQLDBProcess &Manager::getServerSqlProcess()

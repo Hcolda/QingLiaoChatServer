@@ -259,13 +259,13 @@ qjson::JObject JsonMessageProcessImpl::login(UserID user_id, std::string_view pa
     if (user->isUserPassword(password)) {
         // check device type
         if (device == "PersonalComputer")
-            serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::PersonalComputer);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::PersonalComputer);
         else if (device == "Phone")
-            serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Phone);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::Phone);
         else if (device == "Web")
-            serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Web);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::Web);
         else
-            serverManager.modifyUserOfSocket(sf.get_socket_ptr(), user_id, DeviceType::Unknown);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::Unknown);
 
         auto returnJson = makeSuccessMessage("Successfully logged in!");
         std::unique_lock<std::shared_mutex> local_unique_lock(m_user_id_mutex);
