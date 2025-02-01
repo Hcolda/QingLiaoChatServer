@@ -49,17 +49,17 @@ namespace qls
 struct SocketServiceImpl
 {
     // socket ptr
-    std::shared_ptr<Socket> m_socket_ptr;
+    std::shared_ptr<Connection> m_connection_ptr;
     // JsonMsgProcess
     JsonMessageProcess      m_jsonProcess;
     // package
     qls::Package            m_package;
 };
 
-SocketService::SocketService(std::shared_ptr<Socket> socket_ptr) :
-    m_impl(std::make_unique<SocketServiceImpl>(socket_ptr, UserID(-1)))
+SocketService::SocketService(std::shared_ptr<Connection> connection_ptr) :
+    m_impl(std::make_unique<SocketServiceImpl>(connection_ptr, UserID(-1)))
 {
-    if (!socket_ptr)
+    if (!connection_ptr)
         throw std::system_error(qls::qls_errc::null_socket_pointer);
 }
 
@@ -67,22 +67,23 @@ SocketService::~SocketService()
 {
 }
 
-std::shared_ptr<Socket> SocketService::get_socket_ptr() const
+std::shared_ptr<Connection> SocketService::get_connection_ptr() const
 {
-    return m_impl->m_socket_ptr;
+    return m_impl->m_connection_ptr;
 }
 
 asio::awaitable<std::shared_ptr<qls::DataPackage>>
     SocketService::async_receive()
 {
-    std::string addr = socket2ip(*(m_impl->m_socket_ptr));
+    std::string addr = socket2ip(m_impl->m_connection_ptr->socket);
     char buffer[8192]{ 0 };
 
     std::shared_ptr<qls::DataPackage> datapack;
     // receive data
     if (!m_impl->m_package.canRead()) {
         do {
-            std::size_t size = co_await m_impl->m_socket_ptr->async_read_some(asio::buffer(buffer), asio::use_awaitable);
+            std::size_t size = co_await m_impl->m_connection_ptr->socket.async_read_some(asio::buffer(buffer),
+                asio::bind_executor(m_impl->m_connection_ptr->strand, asio::use_awaitable));
             m_impl->m_package.write({ buffer, static_cast<std::size_t>(size) });
         } while (!m_impl->m_package.canRead());
     }
@@ -102,13 +103,13 @@ asio::awaitable<std::size_t> SocketService::async_send(std::string_view data, lo
     pack->requestID = requestID;
     pack->sequence = sequence;
     pack->type = type;
-    co_return co_await asio::async_write(*m_impl->m_socket_ptr,
+    co_return co_await asio::async_write(m_impl->m_connection_ptr->socket,
         asio::buffer(pack->packageToString()),
-        asio::use_awaitable);
+        asio::bind_executor(m_impl->m_connection_ptr->strand, asio::use_awaitable));
 }
 
 asio::awaitable<void> SocketService::process(
-    std::shared_ptr<Socket> socket_ptr,
+    std::shared_ptr<Connection> connection_ptr,
     std::string_view data,
     std::shared_ptr<qls::DataPackage> pack)
 {
@@ -144,17 +145,17 @@ void SocketService::setPackageBuffer(const qls::Package& p)
     m_impl->m_package.setBuffer(p.readBuffer());
 }
 
-asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
+asio::awaitable<void> SocketService::echo(std::shared_ptr<Connection> connection_ptr,
     std::shared_ptr<Network::SocketDataStructure> sds,
     std::chrono::steady_clock::time_point& deadline)
 {
     if (sds.get() == nullptr)
         throw std::logic_error("sds is nullptr");
 
-    SocketService socketService(socket_ptr);
+    SocketService socketService(connection_ptr);
 
     // get address from socket
-    std::string addr = socket2ip(*socket_ptr);
+    std::string addr = socket2ip(connection_ptr->socket);
 
     try {
         long long heart_beat_times = 0;
@@ -168,7 +169,7 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
                 // Data reception error
                 serverLogger.error("[", addr, "]", "package is nullptr, auto closing connection...");
                 std::error_code ignore_error;
-                socket_ptr->shutdown(ignore_error);
+                connection_ptr->socket.shutdown(ignore_error);
                 co_return;
             }
             else if (pack->type == DataPackage::HeartBeat) {
@@ -182,7 +183,7 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
                         serverLogger.error("[", addr, "]", "too many heartbeats");
 
                         // remove socket pointer from manager
-                        serverManager.removeSocket(socket_ptr);
+                        serverManager.removeConnection(connection_ptr);
                         co_return;
                     }
                     heart_beat_times = 0;
@@ -191,7 +192,7 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
             }
 
             // Successfully decrypted and received
-            co_await socketService.process(socket_ptr, pack->getData(), pack);
+            co_await socketService.process(connection_ptr, pack->getData(), pack);
             continue;
         }
     }
@@ -207,7 +208,7 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Socket> socket_ptr,
     }
 
     // remove socket pointer from manager
-    serverManager.removeSocket(socket_ptr);
+    serverManager.removeConnection(connection_ptr);
     co_return;
 }
 

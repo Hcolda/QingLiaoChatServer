@@ -50,9 +50,9 @@ struct UserImpl
                                     m_user_group_verification_map; ///< User's group verification map
     std::shared_mutex               m_user_group_verification_map_mutex; ///< Mutex for thread-safe access to group verification map
 
-    std::unordered_map<std::shared_ptr<Socket>, DeviceType>
-                                    m_socket_map; ///< Map of sockets associated with the user
-    std::shared_mutex               m_socket_map_mutex; ///< Mutex for thread-safe access to socket map
+    std::unordered_map<std::shared_ptr<Connection>, DeviceType>
+                                    m_connection_map; ///< Map of sockets associated with the user
+    std::shared_mutex               m_connection_map_mutex; ///< Mutex for thread-safe access to socket map
 
     bool removeFriend(UserID friend_user_id)
     {
@@ -508,67 +508,67 @@ std::multimap<GroupID, Verification::GroupVerification> User::getGroupVerificati
     return m_impl->m_user_group_verification_map;
 }
 
-void User::addSocket(const std::shared_ptr<Socket> &socket_ptr, DeviceType type)
+void User::addConnection(const std::shared_ptr<Connection> &connection_ptr, DeviceType type)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
-    if (m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend())
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    if (m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::socket_pointer_existed);
 
-    m_impl->m_socket_map.emplace(socket_ptr, type);
+    m_impl->m_connection_map.emplace(connection_ptr, type);
 }
 
-bool User::hasSocket(const std::shared_ptr<Socket> &socket_ptr) const
+bool User::hasConnection(const std::shared_ptr<Connection> &connection_ptr) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
-    return m_impl->m_socket_map.find(socket_ptr) != m_impl->m_socket_map.cend();
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    return m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend();
 }
 
-void User::modifySocketType(const std::shared_ptr<Socket> &socket_ptr, DeviceType type)
+void User::modifyConnectionType(const std::shared_ptr<Connection> &connection_ptr, DeviceType type)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
-    auto iter = m_impl->m_socket_map.find(socket_ptr);
-    if (iter == m_impl->m_socket_map.cend())
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    auto iter = m_impl->m_connection_map.find(connection_ptr);
+    if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
 
     iter->second = type;
 }
 
-void User::removeSocket(const std::shared_ptr<Socket>& socket_ptr)
+void User::removeConnection(const std::shared_ptr<Connection>& connection_ptr)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_socket_map_mutex);
-    auto iter = m_impl->m_socket_map.find(socket_ptr);
-    if (iter == m_impl->m_socket_map.cend())
+    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    auto iter = m_impl->m_connection_map.find(connection_ptr);
+    if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
     
-    m_impl->m_socket_map.erase(iter);
+    m_impl->m_connection_map.erase(iter);
 }
 
 void User::notifyAll(std::string_view data)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
-    for (auto& [socket_ptr, type]: m_impl->m_socket_map) {
-        asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
-            [this, buffer_ptr](std::error_code ec, std::size_t n) {
+    for (auto& [connection_ptr, type]: m_impl->m_connection_map) {
+        asio::async_write(connection_ptr->socket, asio::buffer(*buffer_ptr),
+            asio::bind_executor(connection_ptr->strand, [this, buffer_ptr](std::error_code ec, std::size_t n) {
                 if (ec)
                     serverLogger.error('[', ec.category().name(), ']', ec.message());
-            });
+            }));
     }
 }
 
 void User::notifyWithType(DeviceType type, std::string_view data)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_socket_map_mutex);
+    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
-    for (auto& [socket_ptr, dtype]: m_impl->m_socket_map) {
+    for (auto& [connection_ptr, dtype]: m_impl->m_connection_map) {
         if (dtype == type) {
-            asio::async_write(*socket_ptr, asio::buffer(*buffer_ptr),
-                [this, buffer_ptr](std::error_code ec, std::size_t n) {
-                    if (ec)
-                        serverLogger.error('[', ec.category().name(), ']', ec.message());
-                });
+            asio::async_write(connection_ptr->socket, asio::buffer(*buffer_ptr),
+                asio::bind_executor(connection_ptr->strand, [this, buffer_ptr](std::error_code ec, std::size_t n) {
+                if (ec)
+                    serverLogger.error('[', ec.category().name(), ']', ec.message());
+            }));
         }
     }
 }
