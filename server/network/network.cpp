@@ -27,6 +27,8 @@ using asio::detached;
 using asio::use_awaitable;
 namespace this_coro = asio::this_coro;
 using namespace asio;
+using namespace experimental::awaitable_operators;
+using namespace std::chrono_literals;
 
 qls::Network::Network() :
     m_port(55555),
@@ -117,14 +119,22 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
     try {
         serverLogger.info(std::format("[{}] connected to the server", addr));
 
+        // timeout function
+        auto timeout = [addr](const std::chrono::steady_clock::duration& duration) -> awaitable<void> {
+            steady_timer timer(co_await this_coro::executor);
+            timer.expires_after(duration);
+            co_await timer.async_wait(asio::use_awaitable);
+            throw std::system_error(make_error_code(std::errc::timed_out));
+        };
+
         // SSL handshake
-        co_await connection_ptr->socket.async_handshake(ssl::stream_base::server, use_awaitable);
+        co_await (connection_ptr->socket.async_handshake(ssl::stream_base::server, use_awaitable) || timeout(5s));
 
         char data[8192] {0};
         for (;;) {
             do {
-                std::size_t n = co_await connection_ptr->socket.async_read_some(buffer(data),
-                    bind_executor(connection_ptr->strand, use_awaitable));
+                std::size_t n = std::get<0>(co_await (connection_ptr->socket.async_read_some(buffer(data),
+                    bind_executor(connection_ptr->strand, use_awaitable)) || timeout(5s)));
                 // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
                 sds->package.write({ data, n });
             } while (!sds->package.canRead());
@@ -150,7 +160,6 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
 
                 auto executeFunction = [addr](std::shared_ptr<Connection> connection_ptr,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> awaitable<void> {
-                    using namespace experimental::awaitable_operators;
                     // Create a watchdog
                     auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> awaitable<void> {
                         steady_timer timer(co_await this_coro::executor);
@@ -215,8 +224,12 @@ awaitable<void> qls::Network::listener()
     setsockopt(fd, IPPROTO_TCP, TCP_SYNCOOKIE, &cookie, sizeof(cookie));
 #endif
     for (;;) {
-        tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
-        co_spawn(executor, echo(std::move(socket)), detached);
+        try {
+            tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
+            co_spawn(executor, echo(std::move(socket)), detached);
+        } catch(const std::exception& e) {
+            serverLogger.warning("Error occured at Asio.accepter: ", std::string(e.what()));
+        }
     }
 }
 
