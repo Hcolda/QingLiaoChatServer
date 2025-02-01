@@ -1,7 +1,6 @@
 #include "dataManager.h"
 
-#include <mariadb/conncpp.hpp>
-
+#include <SQLProcess.hpp>
 #include "manager.h"
 
 // manager

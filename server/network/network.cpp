@@ -68,19 +68,18 @@ void qls::Network::run(std::string_view host, unsigned short port)
         asio::signal_set signals(m_io_context, SIGINT, SIGTERM);
         signals.async_wait([&](auto, auto) { m_io_context.stop(); });
 
+        co_spawn(m_io_context, listener(), detached);
+        co_spawn(m_io_context, m_rateLimiter.auto_clean(), detached);
         for (int i = 0; i < m_thread_num; i++) {
             m_threads[i] = std::thread([&]() {
-                co_spawn(m_io_context, listener(), detached);
                 m_io_context.run();
                 });
         }
-
         for (int i = 0; i < m_thread_num; i++) {
             if (m_threads[i].joinable())
                 m_threads[i].join();
         }
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
     }
 }
@@ -96,16 +95,23 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
 {
     auto executor = co_await asio::this_coro::executor;
 
+    // Check socket
+    if (!m_rateLimiter.allow_connection(origin_socket.remote_endpoint().address())) {
+        std::error_code ec;
+        origin_socket.close(ec);
+        // serverLogger.warning('[', origin_socket.remote_endpoint().address().to_string(), "] is seemly attacking the server!");
+        co_return;
+    }
+
     // Load SSL socket pointer
     std::shared_ptr<Socket> socket_ptr = std::allocate_shared<Socket>(
         std::pmr::polymorphic_allocator<Socket>(&socket_sync_pool),
         std::move(origin_socket), *m_ssl_context_ptr);
-    // Socket encrypted structure
-    std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
     // String address for data processing
     std::string addr = socket2ip(*socket_ptr);
-
-    // register the socket
+    // Socket encrypted structure
+    std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
+    // Register the socket
     serverManager.registerSocket(socket_ptr);
 
     try {
@@ -144,6 +150,7 @@ asio::awaitable<void> qls::Network::echo(asio::ip::tcp::socket origin_socket)
                 auto executeFunction = [addr](std::shared_ptr<Socket> socket_ptr,
                     std::shared_ptr<Network::SocketDataStructure> sds) -> asio::awaitable<void> {
                     using namespace asio::experimental::awaitable_operators;
+                    // Create a watchdog
                     auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> asio::awaitable<void> {
                         asio::steady_timer timer(co_await this_coro::executor);
                         auto now = std::chrono::steady_clock::now();
@@ -193,6 +200,19 @@ asio::awaitable<void> qls::Network::listener()
 {
     auto executor = co_await this_coro::executor;
     tcp::acceptor acceptor(executor, { asio::ip::make_address(m_host), m_port });
+
+    // SYN anti-attack & Dos anti-attack
+    acceptor.set_option(asio::ip::tcp::acceptor::reuse_address(true));
+    acceptor.set_option(asio::socket_base::receive_buffer_size(1024*1024));
+    acceptor.set_option(tcp::acceptor::enable_connection_aborted(true));
+#if defined(__LINUX__) || defined(__UNIX__)
+    int fd = acceptor.native_handle();
+    int syncnt = 2;
+    setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));
+    
+    int cookie = 1;
+    setsockopt(fd, IPPROTO_TCP, TCP_SYNCOOKIE, &cookie, sizeof(cookie));
+#endif
     for (;;) {
         tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
         co_spawn(executor, echo(std::move(socket)), detached);
