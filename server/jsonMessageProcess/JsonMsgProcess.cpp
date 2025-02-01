@@ -147,7 +147,7 @@ public:
 
     UserID getLocalUserID() const;
 
-    qjson::JObject processJsonMessage(const qjson::JObject& json, const SocketService& sf);
+    asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
     qjson::JObject login(UserID user_id, std::string_view password, std::string_view device, const SocketService& sf);
     qjson::JObject login(std::string_view email, std::string_view password, std::string_view device);
@@ -189,20 +189,20 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
     return this->m_user_id;
 }
 
-qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
+asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
     try {
         serverLogger.debug("Json body: ", qjson::JWriter::fastWrite(json));
         if (json.getType() != qjson::JDict)
-            return makeErrorMessage("The data body must be json dictory type!");
+            co_return makeErrorMessage("The data body must be json dictory type!");
         else if (!json.hasMember("function"))
-            return makeErrorMessage("\"function\" must be included in json dictory!");
+            co_return makeErrorMessage("\"function\" must be included in json dictory!");
         else if (!json.hasMember("parameters"))
-            return makeErrorMessage("\"function\" must be included in json dictory!");
+            co_return makeErrorMessage("\"function\" must be included in json dictory!");
         else if (json["function"].getType() != qjson::JString)
-            return makeErrorMessage("\"function\" must be string type!");
+            co_return makeErrorMessage("\"function\" must be string type!");
         else if (json["parameters"].getType() != qjson::JDict)
-            return makeErrorMessage("\"parameters\" must be dictory type!");
+            co_return makeErrorMessage("\"parameters\" must be dictory type!");
         std::string function_name = json["function"].getString();
         qjson::JObject param = json["parameters"];
 
@@ -214,24 +214,24 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
                 function_name != "login" &&
                 (!m_jmpc_list.hasCommand(function_name) ||
                     m_jmpc_list.getCommand(function_name)->getCommandType() & JsonMessageCommand::NormalType)) {
-                    return makeErrorMessage("You haven't logged in!");
+                    co_return makeErrorMessage("You haven't logged in!");
             }
         }
 
         if (function_name == "login")
-            return login(UserID(param["user_id"].getInt()), param["password"].getString(), param["device"].getString(), sf);
+            co_return login(UserID(param["user_id"].getInt()), param["password"].getString(), param["device"].getString(), sf);
 
         if (!m_jmpc_list.hasCommand(function_name))
-            return makeErrorMessage("There isn't a function that matches the name!");
+            co_return makeErrorMessage("There isn't a function that matches the name!");
         
         auto command_ptr = m_jmpc_list.getCommand(function_name);
         const qjson::dict_t& param_dict = param.getDict();
         for (const auto& [name, type]: m_jmpc_list.getCommandOptions(function_name)) {
             auto local_iter = param_dict.find(name);
             if (local_iter == param_dict.cend())
-                return makeErrorMessage(std::format("Lost a parameter: {}.", name));
+                co_return makeErrorMessage(std::format("Lost a parameter: {}.", name));
             if (local_iter->second.getType() != type)
-                return makeErrorMessage(std::format("Wrong parameter type: {}.", name));
+                co_return makeErrorMessage(std::format("Wrong parameter type: {}.", name));
         }
 
         UserID user_id;
@@ -239,12 +239,32 @@ qjson::JObject JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& 
             std::shared_lock<std::shared_mutex> id_lock(m_user_id_mutex);
             user_id = m_user_id;
         }
-        return command_ptr->execute(user_id, std::move(param));
+        
+        auto async_invoke = [](auto executor, std::shared_ptr<JsonMessageCommand> command_ptr, UserID user_id, qjson::JObject param, auto&& token) {
+            return asio::async_initiate<decltype(token), void(std::error_code, qjson::JObject)>(
+                [](auto handler, auto executor, std::shared_ptr<JsonMessageCommand> command_ptr, UserID user_id, qjson::JObject param) {
+                    asio::post(executor,
+                        [handler = std::move(handler),
+                        command_ptr = std::move(command_ptr),
+                        user_id,
+                        param = std::move(param)]() mutable {
+                            try {
+                                handler({}, command_ptr->execute(user_id, std::move(param)));
+                            } catch(const std::system_error& e) {
+                                handler(e.code(), qjson::JObject{});
+                            } catch(...) {
+                                handler(std::error_code(asio::error::fault), qjson::JObject{});
+                            }
+                        });
+                }, token, std::move(executor), std::move(command_ptr), user_id, std::move(param));
+            };
+
+        co_return co_await async_invoke(co_await asio::this_coro::executor, std::move(command_ptr), user_id, std::move(param), asio::use_awaitable);
     } catch (const std::exception& e) {
 #ifndef _DEBUG
-        return makeErrorMessage("Unknown error occured!");
+        co_return makeErrorMessage("Unknown error occured!");
 #else
-        return makeErrorMessage(std::string("Unknown error occured: ") + e.what());
+        co_return makeErrorMessage(std::string("Unknown error occured: ") + e.what());
 #endif
     }
 }
@@ -299,7 +319,7 @@ UserID JsonMessageProcess::getLocalUserID() const
 
 asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
 {
-    co_return m_process->processJsonMessage(json, sf);
+    co_return co_await m_process->processJsonMessage(json, sf);
 }
 
 } // namespace qls

@@ -24,14 +24,6 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         # os: [ubuntu-latest, windows-latest]
-        os: [windows-latest]
-        build_type: [Release]
-        # c_compiler: [gcc, clang, cl]
-        c_compiler: [cl]
-        include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
         #   - os: ubuntu-latest
         #     c_compiler: gcc
         #     cpp_compiler: g++
@@ -45,6 +37,14 @@ jobs:
         #     c_compiler: clang
         #   - os: ubuntu-latest
         #     c_compiler: cl
+        os: [windows-latest]
+        build_type: [Release]
+        # c_compiler: [gcc, clang, cl]
+        c_compiler: [cl]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
@@ -56,12 +56,12 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: run-vcpkg
+    - name: Run vcpkg
       uses: lukka/run-vcpkg@v11.5
       with:
         vcpkgGitURL: https://github.com/microsoft/vcpkg.git
         runVcpkgInstall: true
-        vcpkgGitCommitId: fe1cde61e971d53c9687cf9a46308f8f55da19fa
+        vcpkgGitCommitId: 0ca64b4e1c70fa6d9f53b369b8f3f0843797c20c
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
