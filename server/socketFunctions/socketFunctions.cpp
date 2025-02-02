@@ -15,34 +15,6 @@
 extern Log::Logger serverLogger;
 extern qls::Manager serverManager;
 
-namespace qls
-{
-
-asio::awaitable<void> SocketFunction::acceptFunction(asio::ip::tcp::socket& socket)
-{
-    serverLogger.info("[", socket.remote_endpoint().address().to_string(),
-        ":", socket.remote_endpoint().port(), "]", "connected to the server");
-    co_return;
-}
-
-asio::awaitable<void> SocketFunction::receiveFunction(asio::ip::tcp::socket& socket, std::string data, std::shared_ptr<qls::DataPackage> pack)
-{
-    serverLogger.info("Received data: ", data);
-    /* Business logic */
-
-    co_return;
-}
-
-asio::awaitable<void> SocketFunction::closeFunction(asio::ip::tcp::socket& socket)
-{
-    serverLogger.info("[", socket.remote_endpoint().address().to_string(),
-        ":", socket.remote_endpoint().port(), "]", "disconnected from the server");
-    co_return;
-}
-}
-
-// SocketFunction
-
 // SocketService
 namespace qls
 {
@@ -63,9 +35,7 @@ SocketService::SocketService(std::shared_ptr<Connection> connection_ptr) :
         throw std::system_error(qls::qls_errc::null_socket_pointer);
 }
 
-SocketService::~SocketService()
-{
-}
+SocketService::~SocketService() noexcept = default;
 
 std::shared_ptr<Connection> SocketService::get_connection_ptr() const
 {
@@ -82,9 +52,11 @@ asio::awaitable<std::shared_ptr<qls::DataPackage>>
     // receive data
     if (!m_impl->m_package.canRead()) {
         do {
-            std::size_t size = co_await m_impl->m_connection_ptr->socket.async_read_some(asio::buffer(buffer),
-                asio::bind_executor(m_impl->m_connection_ptr->strand, asio::use_awaitable));
-            m_impl->m_package.write({ buffer, static_cast<std::size_t>(size) });
+            std::size_t size = co_await m_impl->m_connection_ptr->socket.async_read_some(
+                asio::buffer(buffer),
+                asio::bind_executor(m_impl->m_connection_ptr->strand,
+                    asio::use_awaitable));
+            m_impl->m_package.write({ buffer, size });
         } while (!m_impl->m_package.canRead());
     }
 
@@ -96,13 +68,19 @@ asio::awaitable<std::shared_ptr<qls::DataPackage>>
     co_return datapack;
 }
 
-asio::awaitable<std::size_t> SocketService::async_send(std::string_view data, long long requestID, DataPackage::DataPackageType type, int sequence)
+asio::awaitable<std::size_t>
+    SocketService::async_send(
+        std::string_view data,
+        long long requestID,
+        DataPackage::DataPackageType type,
+        int sequence)
 {
     std::string out(data);
     auto pack = qls::DataPackage::makePackage(out);
     pack->requestID = requestID;
     pack->sequence = sequence;
     pack->type = type;
+    // Send data to the connection
     co_return co_await asio::async_write(m_impl->m_connection_ptr->socket,
         asio::buffer(pack->packageToString()),
         asio::bind_executor(m_impl->m_connection_ptr->strand, asio::use_awaitable));
@@ -113,28 +91,40 @@ asio::awaitable<void> SocketService::process(
     std::string_view data,
     std::shared_ptr<qls::DataPackage> pack)
 {
-    if (m_impl->m_jsonProcess.getLocalUserID() == -1ll && pack->type != DataPackage::Text) {
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")), pack->requestID, DataPackage::Text);
+    // Check whether the user was logged in
+    if (m_impl->m_jsonProcess.getLocalUserID() == -1ll &&
+        pack->type != DataPackage::Text) {
+        co_await async_send(
+            qjson::JWriter::fastWrite(makeErrorMessage("You haven't logged in!")),
+            pack->requestID,
+            DataPackage::Text);
         co_return;
     }
 
+    // Check the type of the data pack
     switch (pack->type) {
     case DataPackage::Text:
         // json data type
         co_await async_send(qjson::JWriter::fastWrite(
-            co_await m_impl->m_jsonProcess.processJsonMessage(qjson::JParser::fastParse(data), *this)), pack->requestID, DataPackage::Text);
+                co_await m_impl->m_jsonProcess.processJsonMessage(
+                    qjson::JParser::fastParse(data), *this)),
+            pack->requestID,
+            DataPackage::Text);
         co_return;
     case DataPackage::FileStream:
         // file stream type
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, DataPackage::Text); // Temporarily return an error
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")),
+            pack->requestID, DataPackage::Text); // Temporarily return an error
         co_return;
     case DataPackage::Binary:
         // binary stream type
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, DataPackage::Text); // Temporarily return an error
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")),
+            pack->requestID, DataPackage::Text); // Temporarily return an error
         co_return;
     default:
         // unknown type
-        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")), pack->requestID, DataPackage::Text);
+        co_await async_send(qjson::JWriter::fastWrite(makeErrorMessage("Error type")),
+            pack->requestID, DataPackage::Text);
         co_return;
     }
     co_return;
@@ -145,7 +135,8 @@ void SocketService::setPackageBuffer(const qls::Package& p)
     m_impl->m_package.setBuffer(p.readBuffer());
 }
 
-asio::awaitable<void> SocketService::echo(std::shared_ptr<Connection> connection_ptr,
+asio::awaitable<void> SocketService::echo(
+    std::shared_ptr<Connection> connection_ptr,
     std::shared_ptr<Network::SocketDataStructure> sds,
     std::chrono::steady_clock::time_point& deadline)
 {
@@ -167,22 +158,22 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Connection> connection
             // Determine if the package is available
             if (pack.get() == nullptr) {
                 // Data reception error
-                serverLogger.error("[", addr, "]", "package is nullptr, auto closing connection...");
-                std::error_code ignore_error;
-                connection_ptr->socket.shutdown(ignore_error);
+                serverLogger.error("[", addr, "]",
+                    "package is nullptr, auto closing connection...");
+                std::error_code ec;
+                connection_ptr->socket.shutdown(ec);
                 co_return;
-            }
-            else if (pack->type == DataPackage::HeartBeat) {
+            } else if (pack->type == DataPackage::HeartBeat) {
                 // Heartbeat package
                 heart_beat_times++;
-                if (std::chrono::steady_clock::now() - heart_beat_time_point >= std::chrono::seconds(10))
-                {
+                if ((std::chrono::steady_clock::now() - heart_beat_time_point) >=
+                    std::chrono::seconds(10)) {
+                    // Update time point
                     heart_beat_time_point = std::chrono::steady_clock::now();
-                    if (heart_beat_times > 10)
-                    {
+                    if (heart_beat_times > 10) {
+                        // Remove socket pointer from manager
+                        // if there were too many heartbeats
                         serverLogger.error("[", addr, "]", "too many heartbeats");
-
-                        // remove socket pointer from manager
                         serverManager.removeConnection(connection_ptr);
                         co_return;
                     }
@@ -190,24 +181,20 @@ asio::awaitable<void> SocketService::echo(std::shared_ptr<Connection> connection
                 }
                 continue;
             }
-
-            // Successfully decrypted and received
             co_await socketService.process(connection_ptr, pack->getData(), pack);
             continue;
         }
-    }
-    catch (const std::system_error& e) {
+    } catch (const std::system_error& e) {
         const auto& errc = e.code();
         if (errc.message() == "End of file")
             serverLogger.info(std::format("[{}] disconnected from the server", addr));
         else
             serverLogger.error('[', addr, ']', '[', errc.category().name(), ']', errc.message());
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
     }
 
-    // remove socket pointer from manager
+    // Remove socket pointer from manager
     serverManager.removeConnection(connection_ptr);
     co_return;
 }

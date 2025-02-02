@@ -2,10 +2,6 @@
 
 #include <mutex>
 #include <shared_mutex>
-#include <functional>
-#include <utility>
-#include <Json.h>
-#include <dataPackage.h>
 
 #include "user.h"
 #include "groupid.hpp"

@@ -67,7 +67,8 @@ Manager::~Manager() = default;
 
 void Manager::init()
 {
-    // sql 初始化
+    // initiate sql database connection
+
     // m_sqlProcess.setSQLServerInfo(serverIni["mysql"]["username"],
     //     serverIni["mysql"]["password"],
     //     "mysql",
@@ -81,6 +82,7 @@ void Manager::init()
         m_impl->m_newPrivateRoomId = 10000;
         m_impl->m_newGroupRoomId = 10000;
 
+        // initiate data from sql database
         // sql更新初始化数据
         // ...
     }
@@ -98,7 +100,8 @@ GroupID Manager::addPrivateRoom(UserID user1_id, UserID user2_id)
     // 私聊房间id
     GroupID privateRoom_id(m_impl->m_newGroupRoomId++);
     {
-        /*
+        // Update database
+        /**
         * 这里有申请sql 创建私聊房间等命令
         */
     }
@@ -219,6 +222,7 @@ void Manager::removeGroupRoom(GroupID group_room_id)
         throw std::system_error(make_error_code(qls_errc::group_room_not_existed));
 
     {
+        // Remove the group room data from database
         /*
         * sql删除群聊
         */
@@ -232,6 +236,7 @@ std::shared_ptr<User> Manager::addNewUser()
     std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_map_mutex);
     UserID newUserId(m_impl->m_newUserId++);
     {
+        // Update data from database
         // sql处理数据
     }
 

@@ -60,7 +60,8 @@ public:
      * @brief Sets the TLS configuration.
      * @param callback_handle A callback function to configure TLS.
      */
-    void setTlsConfig(std::function<std::shared_ptr<asio::ssl::context>()> callback_handle);
+    void setTlsConfig(
+        std::function<std::shared_ptr<asio::ssl::context>()> callback_handle);
 
     /**
      * @brief Runs the network.

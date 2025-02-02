@@ -29,7 +29,7 @@ public:
     JsonMessageCommand() = default;
     virtual ~JsonMessageCommand() = default;
 
-    virtual std::vector<JsonOption> getOption() const = 0;
+    virtual const std::vector<JsonOption>& getOption() const = 0;
     virtual int getCommandType() const = 0;
     virtual qjson::JObject execute(UserID executor, qjson::JObject parameters) = 0;
 };
@@ -40,10 +40,12 @@ public:
     RegisterCommand() = default;
     ~RegisterCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"email", qjson::JString},
+        static std::vector<JsonOption> v =
+            {{"email", qjson::JString},
             {"password", qjson::JString}};
+        return v;
     }
 
     int getCommandType() const
@@ -60,9 +62,11 @@ public:
     HasUserCommand() = default;
     ~HasUserCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -79,9 +83,11 @@ public:
     SearchUserCommand() = default;
     ~SearchUserCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -98,9 +104,11 @@ public:
     AddFriendCommand() = default;
     ~AddFriendCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -117,9 +125,11 @@ public:
     AcceptFriendVerificationCommand() = default;
     ~AcceptFriendVerificationCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -136,9 +146,11 @@ public:
     RejectFriendVerificationCommand() = default;
     ~RejectFriendVerificationCommand() = default;
     
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -155,9 +167,10 @@ public:
     GetFriendListCommand() = default;
     ~GetFriendListCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {};
+        static std::vector<JsonOption> v;
+        return v;
     }
 
     int getCommandType() const
@@ -174,9 +187,10 @@ public:
     GetFriendVerificationListCommand() = default;
     ~GetFriendVerificationListCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {};
+        static std::vector<JsonOption> v;
+        return v;
     }
 
     int getCommandType() const
@@ -193,9 +207,11 @@ public:
     RemoveFriendCommand() = default;
     ~RemoveFriendCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -212,9 +228,11 @@ public:
     AddGroupCommand() = default;
     ~AddGroupCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"group_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"group_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -231,10 +249,12 @@ public:
     AcceptGroupVerificationCommand() = default;
     ~AcceptGroupVerificationCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"group_id", qjson::JInt},
-                {"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"group_id", qjson::JInt},
+            {"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -251,10 +271,12 @@ public:
     RejectGroupVerificationCommand() = default;
     ~RejectGroupVerificationCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"group_id", qjson::JInt},
-                {"user_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"group_id", qjson::JInt},
+            {"user_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -271,9 +293,10 @@ public:
     GetGroupListCommand() = default;
     ~GetGroupListCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {};
+        static std::vector<JsonOption> v;
+        return v;
     }
 
     int getCommandType() const
@@ -290,9 +313,10 @@ public:
     GetGroupVerificationListCommand() = default;
     ~GetGroupVerificationListCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {};
+        static std::vector<JsonOption> v;
+        return v;
     }
 
     int getCommandType() const
@@ -309,9 +333,10 @@ public:
     CreateGroupCommand() = default;
     ~CreateGroupCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {};
+        static std::vector<JsonOption> v;
+        return v;
     }
 
     int getCommandType() const
@@ -328,9 +353,11 @@ public:
     RemoveGroupCommand() = default;
     ~RemoveGroupCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"group_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"group_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -347,9 +374,11 @@ public:
     LeaveGroupCommand() = default;
     ~LeaveGroupCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"group_id", qjson::JInt}};
+        static std::vector<JsonOption> v =
+            {{"group_id", qjson::JInt}};
+        return v;
     }
 
     int getCommandType() const
@@ -366,10 +395,12 @@ public:
     SendFriendMessageCommand() = default;
     ~SendFriendMessageCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"friend_id", qjson::JInt},
-                {"message", qjson::JString}};
+        static std::vector<JsonOption> v =
+            {{"friend_id", qjson::JInt},
+            {"message", qjson::JString}};
+        return v;
     }
 
     int getCommandType() const
@@ -386,10 +417,12 @@ public:
     SendGroupMessageCommand() = default;
     ~SendGroupMessageCommand() = default;
 
-    std::vector<JsonOption> getOption() const
+    const std::vector<JsonOption>& getOption() const
     {
-        return {{"group_id", qjson::JInt},
-                {"message", qjson::JString}};
+        static std::vector<JsonOption> v =
+            {{"group_id", qjson::JInt},
+            {"message", qjson::JString}};
+        return v;
     }
 
     int getCommandType() const

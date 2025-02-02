@@ -9,7 +9,11 @@ namespace qls
 
 struct Connection
 {
+    // Socket used to send and receive data
     Socket socket;
+    // Keep the sending and receiving data thread-safe
+    // (but must be kept by hand)
+    // E.g: asio::async_write(socket, asio::buffer(data), asio::bind_executor(strand, token))
     asio::strand<asio::any_io_executor> strand;
 
     Connection(asio::ip::tcp::socket s, asio::ssl::context& context):
@@ -20,7 +24,6 @@ struct Connection
     {
         std::error_code ec;
         socket.shutdown(ec);
-        socket.lowest_layer().close(ec);
     }
 };
 

@@ -66,6 +66,11 @@ struct UserImpl
     }
 };
 
+/**
+ * @brief Send json message to user
+ * @param user_id The id of user
+ * @param json json message
+*/
 static inline void sendToUser(qls::UserID user_id, const qjson::JObject& json)
 {
     auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
@@ -74,6 +79,7 @@ static inline void sendToUser(qls::UserID user_id, const qjson::JObject& json)
 }
 
 User::User(UserID user_id, bool is_create):
+    // allocate and construct the pointer of implement
     m_impl([](UserImpl* ui){ new(ui) UserImpl(); return ui; }(
         static_cast<UserImpl*>(local_user_sync_pool.allocate(sizeof(UserImpl)))))
 {
@@ -83,10 +89,9 @@ User::User(UserID user_id, bool is_create):
         std::chrono::system_clock::now()).time_since_epoch().count();
 
     if (is_create) {
-        // sql 创建用户
-    }
-    else {
-        // sql 读取用户信息
+        // Update database
+    } else {
+        // Read the data from database
     }
 }
 
@@ -137,11 +142,8 @@ bool User::isUserPassword(std::string_view password) const
 {
     std::hash<std::string> string_hash;
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
-    std::string localPassword = std::string(password) + m_impl->salt;
-
-    for (std::size_t i = 0; i < 256ull; i++) {
-        localPassword = std::to_string(string_hash(localPassword));
-    }
+    std::string localPassword =
+        std::to_string(string_hash(std::string(password) + m_impl->salt));
 
     return localPassword == m_impl->password;
 }
@@ -182,83 +184,78 @@ void User::firstUpdateUserPassword(std::string_view new_password)
         throw std::system_error(qls_errc::password_already_set);
 
     std::hash<std::string_view> string_hash;
-    std::mt19937_64             mt(std::random_device{}());
+    static std::mt19937_64      mt(std::random_device{}());
 
-    std::size_t mt_temp = 0;
-    for (std::size_t i = 0; i < 256ull; i++) {
-        mt_temp = mt();
-    }
-
-    std::string localSalt = std::to_string(mt_temp);
-    std::string localPassword = std::string(new_password) + localSalt;
-
-    for (std::size_t i = 0; i < 256ull; i++) {
-        localPassword = std::to_string(string_hash(localPassword));
-    }
+    // Generate salt and hash of password
+    std::string localSalt = std::to_string(mt());
+    std::string localPassword =
+        std::to_string(string_hash(std::string(new_password) + localSalt));
 
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_data_mutex);
+        std::unique_lock<std::shared_mutex>
+            local_unique_lock(m_impl->m_data_mutex);
         m_impl->password = localPassword;
         m_impl->salt = localSalt;
     }
     {
-        // sql
+        // Update database
     }
 }
 
-void User::updateUserPassword(std::string_view old_password, std::string_view new_password)
+void User::updateUserPassword(
+    std::string_view old_password,
+    std::string_view new_password)
 {
     if (!isUserPassword(old_password))
-        throw std::system_error(qls_errc::password_mismatched, "wrong old password");
+        throw std::system_error(qls_errc::password_mismatched,
+            "wrong old password");
 
     std::hash<std::string>  string_hash;
-    std::mt19937_64         mt(std::random_device{}());
+    static std::mt19937_64  mt(std::random_device{}());
 
-    std::size_t mt_temp = 0;
-    for (std::size_t i = 0; i < 256ull; i++) {
-        mt_temp = mt();
-    }
-
-    std::string localSalt = std::to_string(mt_temp);
-    std::string localPassword = std::string(new_password) + localSalt;
-
-    for (std::size_t i = 0; i < 256ull; i++) {
-        localPassword = std::to_string(string_hash(localPassword));
-    }
+    // Generate salt and hash of password
+    std::string localSalt = std::to_string(mt());
+    std::string localPassword =
+        std::to_string(string_hash(std::string(new_password) + localSalt));
 
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_data_mutex);
+        std::unique_lock<std::shared_mutex>
+            local_unique_lock(m_impl->m_data_mutex);
         m_impl->password = localPassword;
         m_impl->salt = localSalt;
     }
     {
-        //sql
+        // Update database
     }
 }
 
 bool User::userHasFriend(UserID friend_user_id) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_friend_map_mutex);
+    std::shared_lock<std::shared_mutex>
+        local_shared_lock(m_impl->m_user_friend_map_mutex);
     return m_impl->m_user_friend_map.find(friend_user_id) !=
         m_impl->m_user_friend_map.cend();
 }
 
 bool User::userHasGroup(GroupID group_id) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_map_mutex);
+    std::shared_lock<std::shared_mutex>
+        local_shared_lock(m_impl->m_user_group_map_mutex);
     return m_impl->m_user_group_map.find(group_id) !=
         m_impl->m_user_group_map.cend();
 }
 
 std::unordered_set<UserID> User::getFriendList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_friend_map_mutex);
+    std::shared_lock<std::shared_mutex>
+        local_shared_lock(m_impl->m_user_friend_map_mutex);
     return m_impl->m_user_friend_map;
 }
 
 std::unordered_set<GroupID> User::getGroupList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_map_mutex);
+    std::shared_lock<std::shared_mutex>
+        local_shared_lock(m_impl->m_user_group_map_mutex);
     return m_impl->m_user_group_map;
 }
 
@@ -298,7 +295,8 @@ bool User::acceptFriend(UserID friend_user_id)
             .hasFriendRoomVerification(self_id, friend_user_id))
         return false;
 
-    if (serverManager.getServerVerificationManager().setFriendVerified(self_id, friend_user_id, self_id))
+    if (serverManager.getServerVerificationManager()
+        .setFriendVerified(self_id, friend_user_id, self_id))
         return false;
 
     // notify the other successfully adding a friend
@@ -355,7 +353,8 @@ bool User::removeFriend(UserID friend_user_id)
     return true;
 }
 
-void User::updateFriendList(std::function<void(std::unordered_set<UserID>&)> callback_function)
+void User::updateFriendList(
+    std::function<void(std::unordered_set<UserID>&)> callback_function)
 {
     if (!callback_function)
         throw std::system_error(make_error_code(qls::qls_errc::null_pointer));
@@ -364,39 +363,50 @@ void User::updateFriendList(std::function<void(std::unordered_set<UserID>&)> cal
     callback_function(m_impl->m_user_friend_map);
 }
 
-void User::updateGroupList(std::function<void(std::unordered_set<GroupID>&)> callback_function)
+void User::updateGroupList(
+    std::function<void(std::unordered_set<GroupID>&)> callback_function)
 {
     if (!callback_function)
         throw std::system_error(make_error_code(qls::qls_errc::null_pointer));
 
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_map_mutex);
+    std::unique_lock<std::shared_mutex>
+        local_unique_lock(m_impl->m_user_group_map_mutex);
     callback_function(m_impl->m_user_group_map);
 }
 
-void User::addFriendVerification(UserID friend_user_id, const Verification::UserVerification& u)
+void User::addFriendVerification(
+    UserID friend_user_id,
+    const Verification::UserVerification& u)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
+    std::unique_lock<std::shared_mutex>
+        local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
     m_impl->m_user_friend_verification_map.emplace(friend_user_id, u);
 }
 
-void User::addGroupVerification(GroupID group_id, const Verification::GroupVerification& u)
+void User::addGroupVerification(
+    GroupID group_id,
+    const Verification::GroupVerification& u)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
+    std::unique_lock<std::shared_mutex>
+        local_unique_lock(m_impl->m_user_group_verification_map_mutex);
     m_impl->m_user_group_verification_map.insert({ group_id, u });
 }
 
 void User::removeFriendVerification(UserID friend_user_id)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
+    std::unique_lock<std::shared_mutex>
+        local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
     auto itor = m_impl->m_user_friend_verification_map.find(friend_user_id);
     if (itor == m_impl->m_user_friend_verification_map.cend())
         throw std::system_error(qls_errc::verification_not_existed);
     m_impl->m_user_friend_verification_map.erase(itor);
 }
 
-std::unordered_map<UserID, Verification::UserVerification> User::getFriendVerificationList() const
+std::unordered_map<UserID, Verification::UserVerification>
+    User::getFriendVerificationList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_friend_verification_map_mutex);
+    std::shared_lock<std::shared_mutex>
+        local_shared_lock(m_impl->m_user_friend_verification_map_mutex);
     return m_impl->m_user_friend_verification_map;
 }
 
@@ -437,7 +447,8 @@ bool User::acceptGroup(GroupID group_id, UserID user_id)
         self_id != serverManager.getGroupRoom(group_id)->getAdministrator())
             return false;
 
-    if (!serverManager.getServerVerificationManager().setGroupRoomGroupVerified(group_id, user_id))
+    if (!serverManager.getServerVerificationManager()
+        .setGroupRoomGroupVerified(group_id, user_id))
         return false;
 
     // notify the other successfully adding a group
@@ -457,7 +468,8 @@ bool User::rejectGroup(GroupID group_id, UserID user_id)
             return false;
 
     try {
-        serverManager.getServerVerificationManager().removeGroupRoomVerification(group_id, user_id);
+        serverManager.getServerVerificationManager()
+            .removeGroupRoomVerification(group_id, user_id);
     } catch(...) {
         return false;
     }
@@ -489,7 +501,8 @@ bool User::removeGroup(GroupID group_id)
 
 void User::removeGroupVerification(GroupID group_id, UserID user_id)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_group_verification_map_mutex);
+    std::unique_lock<std::shared_mutex>
+        local_unique_lock(m_impl->m_user_group_verification_map_mutex);
     std::size_t size = m_impl->m_user_group_verification_map.count(group_id);
     if (!size) throw std::system_error(qls_errc::verification_not_existed);
 
@@ -502,15 +515,20 @@ void User::removeGroupVerification(GroupID group_id, UserID user_id)
     }
 }
 
-std::multimap<GroupID, Verification::GroupVerification> User::getGroupVerificationList() const
+std::multimap<GroupID, Verification::GroupVerification>
+    User::getGroupVerificationList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_group_verification_map_mutex);
+    std::shared_lock<std::shared_mutex>
+        local_shared_lock(m_impl->m_user_group_verification_map_mutex);
     return m_impl->m_user_group_verification_map;
 }
 
-void User::addConnection(const std::shared_ptr<Connection> &connection_ptr, DeviceType type)
+void User::addConnection(
+    const std::shared_ptr<Connection> &connection_ptr,
+    DeviceType type)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    std::unique_lock<std::shared_mutex>
+        local_unique_lock(m_impl->m_connection_map_mutex);
     if (m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::socket_pointer_existed);
 
@@ -548,11 +566,12 @@ void User::notifyAll(std::string_view data)
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
-    for (auto& [connection_ptr, type]: m_impl->m_connection_map) {
+    for (const auto& [connection_ptr, type]: m_impl->m_connection_map) {
         asio::async_write(connection_ptr->socket, asio::buffer(*buffer_ptr),
-            asio::bind_executor(connection_ptr->strand, [this, buffer_ptr](std::error_code ec, std::size_t n) {
-                if (ec)
-                    serverLogger.error('[', ec.category().name(), ']', ec.message());
+            asio::bind_executor(connection_ptr->strand,
+                [this, buffer_ptr](std::error_code ec, std::size_t n) {
+                    if (ec)
+                        serverLogger.error('[', ec.category().name(), ']', ec.message());
             }));
     }
 }
@@ -562,12 +581,13 @@ void User::notifyWithType(DeviceType type, std::string_view data)
     std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
-    for (auto& [connection_ptr, dtype]: m_impl->m_connection_map) {
+    for (const auto& [connection_ptr, dtype]: m_impl->m_connection_map) {
         if (dtype == type) {
             asio::async_write(connection_ptr->socket, asio::buffer(*buffer_ptr),
-                asio::bind_executor(connection_ptr->strand, [this, buffer_ptr](std::error_code ec, std::size_t n) {
-                if (ec)
-                    serverLogger.error('[', ec.category().name(), ']', ec.message());
+                asio::bind_executor(connection_ptr->strand,
+                [this, buffer_ptr](std::error_code ec, std::size_t n) {
+                    if (ec)
+                        serverLogger.error('[', ec.category().name(), ']', ec.message());
             }));
         }
     }

@@ -31,7 +31,7 @@ public:
             if (m_function_map.find(function_name) != m_function_map.cend() || !command_ptr)
                 return false;
 
-            m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
+            m_function_map.emplace(function_name, command_ptr);
             return true;
         };
 
@@ -60,29 +60,23 @@ public:
     bool addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr);
     bool hasCommand(std::string_view function_name) const;
     std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name);
-    const std::shared_ptr<JsonMessageCommand> getCommand(std::string_view function_name) const;
-    const std::vector<JsonMessageCommand::JsonOption>& getCommandOptions(std::string_view function_name) const;
     bool removeCommand(std::string_view function_name);
 
 private:
-    struct JsonMessageCommandInfomation
-    {
-        std::shared_ptr<JsonMessageCommand> command_ptr;
-        std::vector<JsonMessageCommand::JsonOption> json_options;
-    };
-
-    std::unordered_map<std::string, JsonMessageCommandInfomation, string_hash, std::equal_to<>>
+    std::unordered_map<std::string, std::shared_ptr<JsonMessageCommand>, string_hash, std::equal_to<>>
                                 m_function_map;
     mutable std::shared_mutex   m_function_map_mutex;
 };
 
-bool JsonMessageProcessCommandList::addCommand(std::string_view function_name, const std::shared_ptr<JsonMessageCommand>& command_ptr)
+bool JsonMessageProcessCommandList::addCommand(
+    std::string_view function_name,
+    const std::shared_ptr<JsonMessageCommand>& command_ptr)
 {
     if (hasCommand(function_name) || !command_ptr)
         return false;
     
     std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex);
-    m_function_map.emplace(function_name, JsonMessageCommandInfomation{command_ptr, command_ptr->getOption()});
+    m_function_map.emplace(function_name, command_ptr);
     return true;
 }
 
@@ -92,31 +86,14 @@ bool JsonMessageProcessCommandList::hasCommand(std::string_view function_name) c
     return m_function_map.find(function_name) != m_function_map.cend();
 }
 
-std::shared_ptr<JsonMessageCommand> JsonMessageProcessCommandList::getCommand(std::string_view function_name)
+std::shared_ptr<JsonMessageCommand>
+    JsonMessageProcessCommandList::getCommand(std::string_view function_name)
 {
     std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
     auto iter = m_function_map.find(function_name);
     if (iter == m_function_map.cend())
         throw std::system_error(make_error_code(qls_errc::null_pointer));
-    return iter->second.command_ptr;
-}
-
-const std::shared_ptr<JsonMessageCommand> JsonMessageProcessCommandList::getCommand(std::string_view function_name) const
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
-    auto iter = m_function_map.find(function_name);
-    if (iter == m_function_map.cend())
-        throw std::system_error(make_error_code(qls_errc::null_pointer));
-    return iter->second.command_ptr;
-}
-
-const std::vector<JsonMessageCommand::JsonOption> &JsonMessageProcessCommandList::getCommandOptions(std::string_view function_name) const
-{
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
-    auto iter = m_function_map.find(function_name);
-    if (iter == m_function_map.cend())
-        throw std::system_error(make_error_code(qls_errc::null_pointer));
-    return iter->second.json_options;
+    return iter->second;
 }
 
 bool JsonMessageProcessCommandList::removeCommand(std::string_view function_name)
@@ -125,7 +102,6 @@ bool JsonMessageProcessCommandList::removeCommand(std::string_view function_name
         return false;
 
     std::unique_lock<std::shared_mutex> unique_lock1(m_function_map_mutex);
-    auto [_, info] = *(m_function_map.find(function_name));
     m_function_map.erase(function_name);
     return true;
 }
@@ -149,8 +125,16 @@ public:
 
     asio::awaitable<qjson::JObject> processJsonMessage(const qjson::JObject& json, const SocketService& sf);
 
-    qjson::JObject login(UserID user_id, std::string_view password, std::string_view device, const SocketService& sf);
-    qjson::JObject login(std::string_view email, std::string_view password, std::string_view device);
+    qjson::JObject login(
+        UserID user_id,
+        std::string_view password,
+        std::string_view device,
+        const SocketService& sf);
+
+    qjson::JObject login(
+        std::string_view email,
+        std::string_view password,
+        std::string_view device);
 
 private:
     UserID                      m_user_id;
@@ -168,7 +152,9 @@ JsonMessageProcess::~JsonMessageProcess() = default;
 
 qjson::JObject JsonMessageProcessImpl::getUserPublicInfo(UserID user_id)
 {
-    return qjson::JObject();
+    // Return user's public information
+    // No implementation for now
+    return makeErrorMessage("This function is incomplete.");
 }
 
 qjson::JObject JsonMessageProcessImpl::hasUser(UserID user_id)
@@ -189,9 +175,12 @@ UserID JsonMessageProcessImpl::getLocalUserID() const
     return this->m_user_id;
 }
 
-asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
+asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(
+    const qjson::JObject& json,
+    const SocketService& sf)
 {
     try {
+        // Check whether the json pack is valid
         serverLogger.debug("Json body: ", qjson::JWriter::fastWrite(json));
         if (json.getType() != qjson::JDict)
             co_return makeErrorMessage("The data body must be json dictory type!");
@@ -206,27 +195,31 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
         std::string function_name = json["function"].getString();
         qjson::JObject param = json["parameters"];
 
-        // check if user has logined
+        // Check if user has logined
         {
             std::shared_lock<std::shared_mutex> shared_lock1(m_user_id_mutex);
             // Check if userid == -1
             if (m_user_id == UserID(-1) &&
                 function_name != "login" &&
                 (!m_jmpc_list.hasCommand(function_name) ||
-                    m_jmpc_list.getCommand(function_name)->getCommandType() & JsonMessageCommand::NormalType)) {
+                    m_jmpc_list.getCommand(function_name)->getCommandType() &
+                        JsonMessageCommand::NormalType)) {
                     co_return makeErrorMessage("You haven't logged in!");
             }
         }
 
         if (function_name == "login")
-            co_return login(UserID(param["user_id"].getInt()), param["password"].getString(), param["device"].getString(), sf);
+            co_return login(UserID(param["user_id"].getInt()),
+                param["password"].getString(), param["device"].getString(), sf);
 
         if (!m_jmpc_list.hasCommand(function_name))
             co_return makeErrorMessage("There isn't a function that matches the name!");
-        
+
+        // Find the command that matches the function name
         auto command_ptr = m_jmpc_list.getCommand(function_name);
         const qjson::dict_t& param_dict = param.getDict();
-        for (const auto& [name, type]: m_jmpc_list.getCommandOptions(function_name)) {
+        // Check whether the type of json values match the options
+        for (const auto& [name, type]: command_ptr->getOption()) {
             auto local_iter = param_dict.find(name);
             if (local_iter == param_dict.cend())
                 co_return makeErrorMessage(std::format("Lost a parameter: {}.", name));
@@ -236,13 +229,17 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
 
         UserID user_id;
         {
+            // Get the ID of this user
             std::shared_lock<std::shared_mutex> id_lock(m_user_id_mutex);
             user_id = m_user_id;
         }
         
-        auto async_invoke = [](auto executor, std::shared_ptr<JsonMessageCommand> command_ptr, UserID user_id, qjson::JObject param, auto&& token) {
+        // This function is used to execute the command asynchronously
+        auto async_invoke = [](auto executor, std::shared_ptr<JsonMessageCommand> command_ptr,
+                               UserID user_id, qjson::JObject param, auto&& token) {
             return asio::async_initiate<decltype(token), void(std::error_code, qjson::JObject)>(
-                [](auto handler, auto executor, std::shared_ptr<JsonMessageCommand> command_ptr, UserID user_id, qjson::JObject param) {
+                [](auto handler, auto executor, std::shared_ptr<JsonMessageCommand> command_ptr,
+                UserID user_id, qjson::JObject param) {
                     asio::post(executor,
                         [handler = std::move(handler),
                         command_ptr = std::move(command_ptr),
@@ -259,7 +256,8 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
                 }, token, std::move(executor), std::move(command_ptr), user_id, std::move(param));
             };
 
-        co_return co_await async_invoke(co_await asio::this_coro::executor, std::move(command_ptr), user_id, std::move(param), asio::use_awaitable);
+        co_return co_await async_invoke(co_await asio::this_coro::executor,
+            std::move(command_ptr), user_id, std::move(param), asio::use_awaitable);
     } catch (const std::exception& e) {
 #ifndef _DEBUG
         co_return makeErrorMessage("Unknown error occured!");
@@ -269,7 +267,11 @@ asio::awaitable<qjson::JObject> JsonMessageProcessImpl::processJsonMessage(const
     }
 }
 
-qjson::JObject JsonMessageProcessImpl::login(UserID user_id, std::string_view password, std::string_view device, const SocketService& sf)
+qjson::JObject JsonMessageProcessImpl::login(
+    UserID user_id,
+    std::string_view password,
+    std::string_view device,
+    const SocketService& sf)
 {
     if (!serverManager.hasUser(user_id))
         return makeErrorMessage("The user ID or password is wrong!");
@@ -279,13 +281,17 @@ qjson::JObject JsonMessageProcessImpl::login(UserID user_id, std::string_view pa
     if (user->isUserPassword(password)) {
         // check device type
         if (device == "PersonalComputer")
-            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::PersonalComputer);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(),
+                user_id, DeviceType::PersonalComputer);
         else if (device == "Phone")
-            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::Phone);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(),
+                user_id, DeviceType::Phone);
         else if (device == "Web")
-            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::Web);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(),
+                user_id, DeviceType::Web);
         else
-            serverManager.modifyUserOfConnection(sf.get_connection_ptr(), user_id, DeviceType::Unknown);
+            serverManager.modifyUserOfConnection(sf.get_connection_ptr(),
+                user_id, DeviceType::Unknown);
 
         auto returnJson = makeSuccessMessage("Successfully logged in!");
         std::unique_lock<std::shared_mutex> local_unique_lock(m_user_id_mutex);
@@ -299,7 +305,10 @@ qjson::JObject JsonMessageProcessImpl::login(UserID user_id, std::string_view pa
     else return makeErrorMessage("The user ID or password is wrong!");
 }
 
-qjson::JObject JsonMessageProcessImpl::login(std::string_view email, std::string_view password, std::string_view device)
+qjson::JObject JsonMessageProcessImpl::login(
+    std::string_view email,
+    std::string_view password,
+    std::string_view device)
 {
     if (!qls::RegexMatch::emailMatch(email))
         return makeErrorMessage("Email is invalid");
@@ -317,7 +326,8 @@ UserID JsonMessageProcess::getLocalUserID() const
     return m_process->getLocalUserID();
 }
 
-asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(const qjson::JObject& json, const SocketService& sf)
+asio::awaitable<qjson::JObject> JsonMessageProcess::processJsonMessage(
+    const qjson::JObject& json, const SocketService& sf)
 {
     co_return co_await m_process->processJsonMessage(json, sf);
 }

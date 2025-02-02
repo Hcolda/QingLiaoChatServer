@@ -52,11 +52,6 @@ struct Verification
     };
 };
 
-class JsonMessageProcess;
-class JsonMessageProcessImpl;
-class Manager;
-class VerificationManager;
-class RegisterCommand;
 struct UserImpl;
 struct UserImplDeleter
 {
@@ -113,19 +108,19 @@ public:
      * @brief Retrieves the list of friend verification entries.
      * @return unordered_map containing friend verification entries.
      */
-    std::unordered_map<UserID,
-        Verification::UserVerification> getFriendVerificationList() const;
+    std::unordered_map<UserID, Verification::UserVerification>
+        getFriendVerificationList() const;
 
     /**
      * @brief Adds a group to the user's group list.
      * @param group_id The ID of the group to add.
      * @return true if adding group was successful, false otherwise.
      */
-    bool addGroup(GroupID group_id);
+    bool    addGroup(GroupID group_id);
     GroupID createGroup();
-    bool acceptGroup(GroupID group_id, UserID user_id);
-    bool rejectGroup(GroupID group_id, UserID user_id);
-    bool removeGroup(GroupID group_id);
+    bool    acceptGroup(GroupID group_id, UserID user_id);
+    bool    rejectGroup(GroupID group_id, UserID user_id);
+    bool    removeGroup(GroupID group_id);
 
     /**
      * @brief Retrieves the list of group verification entries.
@@ -139,14 +134,17 @@ public:
      * @param connection_ptr Pointer to the socket to check.
      * @return true if user has the socket, false otherwise.
      */
-    bool hasConnection(const std::shared_ptr<qls::Connection>& connection_ptr) const;
+    bool hasConnection(
+        const std::shared_ptr<qls::Connection>& connection_ptr) const;
 
     /**
      * @brief Modifies the type of a socket in the user's socket map.
      * @param connection_ptr Pointer to the socket to modify.
      * @param type New DeviceType associated with the socket.
      */
-    void modifyConnectionType(const std::shared_ptr<qls::Connection>& connection_ptr, DeviceType type);
+    void modifyConnectionType(
+        const std::shared_ptr<qls::Connection>& connection_ptr,
+        DeviceType type);
 
     /**
      * @brief Notifies all sockets associated with the user.
@@ -161,13 +159,6 @@ public:
      */
     void notifyWithType(DeviceType type, std::string_view data);
 
-protected:
-    friend class JsonMessageProcess;
-    friend class JsonMessageProcessImpl;
-    friend class Manager;
-    friend class VerificationManager;
-    friend class RegisterCommand;
-
     // Methods to update user information
 
     void updateUserName(std::string_view);
@@ -176,11 +167,14 @@ protected:
     void updateUserPhone(std::string_view);
     void updateUserProfile(std::string_view);
     void firstUpdateUserPassword(std::string_view new_password);
-    void updateUserPassword(std::string_view old_password,
+    void updateUserPassword(
+        std::string_view old_password,
         std::string_view new_password);
 
-    void updateFriendList(std::function<void(std::unordered_set<UserID>&)> callback_function);
-    void updateGroupList(std::function<void(std::unordered_set<GroupID>&)> callback_function);
+    void updateFriendList(
+        std::function<void(std::unordered_set<UserID>&)> callback_function);
+    void updateGroupList(
+        std::function<void(std::unordered_set<GroupID>&)> callback_function);
 
     /**
      * @brief Adds a friend verification entry.
@@ -188,7 +182,9 @@ protected:
      * @param friend_user_id The ID of the friend.
      * @param u Verification::UserVerification to add.
      */
-    void addFriendVerification(UserID friend_user_id, const Verification::UserVerification& u);
+    void addFriendVerification(
+        UserID friend_user_id,
+        const Verification::UserVerification& u);
 
     /**
      * @brief Removes a friend verification entry.

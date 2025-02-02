@@ -17,7 +17,6 @@
 extern Log::Logger serverLogger;
 extern qls::Network serverNetwork;
 extern qls::Manager serverManager;
-extern qls::SocketFunction serverSocketFunction;
 extern qini::INIObject serverIni;
 
 using asio::ip::tcp;
@@ -171,6 +170,7 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
                         }
                         throw std::system_error(make_error_code(std::errc::timed_out));
                     };
+                    // This deadline is used to check if the connection is timeout
                     std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::time_point::max();
                     try {
                         co_await (SocketService::echo(connection_ptr, std::move(sds), deadline) && watchdog(deadline));
