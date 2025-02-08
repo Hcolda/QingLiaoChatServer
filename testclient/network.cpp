@@ -1,4 +1,4 @@
-﻿#include "network.h"
+#include "network.h"
 
 #include <thread>
 #include <chrono>
@@ -15,6 +15,7 @@
 
 #include <asio.hpp>
 #include <asio/ssl.hpp>
+#include <asio/experimental/awaitable_operators.hpp>
 #include <logger.hpp>
 #include <Json.h>
 
@@ -30,6 +31,7 @@ namespace qls
     using asio::detached;
     using asio::use_awaitable;
     namespace this_coro = asio::this_coro;
+    using namespace asio::experimental::awaitable_operators;
     using namespace std::placeholders;
     using asio::ip::tcp;
     using namespace asio;
@@ -37,7 +39,8 @@ namespace qls
 
     using ssl_socket = asio::ssl::stream<tcp::socket>;
 
-    std::string socket2ip(const asio::ip::tcp::socket& s)
+    template<class T>
+    static std::string socket2ip(const T& s)
     {
         auto ep = s.remote_endpoint();
         return std::format("{}:{}", ep.address().to_string(), int(ep.port()));
@@ -121,9 +124,6 @@ namespace qls
         asio::ip::tcp::resolver::results_type   endpoints;
         std::string                             input_buffer;
 
-        asio::steady_timer                      deadline_timer;
-        asio::steady_timer                      heartbeat_timer;
-
         std::unordered_map<std::string,
             ReceiveStdStringFunction>   revceiveStdStringFunction_map;
         std::shared_mutex               revceiveStdStringFunction_map_mutex;
@@ -147,9 +147,7 @@ namespace qls
                                         requestID2Function_map;
         std::shared_mutex               requestID2Function_map_mutex;
 
-        NetworkImpl() :
-            deadline_timer(io_context),
-            heartbeat_timer(io_context),
+        NetworkImpl():
             ssl_context(asio::ssl::context::tlsv13_client),
             requestID_mt(std::random_device{}())
         {
@@ -172,13 +170,12 @@ namespace qls
             // 设置是否验证cert
 #ifdef _DEBUG
             ssl_context.set_verify_mode(asio::ssl::verify_none);
-#else
-            ssl_context.set_verify_mode(asio::ssl::verify_peer);
-#endif // _DEBUG
-
             ssl_context.set_verify_callback(
                 std::bind(&NetworkImpl::verify_certificate, this, _1, _2));
-            // ssl_context.set_verify_callback(ssl::rfc2818_verification("host.name"));
+#else
+            ssl_context.set_verify_mode(asio::ssl::verify_peer);
+            ssl_context.set_verify_callback(ssl::rfc2818_verification("host.name"));
+#endif // _DEBUG
 
             socket_ptr = std::make_shared<ssl_socket>(io_context, ssl_context);
         }
@@ -211,11 +208,12 @@ namespace qls
                     [&]() { return !m_network_impl->is_running || !m_network_impl->endpoints.empty(); });
                 if (!m_network_impl->is_running)
                     return;
-                try {
-                    lock.unlock();
-                    start_connect();
-                    m_network_impl->io_context.run();
-                } catch (...) {}
+                if (m_network_impl->endpoints.empty())
+                    continue;
+                asio::co_spawn(m_network_impl->io_context,
+                    start_connect(),
+                    asio::detached);
+                m_network_impl->io_context.run();
             }
         });
     }
@@ -230,8 +228,6 @@ namespace qls
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
-            m_network_impl->deadline_timer.cancel();
-            m_network_impl->heartbeat_timer.cancel();
         }
         m_network_impl->io_context.stop();
         m_network_impl->condition_variable.notify_all();
@@ -241,22 +237,11 @@ namespace qls
 
     void Network::connect()
     {
-        asio::io_service io_service;
-        asio::ip::tcp::resolver resolver(io_service);
-        asio::ip::tcp::resolver::query resolver_query(m_network_impl->host,
+        asio::ip::tcp::resolver resolver(m_network_impl->io_context);
+        m_network_impl->is_receiving = false;
+        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
+        m_network_impl->endpoints = resolver.resolve(m_network_impl->host,
             std::to_string(m_network_impl->port));
-        std::error_code ec;
-        asio::ip::tcp::resolver::iterator it =
-            resolver.resolve(resolver_query, ec);
-        asio::ip::tcp::resolver::iterator it_end;
-
-        if (it == it_end)
-            throw std::runtime_error("there is not a service match the host");
-        {
-            m_network_impl->is_receiving = false;
-            std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-            m_network_impl->endpoints = resolver.resolve(resolver_query, ec);
-        }
         m_network_impl->condition_variable.notify_all();
     }
 
@@ -264,11 +249,8 @@ namespace qls
     {
         m_network_impl->is_receiving = false;
         {
-            std::unique_lock<std::mutex> lock(m_network_impl->mutex);
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
-            m_network_impl->deadline_timer.cancel();
-            m_network_impl->heartbeat_timer.cancel();
         }
         m_network_impl->condition_variable.notify_all();
     }
@@ -283,8 +265,6 @@ namespace qls
             m_network_impl->is_receiving = false;
             std::error_code ignored_error;
             m_network_impl->socket_ptr->shutdown(ignored_error);
-            m_network_impl->deadline_timer.cancel();
-            m_network_impl->heartbeat_timer.cancel();
         }
         m_network_impl->io_context.stop();
         m_network_impl->condition_variable.notify_all();
@@ -295,8 +275,8 @@ namespace qls
         if (!m_network_impl->is_receiving)
             throw std::runtime_error("Socket is not able to use");
         auto wrapper = std::make_shared<StringWrapper>(data);
-        asio::async_write(*(m_network_impl->socket_ptr),
-            asio::buffer(wrapper->data), std::bind(&Network::handle_write, this, _1, _2, wrapper));
+        asio::async_write(*m_network_impl->socket_ptr,
+            asio::buffer(wrapper->data), [wrapper](auto, auto){});
     }
 
     std::future<std::shared_ptr<DataPackage>> Network::send_data_with_result_n_option(const std::string& data,
@@ -490,170 +470,79 @@ namespace qls
         }
     }
 
-    void Network::start_connect()
+    asio::awaitable<void> Network::start_connect()
     {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running)
-            return;
-        m_network_impl->deadline_timer.expires_after(std::chrono::seconds(60));
-        asio::async_connect(m_network_impl->socket_ptr->lowest_layer(),
-            m_network_impl->endpoints.begin(),
-            m_network_impl->endpoints.end(),
-            std::bind(&Network::handle_connect, this, _1));
-    }
+        auto executor = co_await asio::this_coro::executor;
 
-    void Network::handle_connect(const std::error_code& error)
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running)
-            return;
-        if (error) {
-            std::error_code ec;
-            m_network_impl->socket_ptr->lowest_layer().close(ec);
-            lock.unlock();
-            call_connected_error(error);
-            std::this_thread::sleep_for(10s);
-            start_connect();
-        } else {
-            lock.unlock();
-            async_handshake();
-        }
-    }
+        // timeout function
+        auto timeout = [](const std::chrono::steady_clock::duration& duration) -> awaitable<void> {
+            steady_timer timer(co_await this_coro::executor);
+            timer.expires_after(duration);
+            co_await timer.async_wait(asio::use_awaitable);
+            throw std::system_error(make_error_code(std::errc::timed_out));
+        };
 
-    void Network::async_handshake()
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running)
-            return;
-        m_network_impl->deadline_timer.expires_after(std::chrono::seconds(10));
-        m_network_impl->socket_ptr->async_handshake(asio::ssl::stream_base::client,
-            std::bind(&Network::handle_handshake, this, _1));
-    }
-
-    void Network::handle_handshake(const std::error_code& error)
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running)
-            return;
-        if (!error) {
-            m_network_impl->is_receiving = true;
-            lock.unlock();
-            send_data(DataPackage::makePackage("test")->packageToString());
-            async_read();
-            heart_beat_write();
-            call_connected();
-        } else {
-            std::error_code ec;
-            m_network_impl->socket_ptr->shutdown(ec);
-            std::cout << error.message() << '\n';
-            call_connected_error(error);
-        }
-    }
-
-    void Network::async_read()
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running || !m_network_impl->is_receiving)
-            return;
-        m_network_impl->deadline_timer.expires_after(std::chrono::seconds(30));
-        m_network_impl->socket_ptr->async_read_some(asio::buffer(m_network_impl->input_buffer),
-            std::bind(&Network::handle_read, this, _1, _2));
-    }
-
-    void Network::handle_read(const std::error_code& error, std::size_t n)
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running || !m_network_impl->is_receiving)
-            return;
-        if (!error) {
-            if (!n) {
-                async_read();
-                return;
+        for (std::size_t i = 0; i < 3 && m_network_impl->is_running; ++i) {
+            try {
+                co_await (asio::async_connect(m_network_impl->socket_ptr->lowest_layer(),
+                    m_network_impl->endpoints.begin(),
+                    m_network_impl->endpoints.end(),
+                    asio::use_awaitable) || timeout(60s));
+                co_await (m_network_impl->socket_ptr->async_handshake(
+                    asio::ssl::stream_base::client,
+                    asio::use_awaitable) || timeout(10s));
+                m_network_impl->is_receiving = true;
+                call_connected();
+                asio::co_spawn(executor, heart_beat_write(), asio::detached);
+                for (; m_network_impl->is_running && m_network_impl->is_receiving;) {
+                    m_network_impl->input_buffer.resize(8192);
+                    std::size_t size = std::get<0>(co_await (
+                        m_network_impl->socket_ptr->async_read_some(
+                            asio::buffer(m_network_impl->input_buffer), asio::use_awaitable)
+                            || timeout(30s)));
+                    m_network_impl->package.write({ m_network_impl->input_buffer.begin(),
+                        m_network_impl->input_buffer.begin() + size });
+                    if (m_network_impl->package.canRead())
+                        call_received_stdstring(std::move(
+                            m_network_impl->package.read()));
+                }
+                co_return;
+            } catch (const std::system_error& e) {
+                m_network_impl->is_receiving = false;
+                call_connected_error(e.code());
+                std::error_code ec;
+                m_network_impl->socket_ptr->shutdown(ec);
+            } catch (const std::exception& e) {
+                m_network_impl->is_receiving = false;
+                call_connected_error();
+                std::error_code ec;
+                m_network_impl->socket_ptr->shutdown(ec);
             }
-            m_network_impl->package.write({ m_network_impl->input_buffer.begin(),
-                m_network_impl->input_buffer.begin() + n });
-            m_network_impl->input_buffer.clear();
-            m_network_impl->input_buffer.resize(8192);
-
-            if (m_network_impl->package.canRead())
-                call_received_stdstring(std::move(
-                    m_network_impl->package.read()));
-
-            lock.unlock();
-            async_read();
-        } else {
-            m_network_impl->is_receiving = false;
-            std::error_code ignored_error;
-            m_network_impl->socket_ptr->shutdown(ignored_error);
-            m_network_impl->deadline_timer.cancel();
-            m_network_impl->heartbeat_timer.cancel();
+            asio::steady_timer timer(executor);
+            timer.expires_after(10s);
+            co_await timer.async_wait(asio::use_awaitable);
         }
+        co_return;
     }
 
-    void Network::heart_beat_write()
+    asio::awaitable<void> Network::heart_beat_write()
     {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
         if (!m_network_impl->is_running || !m_network_impl->is_receiving)
-            return;
+            co_return;
+        auto executor = co_await asio::this_coro::executor;
         auto pack = DataPackage::makePackage("heartbeat");
         pack->type = DataPackage::HeartBeat;
-        auto wrapper = std::make_shared<StringWrapper>(pack->packageToString());
-        asio::async_write(*(m_network_impl->socket_ptr), asio::buffer(wrapper->data),
-            std::bind(&Network::handle_heart_beat_write, this, _1, wrapper));
-    }
-
-    void Network::handle_heart_beat_write(const std::error_code& error, std::shared_ptr<StringWrapper>)
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running || !m_network_impl->is_receiving)
-            return;
-        if (!error) {
-            m_network_impl->heartbeat_timer.expires_after(std::chrono::seconds(10));
-            m_network_impl->heartbeat_timer.async_wait(std::bind(&Network::heart_beat_write, this));
-        } else {
-            m_network_impl->is_receiving = false;
-            std::error_code ignored_error;
-            m_network_impl->socket_ptr->shutdown(ignored_error);
-            m_network_impl->deadline_timer.cancel();
-            m_network_impl->heartbeat_timer.cancel();
-            call_disconnect();
+        std::string strpack = pack->packageToString();
+        asio::steady_timer timer(executor);
+        while (m_network_impl->is_running && m_network_impl->is_receiving) {
+            timer.expires_after(10s);
+            co_await timer.async_wait(asio::use_awaitable);
+            try {
+                co_await asio::async_write(*m_network_impl->socket_ptr, asio::buffer(strpack), asio::use_awaitable);
+            } catch (...) {
+                co_return;
+            }
         }
-    }
-
-    void Network::check_deadline()
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running || !m_network_impl->is_receiving)
-            return;
-        if (m_network_impl->deadline_timer.expiry() <= asio::steady_timer::clock_type::now()) {
-            std::error_code ec;
-            m_network_impl->socket_ptr->shutdown(ec);
-            m_network_impl->is_receiving = false;
-
-            m_network_impl->deadline_timer.expires_at(asio::steady_timer::time_point::max());
-            call_disconnect();
-
-            lock.unlock();
-            start_connect();
-        }
-
-        m_network_impl->deadline_timer.async_wait(std::bind(&Network::check_deadline, this));
-    }
-
-    void Network::handle_write(const std::error_code& error,
-        std::size_t n,
-        std::shared_ptr<StringWrapper>)
-    {
-        std::unique_lock<std::mutex> lock(m_network_impl->mutex);
-        if (!m_network_impl->is_running || !m_network_impl->is_receiving)
-            return;
-        if (error) {
-            m_network_impl->is_receiving = false;
-            std::error_code ignored_error;
-            m_network_impl->socket_ptr->shutdown(ignored_error);
-            m_network_impl->deadline_timer.cancel();
-            m_network_impl->heartbeat_timer.cancel();
-            call_disconnect();
-        }
+        co_return;
     }
 }

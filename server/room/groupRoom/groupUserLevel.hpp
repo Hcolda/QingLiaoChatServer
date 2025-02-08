@@ -25,14 +25,14 @@ public:
     UserLevel(const UserLevel& u):
         m_value(MIN_Level)
     {
-        std::shared_lock<std::shared_mutex> local_shared_lock(u.m_value_mutex);
+        std::shared_lock<std::shared_mutex> lock(u.m_value_mutex);
         m_value = u.m_value;
     }
 
     UserLevel(UserLevel&& u) noexcept:
         m_value(MIN_Level)
     {
-        std::shared_lock<std::shared_mutex> local_shared_lock(u.m_value_mutex);
+        std::shared_lock<std::shared_mutex> lock(u.m_value_mutex);
         m_value = u.m_value;
     }
 
@@ -41,9 +41,9 @@ public:
     UserLevel& operator=(const UserLevel& u)
     {
         if (&u == this) return *this;
-        std::unique_lock<std::shared_mutex> local_unique_lock_1(m_value_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> local_shared_lock_2(u.m_value_mutex, std::defer_lock);
-        std::lock(local_unique_lock_1, local_shared_lock_2);
+        std::unique_lock<std::shared_mutex> lock_1(m_value_mutex, std::defer_lock);
+        std::shared_lock<std::shared_mutex> lock_2(u.m_value_mutex, std::defer_lock);
+        std::lock(lock_1, lock_2);
 
         m_value = u.m_value;
         return *this;
@@ -51,7 +51,7 @@ public:
 
     bool increase(int value)
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_value_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_value_mutex);
         if (!(MIN_Level <= m_value + value && m_value + value <= MAX_Level))
             return false;
         m_value += value;
@@ -60,7 +60,7 @@ public:
 
     bool decrease(int value)
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_value_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_value_mutex);
         if (!(MIN_Level <= m_value - value && m_value - value <= MAX_Level))
             return false;
         m_value -= value;
@@ -69,7 +69,7 @@ public:
 
     int getValue() const
     {
-        std::shared_lock<std::shared_mutex> local_shared_lock(m_value_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_value_mutex);
         return m_value;
     }
 

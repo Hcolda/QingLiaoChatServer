@@ -49,7 +49,7 @@ BaseRoom::~BaseRoom() noexcept = default;
 
 void BaseRoom::joinRoom(UserID user_id)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_user_map_mutex);
     if (m_impl->m_user_map.find(user_id) != m_impl->m_user_map.cend())
         return;
 
@@ -58,13 +58,13 @@ void BaseRoom::joinRoom(UserID user_id)
 
 bool BaseRoom::hasUser(UserID user_id) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_map_mutex);
     return m_impl->m_user_map.find(user_id) != m_impl->m_user_map.cend();
 }
 
 void BaseRoom::leaveRoom(UserID user_id)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_user_map_mutex);
     auto iter = m_impl->m_user_map.find(user_id);
     if (iter == m_impl->m_user_map.cend())
         return;
@@ -74,7 +74,7 @@ void BaseRoom::leaveRoom(UserID user_id)
 
 void BaseRoom::sendData(std::string_view data)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_map_mutex);
 
     for (const auto& [user_id, user_ptr]: std::as_const(m_impl->m_user_map)) {
         if (!user_ptr.expired())
@@ -84,7 +84,7 @@ void BaseRoom::sendData(std::string_view data)
 
 void BaseRoom::sendData(std::string_view data, UserID user_id)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_map_mutex);
     if (m_impl->m_user_map.find(user_id) == m_impl->m_user_map.cend())
         throw std::logic_error("User id not in room.");
     serverManager.getUser(user_id)->notifyAll(data);

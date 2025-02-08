@@ -15,7 +15,7 @@ namespace qls
 class DataPackage final
 {
 public:
-    enum DataPackageType : int
+    enum DataPackageType: int
     {
         Unknown = 0,
         Text = 1,
@@ -28,12 +28,11 @@ private:
 #pragma pack(1)
     int                 length = 0;                         ///< Length of the data package.
 public:
-    long long           requestID = 0;                      ///< Request ID associated with the data package.
     DataPackageType     type = DataPackageType::Unknown;    ///< Type identifier of the data package.
-    int                 sequence = -1;                      ///< Sequence number of the data package.
-private:
-    unsigned long long  verifyCode = 0;                     ///< Verification code for the data package.
-    char                data[2]{ 0 };                       ///< Data buffer of the data package.
+    int                 sequenceSize = 1;                   ///< Sequence size.
+    int                 sequence = 0;                       ///< Sequence number of the data package.
+    long long           requestID = 0;                      ///< Request ID associated with the data package.
+    char                data[0];                            ///< Data in the pack
 #pragma pack()
 
 public:

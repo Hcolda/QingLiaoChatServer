@@ -16,7 +16,6 @@ static std::pmr::synchronized_pool_resource sync_pool;
 
 std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
 {
-    std::hash<std::string_view> hash;
     const int lenth = static_cast<int>(sizeof(DataPackage) + data.size());
     void* mem = sync_pool.allocate(lenth);
     std::memset(mem, 0, lenth);
@@ -26,31 +25,27 @@ std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
         });
     package->length = lenth;
     std::memcpy(package->data, data.data(), data.size());
-    package->verifyCode = hash(data);
     return package;
 }
 
 std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
 {
-    using namespace qls;
-
     // Data package is too small
-    if (data.size() < sizeof(DataPackage)) throw std::system_error(qls_errc::data_too_small);
+    if (data.size() < sizeof(DataPackage))
+        throw std::system_error(qls_errc::data_too_small);
 
     // Data package length
     int size = 0;
     std::memcpy(&size, data.data(), sizeof(int));
-    size = swapNetworkEndianness(size);
+    if (!isBigEndianness())
+        size = swapEndianness(size);
 
     // Error handling if data package length does not match actual size,
-    // length is smaller than the default package size, length is very large,
-    // or the package ends not with 2 * '\0'
+    // length is smaller than the default package size, length is very large
     if (size != data.size() || size < sizeof(DataPackage))
         throw std::system_error(qls_errc::invalid_data);
     else if (size > INT32_MAX / 2)
         throw std::system_error(qls_errc::data_too_large);
-    else if (data[std::size_t(size - 1)] || data[std::size_t(size - 2)])
-        throw std::system_error(qls_errc::invalid_data);
 
     void* mem = sync_pool.allocate(size);
     std::memset(mem, 0, size);
@@ -60,19 +55,19 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
         });
     std::memcpy(package.get(), data.data(), size);
 
-    // Endianness conversion
-    package->length = swapNetworkEndianness(package->length);
-    package->requestID = swapNetworkEndianness(package->requestID);
-    package->type = static_cast<DataPackageType>(swapNetworkEndianness(static_cast<int>(package->type)));
-    package->sequence = swapNetworkEndianness(package->sequence);
-    package->verifyCode = swapNetworkEndianness(package->verifyCode);
+    if (!isBigEndianness()) {
+        // Endianness conversion
+        package->length = swapEndianness(package->length);
+        package->type = static_cast<DataPackageType>(swapEndianness(static_cast<int>(package->type)));
+        package->sequenceSize = swapEndianness(package->sequenceSize);
+        package->sequence = swapEndianness(package->sequence);
+        package->requestID = swapEndianness(package->requestID);
 
-    std::hash<std::string_view> hash;
-    std::size_t gethash = hash(package->getData());
-    if (gethash != package->verifyCode)
-        throw std::system_error(make_error_code(qls_errc::hash_mismatched),
-            std::format("hash is different, local hash: {}, pack hash: {}",
-            gethash, package->verifyCode));
+        char* data = reinterpret_cast<char*>(package.get());
+        for (std::size_t i = sizeof(DataPackage); i < size - sizeof(DataPackage); ++i) {
+            data[i] = swapEndianness(data[i]);
+        }
+    }
 
     return package;
 }
@@ -80,20 +75,26 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
 std::string DataPackage::packageToString() noexcept
 {
     using namespace qls;
+    std::string strdata;
+    strdata.resize(this->length);
+    std::memcpy(strdata.data(), this, this->length);
+    DataPackage* package = reinterpret_cast<DataPackage*>(strdata.data());
 
-    std::size_t localLength = this->length;
+    if (!isBigEndianness()) {
+        // Endianness conversion
+        package->length = swapEndianness(package->length);
+        package->type = static_cast<DataPackageType>(swapEndianness(static_cast<int>(package->type)));
+        package->sequenceSize = swapEndianness(package->sequenceSize);
+        package->sequence = swapEndianness(package->sequence);
+        package->requestID = swapEndianness(package->requestID);
 
-    // Endianness conversion
-    this->length = swapNetworkEndianness(this->length);
-    this->requestID = swapNetworkEndianness(this->requestID);
-    this->type = static_cast<DataPackageType>(swapNetworkEndianness(static_cast<int>(this->type)));
-    this->sequence = swapNetworkEndianness(this->sequence);
-    this->verifyCode = swapNetworkEndianness(this->verifyCode);
+        char* data = strdata.data();
+        for (std::size_t i = sizeof(DataPackage); i < this->length - sizeof(DataPackage); ++i) {
+            data[i] = swapEndianness(data[i]);
+        }
+    }
 
-    std::string data;
-    data.resize(localLength);
-    std::memcpy(data.data(), this, localLength);
-    return data;
+    return strdata;
 }
 
 std::size_t DataPackage::getPackageSize() noexcept

@@ -19,6 +19,7 @@
 #include "verificationManager.h"
 #include "dataManager.h"
 #include "connection.hpp"
+#include "network.h"
 
 namespace qls
 {
@@ -214,6 +215,12 @@ public:
      * @return Reference to the VerificationManager.
      */
     qls::VerificationManager& getServerVerificationManager();
+
+    /**
+     * @brief Retrieves the network for the server.
+     * @return Reference to the Network.
+     */
+    qls::Network& getServerNetwork();
 
 private:
     std::unique_ptr<ManagerImpl> m_impl;

@@ -14,8 +14,6 @@
 Log::Logger serverLogger;
 // ini config
 qini::INIObject serverIni;
-// server network system
-qls::Network serverNetwork;
 // manager
 qls::Manager serverManager;
 

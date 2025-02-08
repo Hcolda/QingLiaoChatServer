@@ -31,7 +31,7 @@ void GroupPermission::removePermission(std::string_view permissionName)
 
 PermissionType GroupPermission::getPermissionType(std::string_view permissionName) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_permission_map_mutex);
 
     // 是否有此权限
     auto itor = m_permission_map.find(permissionName);
@@ -44,7 +44,7 @@ PermissionType GroupPermission::getPermissionType(std::string_view permissionNam
 std::unordered_map<std::string, PermissionType, string_hash, std::equal_to<>>
     GroupPermission::getPermissionList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_permission_map_mutex);
     return m_permission_map;
 }
 
@@ -68,9 +68,9 @@ void GroupPermission::removeUser(UserID user_id)
 
 bool GroupPermission::userHasPermission(UserID user_id, std::string_view permissionName) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock1(m_permission_map_mutex, std::defer_lock);
-    std::shared_lock<std::shared_mutex> local_shared_lock2(m_user_permission_map_mutex, std::defer_lock);
-    std::lock(local_shared_lock1, local_shared_lock2);
+    std::shared_lock<std::shared_mutex> lock1(m_permission_map_mutex, std::defer_lock);
+    std::shared_lock<std::shared_mutex> lock2(m_user_permission_map_mutex, std::defer_lock);
+    std::lock(lock1, lock2);
 
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
@@ -88,7 +88,7 @@ bool GroupPermission::userHasPermission(UserID user_id, std::string_view permiss
 
 PermissionType GroupPermission::getUserPermissionType(UserID user_id) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_user_permission_map_mutex);
 
     // 是否有此user
     auto itor = m_user_permission_map.find(user_id);
@@ -101,13 +101,13 @@ PermissionType GroupPermission::getUserPermissionType(UserID user_id) const
 std::unordered_map<UserID, PermissionType>
     GroupPermission::getUserPermissionList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_user_permission_map_mutex);
     return m_user_permission_map;
 }
 
 std::vector<UserID> GroupPermission::getDefaultUserList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_user_permission_map_mutex);
 
     std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
@@ -121,7 +121,7 @@ std::vector<UserID> GroupPermission::getDefaultUserList() const
 
 std::vector<UserID> GroupPermission::getOperatorList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_user_permission_map_mutex);
 
     std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),
@@ -135,7 +135,7 @@ std::vector<UserID> GroupPermission::getOperatorList() const
 
 std::vector<UserID> GroupPermission::getAdministratorList() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_permission_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_user_permission_map_mutex);
 
     std::vector<UserID> return_vector;
     std::for_each(m_user_permission_map.cbegin(), m_user_permission_map.cend(),

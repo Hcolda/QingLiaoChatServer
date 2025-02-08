@@ -99,7 +99,7 @@ User::~User() = default;
 
 UserID User::getUserID() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_data_mutex);
     return m_impl->user_id;
 }
 
@@ -141,7 +141,7 @@ std::string User::getUserProfile() const
 bool User::isUserPassword(std::string_view password) const
 {
     std::hash<std::string> string_hash;
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_data_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_data_mutex);
     std::string localPassword =
         std::to_string(string_hash(std::string(password) + m_impl->salt));
 
@@ -193,7 +193,7 @@ void User::firstUpdateUserPassword(std::string_view new_password)
 
     {
         std::unique_lock<std::shared_mutex>
-            local_unique_lock(m_impl->m_data_mutex);
+            lock(m_impl->m_data_mutex);
         m_impl->password = localPassword;
         m_impl->salt = localSalt;
     }
@@ -220,7 +220,7 @@ void User::updateUserPassword(
 
     {
         std::unique_lock<std::shared_mutex>
-            local_unique_lock(m_impl->m_data_mutex);
+            lock(m_impl->m_data_mutex);
         m_impl->password = localPassword;
         m_impl->salt = localSalt;
     }
@@ -232,7 +232,7 @@ void User::updateUserPassword(
 bool User::userHasFriend(UserID friend_user_id) const
 {
     std::shared_lock<std::shared_mutex>
-        local_shared_lock(m_impl->m_user_friend_map_mutex);
+        lock(m_impl->m_user_friend_map_mutex);
     return m_impl->m_user_friend_map.find(friend_user_id) !=
         m_impl->m_user_friend_map.cend();
 }
@@ -240,7 +240,7 @@ bool User::userHasFriend(UserID friend_user_id) const
 bool User::userHasGroup(GroupID group_id) const
 {
     std::shared_lock<std::shared_mutex>
-        local_shared_lock(m_impl->m_user_group_map_mutex);
+        lock(m_impl->m_user_group_map_mutex);
     return m_impl->m_user_group_map.find(group_id) !=
         m_impl->m_user_group_map.cend();
 }
@@ -248,14 +248,14 @@ bool User::userHasGroup(GroupID group_id) const
 std::unordered_set<UserID> User::getFriendList() const
 {
     std::shared_lock<std::shared_mutex>
-        local_shared_lock(m_impl->m_user_friend_map_mutex);
+        lock(m_impl->m_user_friend_map_mutex);
     return m_impl->m_user_friend_map;
 }
 
 std::unordered_set<GroupID> User::getGroupList() const
 {
     std::shared_lock<std::shared_mutex>
-        local_shared_lock(m_impl->m_user_group_map_mutex);
+        lock(m_impl->m_user_group_map_mutex);
     return m_impl->m_user_group_map;
 }
 
@@ -359,7 +359,7 @@ void User::updateFriendList(
     if (!callback_function)
         throw std::system_error(make_error_code(qls::qls_errc::null_pointer));
 
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_user_friend_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_user_friend_map_mutex);
     callback_function(m_impl->m_user_friend_map);
 }
 
@@ -370,7 +370,7 @@ void User::updateGroupList(
         throw std::system_error(make_error_code(qls::qls_errc::null_pointer));
 
     std::unique_lock<std::shared_mutex>
-        local_unique_lock(m_impl->m_user_group_map_mutex);
+        lock(m_impl->m_user_group_map_mutex);
     callback_function(m_impl->m_user_group_map);
 }
 
@@ -379,7 +379,7 @@ void User::addFriendVerification(
     const Verification::UserVerification& u)
 {
     std::unique_lock<std::shared_mutex>
-        local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
+        lock(m_impl->m_user_friend_verification_map_mutex);
     m_impl->m_user_friend_verification_map.emplace(friend_user_id, u);
 }
 
@@ -388,14 +388,14 @@ void User::addGroupVerification(
     const Verification::GroupVerification& u)
 {
     std::unique_lock<std::shared_mutex>
-        local_unique_lock(m_impl->m_user_group_verification_map_mutex);
+        lock(m_impl->m_user_group_verification_map_mutex);
     m_impl->m_user_group_verification_map.insert({ group_id, u });
 }
 
 void User::removeFriendVerification(UserID friend_user_id)
 {
     std::unique_lock<std::shared_mutex>
-        local_unique_lock(m_impl->m_user_friend_verification_map_mutex);
+        lock(m_impl->m_user_friend_verification_map_mutex);
     auto itor = m_impl->m_user_friend_verification_map.find(friend_user_id);
     if (itor == m_impl->m_user_friend_verification_map.cend())
         throw std::system_error(qls_errc::verification_not_existed);
@@ -406,7 +406,7 @@ std::unordered_map<UserID, Verification::UserVerification>
     User::getFriendVerificationList() const
 {
     std::shared_lock<std::shared_mutex>
-        local_shared_lock(m_impl->m_user_friend_verification_map_mutex);
+        lock(m_impl->m_user_friend_verification_map_mutex);
     return m_impl->m_user_friend_verification_map;
 }
 
@@ -502,7 +502,7 @@ bool User::removeGroup(GroupID group_id)
 void User::removeGroupVerification(GroupID group_id, UserID user_id)
 {
     std::unique_lock<std::shared_mutex>
-        local_unique_lock(m_impl->m_user_group_verification_map_mutex);
+        lock(m_impl->m_user_group_verification_map_mutex);
     std::size_t size = m_impl->m_user_group_verification_map.count(group_id);
     if (!size) throw std::system_error(qls_errc::verification_not_existed);
 
@@ -519,7 +519,7 @@ std::multimap<GroupID, Verification::GroupVerification>
     User::getGroupVerificationList() const
 {
     std::shared_lock<std::shared_mutex>
-        local_shared_lock(m_impl->m_user_group_verification_map_mutex);
+        lock(m_impl->m_user_group_verification_map_mutex);
     return m_impl->m_user_group_verification_map;
 }
 
@@ -528,7 +528,7 @@ void User::addConnection(
     DeviceType type)
 {
     std::unique_lock<std::shared_mutex>
-        local_unique_lock(m_impl->m_connection_map_mutex);
+        lock(m_impl->m_connection_map_mutex);
     if (m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::socket_pointer_existed);
 
@@ -537,13 +537,13 @@ void User::addConnection(
 
 bool User::hasConnection(const std::shared_ptr<Connection> &connection_ptr) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_connection_map_mutex);
     return m_impl->m_connection_map.find(connection_ptr) != m_impl->m_connection_map.cend();
 }
 
 void User::modifyConnectionType(const std::shared_ptr<Connection> &connection_ptr, DeviceType type)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_connection_map_mutex);
     auto iter = m_impl->m_connection_map.find(connection_ptr);
     if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
@@ -553,7 +553,7 @@ void User::modifyConnectionType(const std::shared_ptr<Connection> &connection_pt
 
 void User::removeConnection(const std::shared_ptr<Connection>& connection_ptr)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_connection_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_connection_map_mutex);
     auto iter = m_impl->m_connection_map.find(connection_ptr);
     if (iter == m_impl->m_connection_map.cend())
         throw std::system_error(qls_errc::null_socket_pointer, "socket pointer doesn't exist");
@@ -563,7 +563,7 @@ void User::removeConnection(const std::shared_ptr<Connection>& connection_ptr)
 
 void User::notifyAll(std::string_view data)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_connection_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
     for (const auto& [connection_ptr, type]: m_impl->m_connection_map) {
@@ -578,7 +578,7 @@ void User::notifyAll(std::string_view data)
 
 void User::notifyWithType(DeviceType type, std::string_view data)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_connection_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_connection_map_mutex);
     std::shared_ptr<std::string> buffer_ptr(std::allocate_shared<std::string>(
         std::pmr::polymorphic_allocator<std::string>(&local_user_sync_pool), data));
     for (const auto& [connection_ptr, dtype]: m_impl->m_connection_map) {

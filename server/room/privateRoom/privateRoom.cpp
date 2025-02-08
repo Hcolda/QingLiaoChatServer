@@ -60,7 +60,7 @@ void PrivateRoom::sendMessage(std::string_view message, UserID sender_user_id)
 
     // 存储数据
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_impl->m_message_queue_mutex);
         m_impl->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
@@ -85,7 +85,7 @@ void PrivateRoom::sendTipMessage(std::string_view message, UserID sender_user_id
     
     // 存储数据
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_impl->m_message_queue_mutex);
         m_impl->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
@@ -134,7 +134,7 @@ void PrivateRoom::getMessage(const std::chrono::time_point<std::chrono::system_c
             return edge ? left : right;
         };
 
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_message_queue_mutex);
     if (m_impl->m_message_queue.empty())
     {
         sendData(

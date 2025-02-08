@@ -15,7 +15,6 @@
 #include "connection.hpp"
 
 extern Log::Logger serverLogger;
-extern qls::Network serverNetwork;
 extern qls::Manager serverManager;
 extern qini::INIObject serverIni;
 
@@ -110,8 +109,8 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
         std::move(origin_socket), *m_ssl_context_ptr);
     // String address for data processing
     std::string addr = socket2ip(connection_ptr->socket);
-    // Socket encrypted structure
-    std::shared_ptr<SocketDataStructure> sds = std::make_shared<SocketDataStructure>();
+    // Socket package receiver
+    Package packageReceiver;
     // Register the socket
     serverManager.registerConnection(connection_ptr);
 
@@ -119,7 +118,7 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
         serverLogger.info(std::format("[{}] connected to the server", addr));
 
         // timeout function
-        auto timeout = [addr](const std::chrono::steady_clock::duration& duration) -> awaitable<void> {
+        auto timeout = [](const std::chrono::steady_clock::duration& duration) -> awaitable<void> {
             steady_timer timer(co_await this_coro::executor);
             timer.expires_after(duration);
             co_await timer.async_wait(asio::use_awaitable);
@@ -127,80 +126,66 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
         };
 
         // SSL handshake
-        co_await (connection_ptr->socket.async_handshake(ssl::stream_base::server, use_awaitable) || timeout(5s));
+        co_await (connection_ptr->socket.async_handshake(ssl::stream_base::server, use_awaitable) || timeout(10s));
 
         char data[8192] {0};
-        for (;;) {
-            do {
-                std::size_t n = std::get<0>(co_await (connection_ptr->socket.async_read_some(buffer(data),
-                    bind_executor(connection_ptr->strand, use_awaitable)) || timeout(5s)));
-                // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
-                sds->package.write({ data, n });
-            } while (!sds->package.canRead());
+        SocketService socketService(connection_ptr);
+        long long heart_beat_times = 0;
+        auto heart_beat_time_point = std::chrono::steady_clock::now();
+        while (true) {
+            try {
+                do {
+                    std::size_t n = std::get<0>(co_await (connection_ptr->socket.async_read_some(buffer(data),
+                        bind_executor(connection_ptr->strand, use_awaitable)) || timeout(60s)));
+                    // serverLogger.info((std::format("[{}] received message: {}", addr, showBinaryData({data, n}))));
+                    packageReceiver.write({ data, n });
+                } while (!packageReceiver.canRead());
 
-            while (sds->package.canRead()) {
-                std::shared_ptr<qls::DataPackage> datapack;
-
-                // Check if the data package is normal
-                try {
-                    // Data package
-                    datapack = std::shared_ptr<qls::DataPackage>(
-                        qls::DataPackage::stringToPackage(
-                            sds->package.read()));
-                    if (datapack->type == DataPackage::HeartBeat) continue;
-                    if (datapack->getData() != "test")
-                        throw std::system_error(qls_errc::connection_test_failed);
-                } catch (const std::exception& e) {
-                    serverLogger.error("[", addr, "]", ERROR_WITH_STACKTRACE(e.what()));
-                    std::error_code ec;
-                    connection_ptr->socket.shutdown(ec);
-                    co_return;
-                }
-
-                auto executeFunction = [addr](std::shared_ptr<Connection> connection_ptr,
-                    std::shared_ptr<Network::SocketDataStructure> sds) -> awaitable<void> {
-                    // Create a watchdog
-                    auto watchdog = [addr](std::chrono::steady_clock::time_point & deadline) -> awaitable<void> {
-                        steady_timer timer(co_await this_coro::executor);
-                        auto now = std::chrono::steady_clock::now();
-                        while (deadline > now) {
-                            timer.expires_at(deadline);
-                            co_await timer.async_wait(use_awaitable);
-                            now = std::chrono::steady_clock::now();
+                auto pack = DataPackage::stringToPackage(packageReceiver.read());
+                if (pack->type == DataPackage::HeartBeat) {
+                    // Heartbeat package
+                    heart_beat_times++;
+                    if ((std::chrono::steady_clock::now() - heart_beat_time_point) >=
+                        std::chrono::seconds(10)) {
+                        // Update time point
+                        heart_beat_time_point = std::chrono::steady_clock::now();
+                        if (heart_beat_times > 10) {
+                            // Remove socket pointer from manager
+                            // if there were too many heartbeats
+                            serverLogger.error("[", addr, "]", "too many heartbeats");
+                            serverManager.removeConnection(connection_ptr);
+                            co_return;
                         }
-                        throw std::system_error(make_error_code(std::errc::timed_out));
-                    };
-                    // This deadline is used to check if the connection is timeout
-                    std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::time_point::max();
-                    try {
-                        co_await (SocketService::echo(connection_ptr, std::move(sds), deadline) && watchdog(deadline));
-                    } catch (const std::system_error& e) {
-                        const auto& errc = e.code();
-                        if (errc.message() == "End of file")
-                            serverLogger.info(std::format("[{}] disconnected from the server", addr));
-                        else
-                            serverLogger.error('[', errc.category().name(), ']', errc.message());
-                    } catch (const std::exception& e) {
-                        serverLogger.error(std::string(e.what()));
+                        heart_beat_times = 0;
                     }
-                    serverManager.removeConnection(connection_ptr);
-                    co_return;
-                    };
-
-                co_spawn(executor, executeFunction(std::move(connection_ptr), std::move(sds)), detached);
-                co_return;
+                    continue;
+                }
+                co_await socketService.process(pack->getData(), pack);
+                continue;
+            } catch (const std::system_error& e) {
+                const auto& errc = e.code();
+                if (errc.message() == "End of file")
+                    serverLogger.info(std::format("[{}] disconnected from the server", addr));
+                else
+                    serverLogger.error('[', errc.category().name(), ']', errc.message());
+            } catch (const std::exception& e) {
+                serverLogger.error(std::string(e.what()));
             }
+
+            // Remove socket pointer from manager
+            serverManager.removeConnection(connection_ptr);
+            co_return;
         }
-    }
-    catch (const std::system_error& e) {
+    } catch (const std::system_error& e) {
         const auto& errc = e.code();
         if (errc.message() == "End of file")
             serverLogger.info(std::format("[{}] disconnected from the server", addr));
         else
             serverLogger.error('[', errc.category().name(), ']', errc.message());
-    }
-    catch (const std::exception& e) {
-        serverLogger.error(ERROR_WITH_STACKTRACE(e.what()));
+    } catch (const asio::multiple_exceptions& e) {
+        serverLogger.error(std::string(e.what()));
+    } catch (const std::exception& e) {
+        serverLogger.error(std::string(e.what()));
     }
     serverManager.removeConnection(connection_ptr);
     co_return;

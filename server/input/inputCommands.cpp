@@ -16,8 +16,6 @@
 extern Log::Logger serverLogger;
 // ini配置
 extern qini::INIObject serverIni;
-// 服务器网络系统
-extern qls::Network serverNetwork;
 // manager
 extern qls::Manager serverManager;
 
@@ -26,7 +24,7 @@ namespace qls
 
 bool stop_command::execute()
 {
-    serverNetwork.stop();
+    serverManager.getServerNetwork().stop();
     return false;
 }
 

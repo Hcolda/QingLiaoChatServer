@@ -42,15 +42,6 @@ inline std::string showBinaryData(std::string_view data);
 class Network final
 {
 public:
-    /**
-     * @struct SocketDataStructure
-     * @brief Structure to hold data associated with a socket.
-     */
-    struct SocketDataStructure
-    {
-        qls::Package package; ///< Package used to receive data.
-    };
-
     Network();
     Network(const Network&) = delete;
     Network(Network&&) = delete;

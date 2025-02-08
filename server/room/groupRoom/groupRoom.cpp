@@ -122,7 +122,7 @@ void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
 
     // 发送者是否被禁言
     {
-        std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_muted_user_map_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_impl->m_muted_user_map_mutex);
         auto itor = m_impl->m_muted_user_map.find(sender_user_id);
         if (itor != m_impl->m_muted_user_map.cend()) {
             if (itor->second.first + itor->second.second >=
@@ -130,8 +130,8 @@ void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
                     std::chrono::system_clock::now()))
                 return;
             else {
-                local_shared_lock.unlock();
-                std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex);
+                lock.unlock();
+                std::unique_lock<std::shared_mutex> lock(m_impl->m_muted_user_map_mutex);
                 m_impl->m_muted_user_map.erase(sender_user_id);
             }
         }
@@ -139,7 +139,7 @@ void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
 
     // 存储数据
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_impl->m_message_queue_mutex);
         m_impl->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
@@ -167,7 +167,7 @@ void GroupRoom::sendTipMessage(UserID sender_user_id,
 
     // 发送者是否被禁言
     {
-        std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_muted_user_map_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_impl->m_muted_user_map_mutex);
         auto itor = m_impl->m_muted_user_map.find(sender_user_id);
         if (itor != m_impl->m_muted_user_map.cend()) {
             if (itor->second.first + itor->second.second >=
@@ -175,8 +175,8 @@ void GroupRoom::sendTipMessage(UserID sender_user_id,
                     std::chrono::system_clock::now()))
                 return;
             else {
-                local_shared_lock.unlock();
-                std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex);
+                lock.unlock();
+                std::unique_lock<std::shared_mutex> lock(m_impl->m_muted_user_map_mutex);
                 m_impl->m_muted_user_map.erase(sender_user_id);
             }
         }
@@ -184,7 +184,7 @@ void GroupRoom::sendTipMessage(UserID sender_user_id,
 
     // 存储数据
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_impl->m_message_queue_mutex);
         m_impl->m_message_queue.push_back(
             { std::chrono::time_point_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now()),
@@ -212,7 +212,7 @@ void GroupRoom::sendUserTipMessage(UserID sender_user_id,
 
     // 发送者是否被禁言
     {
-        std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_muted_user_map_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_impl->m_muted_user_map_mutex);
         auto itor = m_impl->m_muted_user_map.find(sender_user_id);
         if (itor != m_impl->m_muted_user_map.cend()) {
             if (itor->second.first + itor->second.second >=
@@ -220,8 +220,8 @@ void GroupRoom::sendUserTipMessage(UserID sender_user_id,
                     std::chrono::system_clock::now()))
                 return;
             else {
-                local_shared_lock.unlock();
-                std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex);
+                lock.unlock();
+                std::unique_lock<std::shared_mutex> lock(m_impl->m_muted_user_map_mutex);
                 m_impl->m_muted_user_map.erase(sender_user_id);
             }
         }
@@ -272,7 +272,7 @@ void GroupRoom::getMessage(
         return edge ? left : right;
         };
 
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_message_queue_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_message_queue_mutex);
     if (m_impl->m_message_queue.empty()) {
         sendData(qjson::JWriter::fastWrite(qjson::JObject(qjson::JValueType::JList)));
         return;
@@ -324,7 +324,7 @@ bool GroupRoom::hasUser(UserID user_id) const
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_id_map_mutex);
     return m_impl->m_user_id_map.find(user_id) != m_impl->m_user_id_map.cend();
 }
 
@@ -333,7 +333,7 @@ std::unordered_map<UserID, GroupRoom::UserDataStructure> GroupRoom::getUserList(
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_id_map_mutex);
     return m_impl->m_user_id_map;
 }
 
@@ -342,7 +342,7 @@ std::string GroupRoom::getUserNickname(UserID user_id) const
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_id_map_mutex);
     auto itor = m_impl->m_user_id_map.find(user_id);
     if (itor == m_impl->m_user_id_map.cend())
         throw std::system_error(make_error_code(qls_errc::user_not_existed), "user isn't in the room");
@@ -355,7 +355,7 @@ long long GroupRoom::getUserGroupLevel(UserID user_id) const
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_id_map_mutex);
     auto itor = m_impl->m_user_id_map.find(user_id);
     if (itor == m_impl->m_user_id_map.cend())
         throw std::system_error(make_error_code(qls_errc::user_not_existed), "user isn't in the room");
@@ -377,7 +377,7 @@ UserID GroupRoom::getAdministrator() const
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_administrator_user_id_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_administrator_user_id_mutex);
     return m_impl->m_administrator_user_id;
 }
 
@@ -386,9 +386,9 @@ void GroupRoom::setAdministrator(UserID user_id)
     if (!m_impl->m_can_be_used)
         throw std::system_error(make_error_code(qls_errc::group_room_unable_to_use));
 
-    std::unique_lock<std::shared_mutex> local_unique_lock1(m_impl->m_user_id_map_mutex, std::defer_lock);
-    std::unique_lock<std::shared_mutex> local_unique_lock2(m_impl->m_administrator_user_id_mutex, std::defer_lock);
-    std::lock(local_unique_lock1, local_unique_lock2);
+    std::unique_lock<std::shared_mutex> lock1(m_impl->m_user_id_map_mutex, std::defer_lock);
+    std::unique_lock<std::shared_mutex> lock2(m_impl->m_administrator_user_id_mutex, std::defer_lock);
+    std::lock(lock1, lock2);
 
     if (m_impl->m_administrator_user_id == 0) {
         auto itor = m_impl->m_user_id_map.find(user_id);
@@ -442,9 +442,9 @@ bool GroupRoom::muteUser(UserID executor_id, UserID user_id, const std::chrono::
     if (userIdType >= executor_idType)
         return false;
 
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex, std::defer_lock);
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex, std::defer_lock);
-    std::lock(local_unique_lock, local_shared_lock);
+    std::unique_lock<std::shared_mutex> lock1(m_impl->m_muted_user_map_mutex, std::defer_lock);
+    std::shared_lock<std::shared_mutex> lock2(m_impl->m_user_id_map_mutex, std::defer_lock);
+    std::lock(lock1, lock2);
 
     m_impl->m_muted_user_map[user_id] = std::pair<std::chrono::time_point<std::chrono::system_clock,
         std::chrono::milliseconds>,
@@ -469,9 +469,9 @@ bool GroupRoom::unmuteUser(UserID executor_id, UserID user_id)
     if (userIdType >= executor_idType)
         return false;
 
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_impl->m_muted_user_map_mutex, std::defer_lock);
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex, std::defer_lock);
-    std::lock(local_unique_lock, local_shared_lock);
+    std::unique_lock<std::shared_mutex> lock1(m_impl->m_muted_user_map_mutex, std::defer_lock);
+    std::shared_lock<std::shared_mutex> lock2(m_impl->m_user_id_map_mutex, std::defer_lock);
+    std::lock(lock1, lock2);
 
     m_impl->m_muted_user_map.erase(user_id);
     sendTipMessage(executor_id, std::format("{} was unmuted by {}",
@@ -492,9 +492,9 @@ bool GroupRoom::kickUser(UserID executor_id, UserID user_id)
     if (userIdType >= executor_idType)
         return false;
 
-    std::unique_lock<std::shared_mutex> local_unique_lock1(m_impl->m_user_id_map_mutex, std::defer_lock),
-        local_shared_lock2(m_impl->m_muted_user_map_mutex, std::defer_lock);
-    std::lock(local_unique_lock1, local_shared_lock2);
+    std::unique_lock<std::shared_mutex> lock1(m_impl->m_user_id_map_mutex, std::defer_lock),
+        lock2(m_impl->m_muted_user_map_mutex, std::defer_lock);
+    std::lock(lock1, lock2);
     sendTipMessage(executor_id, std::format("{} was kicked by {}",
         m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
     m_impl->m_user_id_map.erase(user_id);
@@ -517,7 +517,7 @@ bool GroupRoom::addOperator(UserID executor_id, UserID user_id)
     m_impl->m_permission.modifyUserPermission(user_id,
         PermissionType::Operator);
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_id_map_mutex);
     sendTipMessage(executor_id, std::format("{} was turned operator by {}",
         m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
 
@@ -541,7 +541,7 @@ bool GroupRoom::removeOperator(UserID executor_id, UserID user_id)
     m_impl->m_permission.modifyUserPermission(user_id,
         PermissionType::Default);
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_impl->m_user_id_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_user_id_map_mutex);
     sendTipMessage(executor_id, std::format("{} was turned default user by {}",
         m_impl->m_user_id_map[user_id].nickname, m_impl->m_user_id_map[executor_id].nickname));
 

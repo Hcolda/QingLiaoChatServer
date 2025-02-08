@@ -33,7 +33,7 @@ void VerificationManager::addFriendRoomVerification(UserID user_id_1, UserID use
         throw std::system_error(make_error_code(qls_errc::private_room_existed));
 
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_FriendRoomVerification_map_mutex);
 
         if (m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
             m_FriendRoomVerification_map.cend())
@@ -73,7 +73,7 @@ bool VerificationManager::hasFriendRoomVerification(UserID user_id_1, UserID use
     if (user_id_1 == user_id_2)
         return false;
 
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_FriendRoomVerification_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_FriendRoomVerification_map_mutex);
     return m_FriendRoomVerification_map.find({ user_id_1, user_id_2 }) !=
         m_FriendRoomVerification_map.cend();
 }
@@ -86,7 +86,7 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
 
     bool result = false;
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_FriendRoomVerification_map_mutex);
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.cend())
@@ -134,7 +134,7 @@ void VerificationManager::removeFriendRoomVerification(UserID user_id_1, UserID 
         throw std::system_error(make_error_code(qls_errc::invalid_verification));
 
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_FriendRoomVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_FriendRoomVerification_map_mutex);
 
         auto itor = m_FriendRoomVerification_map.find({ user_id_1, user_id_2 });
         if (itor == m_FriendRoomVerification_map.cend())
@@ -155,7 +155,7 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
             throw std::system_error(make_error_code(qls_errc::user_not_existed));
 
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_GroupVerification_map_mutex);
 
         if (m_GroupVerification_map.find({ group_id, user_id }) !=
             m_GroupVerification_map.cend())
@@ -193,7 +193,7 @@ void VerificationManager::addGroupRoomVerification(GroupID group_id, UserID user
 
 bool VerificationManager::hasGroupRoomVerification(GroupID group_id, UserID user_id) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_GroupVerification_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_GroupVerification_map_mutex);
 
     return m_GroupVerification_map.find({ group_id, user_id }) !=
         m_GroupVerification_map.cend();
@@ -203,7 +203,7 @@ bool VerificationManager::setGroupRoomGroupVerified(GroupID group_id, UserID use
 {
     bool result = false;
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_GroupVerification_map_mutex);
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.cend())
@@ -231,7 +231,7 @@ bool VerificationManager::setGroupRoomUserVerified(GroupID group_id, UserID user
 {
     bool result = false;
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_GroupVerification_map_mutex);
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.cend())
@@ -264,7 +264,7 @@ bool VerificationManager::setGroupRoomUserVerified(GroupID group_id, UserID user
 void VerificationManager::removeGroupRoomVerification(GroupID group_id, UserID user_id)
 {
     {
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_GroupVerification_map_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_GroupVerification_map_mutex);
 
         auto itor = m_GroupVerification_map.find({ group_id, user_id });
         if (itor == m_GroupVerification_map.cend())

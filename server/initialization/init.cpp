@@ -11,7 +11,6 @@
 #include "input.h"
 
 extern Log::Logger serverLogger;
-extern qls::Network serverNetwork;
 extern qini::INIObject serverIni;
 extern qls::Manager serverManager;
 
@@ -53,10 +52,13 @@ qini::INIObject Init::readConfig()
 
 int init()
 {
-#ifdef WIN32
-    std::system("chcp 65001"); // Set the console code page to UTF-8
+#if defined(_WIN32) || defined(_WIN64)
+    // Set the console code page to UTF-8
+    std::system("chcp 65001");
 #endif
     serverLogger.info("Server log system started successfully!");
+
+    Network& serverNetwork = serverManager.getServerNetwork();
 
     if (qls::isBigEndianness())
         serverLogger.info("The local endianness of the server is big-endian");

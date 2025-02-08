@@ -19,9 +19,10 @@ bool qls::Package::canRead() const
     int length = 0;
     std::memcpy(&length, m_buffer.c_str(), sizeof(int));
     length = qls::swapNetworkEndianness(length);
-    if (length > m_buffer.size())
+    if (length > INT32_MAX / 2)
+        throw std::system_error(qls_errc::data_too_large);
+    else if (length > m_buffer.size())
         return false;
-
     return true;
 }
 

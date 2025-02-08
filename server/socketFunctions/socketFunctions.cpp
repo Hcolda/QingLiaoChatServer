@@ -42,55 +42,27 @@ std::shared_ptr<Connection> SocketService::get_connection_ptr() const
     return m_impl->m_connection_ptr;
 }
 
-asio::awaitable<std::shared_ptr<qls::DataPackage>>
-    SocketService::async_receive()
-{
-    std::string addr = socket2ip(m_impl->m_connection_ptr->socket);
-    char buffer[8192]{ 0 };
-
-    std::shared_ptr<qls::DataPackage> datapack;
-    // receive data
-    if (!m_impl->m_package.canRead()) {
-        do {
-            std::size_t size = co_await m_impl->m_connection_ptr->socket.async_read_some(
-                asio::buffer(buffer),
-                asio::bind_executor(m_impl->m_connection_ptr->strand,
-                    asio::use_awaitable));
-            m_impl->m_package.write({ buffer, size });
-        } while (!m_impl->m_package.canRead());
-    }
-
-    // check data package if it is normal
-    datapack = std::shared_ptr<qls::DataPackage>(
-        qls::DataPackage::stringToPackage(
-            m_impl->m_package.read()));
-
-    co_return datapack;
-}
-
-asio::awaitable<std::size_t>
-    SocketService::async_send(
-        std::string_view data,
-        long long requestID,
-        DataPackage::DataPackageType type,
-        int sequence)
-{
-    std::string out(data);
-    auto pack = qls::DataPackage::makePackage(out);
-    pack->requestID = requestID;
-    pack->sequence = sequence;
-    pack->type = type;
-    // Send data to the connection
-    co_return co_await asio::async_write(m_impl->m_connection_ptr->socket,
-        asio::buffer(pack->packageToString()),
-        asio::bind_executor(m_impl->m_connection_ptr->strand, asio::use_awaitable));
-}
-
 asio::awaitable<void> SocketService::process(
-    std::shared_ptr<Connection> connection_ptr,
     std::string_view data,
     std::shared_ptr<qls::DataPackage> pack)
 {
+    auto async_send = [this](
+        std::string_view data,
+        long long requestID = 0,
+        DataPackage::DataPackageType type = DataPackage::Unknown,
+        int sequence = 0,
+        int sequenceSize = 1) -> asio::awaitable<std::size_t> {
+            std::string out(data);
+            auto pack = qls::DataPackage::makePackage(out);
+            pack->requestID = requestID;
+            pack->sequence = sequence;
+            pack->type = type;
+            // Send data to the connection
+            co_return co_await asio::async_write(m_impl->m_connection_ptr->socket,
+                asio::buffer(pack->packageToString()),
+                asio::bind_executor(m_impl->m_connection_ptr->strand, asio::use_awaitable));
+    };
+
     // Check whether the user was logged in
     if (m_impl->m_jsonProcess.getLocalUserID() == -1ll &&
         pack->type != DataPackage::Text) {
@@ -127,75 +99,6 @@ asio::awaitable<void> SocketService::process(
             pack->requestID, DataPackage::Text);
         co_return;
     }
-    co_return;
-}
-
-void SocketService::setPackageBuffer(const qls::Package& p)
-{
-    m_impl->m_package.setBuffer(p.readBuffer());
-}
-
-asio::awaitable<void> SocketService::echo(
-    std::shared_ptr<Connection> connection_ptr,
-    std::shared_ptr<Network::SocketDataStructure> sds,
-    std::chrono::steady_clock::time_point& deadline)
-{
-    if (sds.get() == nullptr)
-        throw std::logic_error("sds is nullptr");
-
-    SocketService socketService(connection_ptr);
-
-    // get address from socket
-    std::string addr = socket2ip(connection_ptr->socket);
-
-    try {
-        long long heart_beat_times = 0;
-        auto heart_beat_time_point = std::chrono::steady_clock::now();
-        for (;;) {
-            deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
-            auto pack = co_await socketService.async_receive();
-
-            // Determine if the package is available
-            if (pack.get() == nullptr) {
-                // Data reception error
-                serverLogger.error("[", addr, "]",
-                    "package is nullptr, auto closing connection...");
-                std::error_code ec;
-                connection_ptr->socket.shutdown(ec);
-                co_return;
-            } else if (pack->type == DataPackage::HeartBeat) {
-                // Heartbeat package
-                heart_beat_times++;
-                if ((std::chrono::steady_clock::now() - heart_beat_time_point) >=
-                    std::chrono::seconds(10)) {
-                    // Update time point
-                    heart_beat_time_point = std::chrono::steady_clock::now();
-                    if (heart_beat_times > 10) {
-                        // Remove socket pointer from manager
-                        // if there were too many heartbeats
-                        serverLogger.error("[", addr, "]", "too many heartbeats");
-                        serverManager.removeConnection(connection_ptr);
-                        co_return;
-                    }
-                    heart_beat_times = 0;
-                }
-                continue;
-            }
-            co_await socketService.process(connection_ptr, pack->getData(), pack);
-            continue;
-        }
-    } catch (const std::system_error& e) {
-        const auto& errc = e.code();
-        if (errc.message() == "End of file")
-            serverLogger.info(std::format("[{}] disconnected from the server", addr));
-        else
-            serverLogger.error('[', addr, ']', '[', errc.category().name(), ']', errc.message());
-    } catch (const std::exception& e) {
-        serverLogger.error(std::string(e.what()));
-    }
-
-    // Remove socket pointer from manager
-    serverManager.removeConnection(connection_ptr);
     co_return;
 }
 

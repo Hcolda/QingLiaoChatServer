@@ -1,4 +1,4 @@
-﻿#ifndef NETWORK_HPP
+#ifndef NETWORK_HPP
 #define NETWORK_HPP
 
 #include <string>
@@ -10,7 +10,6 @@ namespace qls
 {
     using ReceiveStdStringFunction = std::function<void(std::string)>;
 
-    inline std::string socket2ip(const asio::ip::tcp::socket& s);
     inline std::string showBinaryData(const std::string& data);
 
     struct NetworkImpl;
@@ -54,16 +53,8 @@ namespace qls
         void call_connected_error(const std::error_code& = std::make_error_code(std::errc::not_connected));
         void call_received_stdstring(std::string);
 
-        void start_connect();
-        void handle_connect(const std::error_code& error);
-        void async_handshake();
-        void handle_handshake(const std::error_code&);
-        void async_read();
-        void handle_read(const std::error_code& error, std::size_t n);
-        void heart_beat_write();
-        void handle_heart_beat_write(const std::error_code& error, std::shared_ptr<StringWrapper>);
-        void check_deadline();
-        void handle_write(const std::error_code& error, std::size_t n, std::shared_ptr<StringWrapper>);
+        asio::awaitable<void> start_connect();
+        asio::awaitable<void> heart_beat_write();
 
     private:
         std::shared_ptr<NetworkImpl> m_network_impl;

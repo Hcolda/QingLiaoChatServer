@@ -82,14 +82,14 @@ bool JsonMessageProcessCommandList::addCommand(
 
 bool JsonMessageProcessCommandList::hasCommand(std::string_view function_name) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_function_map_mutex);
     return m_function_map.find(function_name) != m_function_map.cend();
 }
 
 std::shared_ptr<JsonMessageCommand>
     JsonMessageProcessCommandList::getCommand(std::string_view function_name)
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_function_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_function_map_mutex);
     auto iter = m_function_map.find(function_name);
     if (iter == m_function_map.cend())
         throw std::system_error(make_error_code(qls_errc::null_pointer));
@@ -171,7 +171,7 @@ qjson::JObject JsonMessageProcessImpl::searchUser(std::string_view user_name)
 
 UserID JsonMessageProcessImpl::getLocalUserID() const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_user_id_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_user_id_mutex);
     return this->m_user_id;
 }
 
@@ -294,7 +294,7 @@ qjson::JObject JsonMessageProcessImpl::login(
                 user_id, DeviceType::Unknown);
 
         auto returnJson = makeSuccessMessage("Successfully logged in!");
-        std::unique_lock<std::shared_mutex> local_unique_lock(m_user_id_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_user_id_mutex);
         this->m_user_id = user_id;
 
         

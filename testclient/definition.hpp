@@ -1,4 +1,4 @@
-﻿#ifndef DEFINITION_HPP
+#ifndef DEFINITION_HPP
 #define DEFINITION_HPP
 
 #include <format>

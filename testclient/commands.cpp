@@ -33,7 +33,7 @@ public:
             return;
         }
 
-        std::shared_lock<std::shared_mutex> local_shared_lock(m_command_manager.m_command_map_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_command_manager.m_command_map_mutex);
         std::cout << "help [--name=(function name)]\n";
         for (const auto& [commandName, commandPtr]: std::as_const(m_command_manager.m_command_map))
         {
@@ -375,7 +375,7 @@ CommandManager::CommandManager()
 
 bool CommandManager::addCommand(std::string_view commandName, const std::shared_ptr<Command> &commandPtr)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_command_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_command_map_mutex);
     if (m_command_map.find(commandName) != m_command_map.cend()) {
         return false;
     }
@@ -385,7 +385,7 @@ bool CommandManager::addCommand(std::string_view commandName, const std::shared_
 
 bool CommandManager::removeCommand(std::string_view commandName)
 {
-    std::unique_lock<std::shared_mutex> local_unique_lock(m_command_map_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_command_map_mutex);
     auto iter = m_command_map.find(commandName);
     if (iter == m_command_map.cend()) {
         return false;
@@ -396,13 +396,13 @@ bool CommandManager::removeCommand(std::string_view commandName)
 
 bool CommandManager::canFindCommand(std::string_view commandName) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_command_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_command_map_mutex);
     return m_command_map.find(commandName) != m_command_map.cend();
 }
 
 std::shared_ptr<Command> CommandManager::getCommand(std::string_view commandName) const
 {
-    std::shared_lock<std::shared_mutex> local_shared_lock(m_command_map_mutex);
+    std::shared_lock<std::shared_mutex> lock(m_command_map_mutex);
     auto iter = m_command_map.find(commandName);
     if (iter == m_command_map.cend())
         throw std::logic_error(std::string(commandName) + " does not exist");
