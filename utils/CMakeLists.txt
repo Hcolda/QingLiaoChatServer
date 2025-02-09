@@ -27,7 +27,8 @@ target_include_directories(Utils PUBLIC
     .
     network
     error
-    parser)
+    parser
+    crypto)
 
 target_link_libraries(Utils PUBLIC
     OpenSSL::SSL

@@ -11,6 +11,7 @@
 #include "dataPackage.h"
 #include "userid.hpp"
 #include "groupid.hpp"
+#include "md_proxy.hpp"
 
 extern Log::Logger serverLogger;
 extern qls::Manager serverManager;
@@ -54,6 +55,8 @@ struct UserImpl
                                     m_connection_map; ///< Map of sockets associated with the user
     std::shared_mutex               m_connection_map_mutex; ///< Mutex for thread-safe access to socket map
 
+    static ossl_proxy               m_ossl_proxy;
+
     bool removeFriend(UserID friend_user_id)
     {
         std::unique_lock<std::shared_mutex> ul(m_user_friend_map_mutex);
@@ -65,6 +68,8 @@ struct UserImpl
         return true;
     }
 };
+
+ossl_proxy UserImpl::m_ossl_proxy;
 
 /**
  * @brief Send json message to user
@@ -140,10 +145,9 @@ std::string User::getUserProfile() const
 
 bool User::isUserPassword(std::string_view password) const
 {
-    std::hash<std::string> string_hash;
+    md_proxy sha512_proxy(m_impl->m_ossl_proxy, "SHA3-512");
     std::shared_lock<std::shared_mutex> lock(m_impl->m_data_mutex);
-    std::string localPassword =
-        std::to_string(string_hash(std::string(password) + m_impl->salt));
+    std::string localPassword = sha512_proxy(password, m_impl->salt);
 
     return localPassword == m_impl->password;
 }
@@ -183,13 +187,12 @@ void User::firstUpdateUserPassword(std::string_view new_password)
     if (!m_impl->password.empty())
         throw std::system_error(qls_errc::password_already_set);
 
-    std::hash<std::string_view> string_hash;
-    static std::mt19937_64      mt(std::random_device{}());
+    md_proxy sha512_proxy(m_impl->m_ossl_proxy, "SHA3-512");
+    static std::mt19937_64 mt(std::random_device{}());
 
     // Generate salt and hash of password
     std::string localSalt = std::to_string(mt());
-    std::string localPassword =
-        std::to_string(string_hash(std::string(new_password) + localSalt));
+    std::string localPassword = sha512_proxy(new_password, localSalt);
 
     {
         std::unique_lock<std::shared_mutex>
@@ -210,13 +213,12 @@ void User::updateUserPassword(
         throw std::system_error(qls_errc::password_mismatched,
             "wrong old password");
 
-    std::hash<std::string>  string_hash;
-    static std::mt19937_64  mt(std::random_device{}());
+    md_proxy sha512_proxy(m_impl->m_ossl_proxy, "SHA3-512");
+    static std::mt19937_64 mt(std::random_device{}());
 
     // Generate salt and hash of password
     std::string localSalt = std::to_string(mt());
-    std::string localPassword =
-        std::to_string(string_hash(std::string(new_password) + localSalt));
+    std::string localPassword = sha512_proxy(new_password, localSalt);
 
     {
         std::unique_lock<std::shared_mutex>
