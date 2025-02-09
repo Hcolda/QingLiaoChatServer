@@ -84,8 +84,8 @@ namespace qls
         }
 
         template<class... Args>
-            requires requires (Args... args) { (std::string_view(args), ...); }
-        std::string operator()(Args... args)
+            requires requires (Args&&... args) { (std::string_view(std::forward<Args>(args)), ...); }
+        std::string operator()(Args&&... args)
         {
             std::string digest_value;
             int digest_length = EVP_MD_get_size(m_message_digest);
@@ -97,7 +97,7 @@ namespace qls
                     throw std::runtime_error("EVP_DigestUpdate() failed");
             };
 
-            (input(args), ...);
+            (input(std::forward<Args>(args)), ...);
 
             digest_value.resize(digest_length);
             if (EVP_DigestFinal(m_digest_context,
