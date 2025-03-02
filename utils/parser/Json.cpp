@@ -1,21 +1,22 @@
 #include "Json.h"
 
 #include <cmath>
+#include <stack>
 
 #define JSON_NAMESPACE_START namespace qjson {
 #define JSON_NAMESPACE_END }
 
 JSON_NAMESPACE_START
 
-JObject::JObject()
-    :m_type(JValueType::JNull),
+JObject::JObject():
+    m_type(JValueType::JNull),
     m_value(std::make_unique<value_t>())
 {
     *m_value = null_t();
 }
 
-JObject::JObject(const JObject& jo)
-    :m_type(jo.m_type),
+JObject::JObject(const JObject& jo):
+    m_type(jo.m_type),
     m_value(std::make_unique<value_t>())
 {
     switch (jo.m_type) {
@@ -34,14 +35,14 @@ JObject::JObject(const JObject& jo)
     }
 }
 
-JObject::JObject(JObject&& jo) noexcept
-    :m_type(jo.m_type)
+JObject::JObject(JObject&& jo) noexcept:
+    m_type(jo.m_type)
 {
     m_value = std::move(jo.m_value);
 }
 
-JObject::JObject(JValueType jvt)
-    :m_type(jvt),
+JObject::JObject(JValueType jvt):
+    m_type(jvt),
     m_value(std::make_unique<value_t>())
 {
     switch (jvt) {
@@ -71,85 +72,85 @@ JObject::JObject(JValueType jvt)
     }
 }
 
-JObject::JObject(long long value)
-    :m_type(JValueType::JInt),
+JObject::JObject(long long value):
+    m_type(JValueType::JInt),
     m_value(std::make_unique<value_t>())
 {
     *m_value = value;
 }
 
-JObject::JObject(long value)
-    :m_type(JValueType::JInt),
+JObject::JObject(long value):
+    m_type(JValueType::JInt),
     m_value(std::make_unique<value_t>())
 {
     *m_value = static_cast<long long>(value);
 }
 
-JObject::JObject(int value)
-    :m_type(JValueType::JInt),
+JObject::JObject(int value):
+    m_type(JValueType::JInt),
     m_value(std::make_unique<value_t>())
 {
     *m_value = static_cast<long long>(value);
 }
 
-JObject::JObject(short value)
-    :m_type(JValueType::JInt),
+JObject::JObject(short value):
+    m_type(JValueType::JInt),
     m_value(std::make_unique<value_t>())
 {
     *m_value = static_cast<long long>(value);
 }
 
-JObject::JObject(bool value)
-    :m_type(JValueType::JBool),
+JObject::JObject(bool value):
+    m_type(JValueType::JBool),
     m_value(std::make_unique<value_t>())
 {
     *m_value = value;
 }
 
-JObject::JObject(long double value)
-    :m_type(JValueType::JDouble),
+JObject::JObject(long double value):
+    m_type(JValueType::JDouble),
     m_value(std::make_unique<value_t>())
 {
     *m_value = value;
 }
 
-JObject::JObject(double value)
-    :m_type(JValueType::JDouble),
+JObject::JObject(double value):
+    m_type(JValueType::JDouble),
     m_value(std::make_unique<value_t>())
 {
     *m_value = static_cast<long double>(value);
 }
 
-JObject::JObject(float value)
-    :m_type(JValueType::JDouble),
+JObject::JObject(float value):
+    m_type(JValueType::JDouble),
     m_value(std::make_unique<value_t>())
 {
     *m_value = static_cast<long double>(value);
 }
 
-JObject::JObject(const char* data)
-    :m_type(JValueType::JString),
+JObject::JObject(const char* data):
+    m_type(JValueType::JString),
     m_value(std::make_unique<value_t>())
 {
     *m_value = std::string(data);
 }
 
-JObject::JObject(const std::string& data)
-    :m_type(JValueType::JString),
+JObject::JObject(const std::string& data):
+    m_type(JValueType::JString),
     m_value(std::make_unique<value_t>())
 {
     *m_value = data;
 }
 
-qjson::JObject::JObject(std::string_view data)
-    :m_type(JValueType::JString),
+qjson::JObject::JObject(std::string_view data):
+    m_type(JValueType::JString),
     m_value(std::make_unique<value_t>())
 {
     *m_value = std::string(data);
 }
 
-JObject::JObject(std::string&& data) noexcept
-    :m_type(JValueType::JString),
+JObject::JObject(std::string&& data) noexcept:
+    m_type(JValueType::JString),
     m_value(std::make_unique<value_t>())
 {
     *m_value = std::move(data);
@@ -688,6 +689,11 @@ JObject JParser::getNull(std::string_view data, std::size_t data_size, std::size
 std::string JParser::getLogicErrorString(long long error_line)
 {
     return "Invalid Input, in line " + std::to_string(error_line);
+}
+
+std::string qjson::JParser::getLogicErrorString(long long error_line, std::string_view error)
+{
+    return std::string(error) + " , in line " + std::to_string(error_line);
 }
 
 std::string JWriter::write(const JObject& jo)

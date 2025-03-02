@@ -30,7 +30,7 @@ std::shared_ptr<DataPackage> DataPackage::makePackage(std::string_view data)
 
 std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
 {
-    // Data package is too small
+    // Check if the package data is too small
     if (data.size() < sizeof(DataPackage))
         throw std::system_error(qls_errc::data_too_small);
 
@@ -41,20 +41,23 @@ std::shared_ptr<DataPackage> DataPackage::stringToPackage(std::string_view data)
         size = swapEndianness(size);
 
     // Error handling if data package length does not match actual size,
-    // length is smaller than the default package size, length is very large
+    // if length is smaller than the default package size
     if (size != data.size() || size < sizeof(DataPackage))
         throw std::system_error(qls_errc::invalid_data);
     else if (size > INT32_MAX / 2)
         throw std::system_error(qls_errc::data_too_large);
 
+    // Allocate memory and construct the DataPackage
     void* mem = sync_pool.allocate(size);
     std::memset(mem, 0, size);
     std::shared_ptr<DataPackage> package(static_cast<DataPackage*>(mem),
         [lenth = size](DataPackage* dp) {
             sync_pool.deallocate(dp, static_cast<std::size_t>(lenth));
         });
+    // Copy the data from string
     std::memcpy(package.get(), data.data(), size);
 
+    // Process data in package
     if (!isBigEndianness()) {
         // Endianness conversion
         package->length = swapEndianness(package->length);
@@ -77,9 +80,12 @@ std::string DataPackage::packageToString() noexcept
     using namespace qls;
     std::string strdata;
     strdata.resize(this->length);
+    // Copy this memory data into strdata
     std::memcpy(strdata.data(), this, this->length);
+    // Converse the string pointer to DataPackage pointor to process data
     DataPackage* package = reinterpret_cast<DataPackage*>(strdata.data());
 
+    // Process string data
     if (!isBigEndianness()) {
         // Endianness conversion
         package->length = swapEndianness(package->length);

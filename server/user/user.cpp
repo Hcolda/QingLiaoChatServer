@@ -74,11 +74,13 @@ ossl_proxy UserImpl::m_ossl_proxy;
 /**
  * @brief Send json message to user
  * @param user_id The id of user
- * @param json json message
+ * @param json json type message
 */
-static inline void sendToUser(qls::UserID user_id, const qjson::JObject& json)
+template<class T>
+    requires requires (T json_value) { qjson::JObject(json_value); }
+static inline void sendJsonToUser(qls::UserID user_id, T&& json)
 {
-    auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(json));
+    auto pack = DataPackage::makePackage(qjson::JWriter::fastWrite(std::forward<T>(json)));
     pack->type = DataPackage::Text;
     serverManager.getUser(user_id)->notifyAll(pack->packageToString());
 }
@@ -281,7 +283,7 @@ bool User::addFriend(UserID friend_user_id)
         json["userid"] = self_id.getOriginValue();
         json["type"] = "added_friend_verfication";
         json["message"] = "";
-        sendToUser(friend_user_id, json);
+        sendJsonToUser(friend_user_id, std::move(json));
         return true;
     }
     else
@@ -305,7 +307,7 @@ bool User::acceptFriend(UserID friend_user_id)
     qjson::JObject json(qjson::JValueType::JDict);
     json["userid"] = self_id.getOriginValue();
     json["type"] = "added_friend";
-    sendToUser(friend_user_id, json);
+    sendJsonToUser(friend_user_id, std::move(json));
     return true;
 }
 
@@ -330,7 +332,7 @@ bool User::rejectFriend(UserID friend_user_id)
     qjson::JObject json(qjson::JValueType::JDict);
     json["userid"] = self_id.getOriginValue();
     json["type"] = "rejected_to_add_friend";
-    sendToUser(friend_user_id, json);
+    sendJsonToUser(friend_user_id, std::move(json));
     return true;
 }
 
@@ -351,7 +353,7 @@ bool User::removeFriend(UserID friend_user_id)
     qjson::JObject json(qjson::JValueType::JDict);
     json["userid"] = self_id.getOriginValue();
     json["type"] = "removed_friend";
-    sendToUser(friend_user_id, json);
+    sendJsonToUser(friend_user_id, std::move(json));
     return true;
 }
 
@@ -430,7 +432,7 @@ bool User::addGroup(GroupID group_id)
         json["userid"] = self_id.getOriginValue();
         json["type"] = "added_group_verification";
         json["message"] = "";
-        sendToUser(adminID, json);
+        sendJsonToUser(adminID, std::move(json));
         return true;
     }
     else return false;
@@ -457,7 +459,7 @@ bool User::acceptGroup(GroupID group_id, UserID user_id)
     qjson::JObject json(qjson::JValueType::JDict);
     json["groupid"] = group_id.getOriginValue();
     json["type"] = "added_group";
-    sendToUser(user_id, json);
+    sendJsonToUser(user_id, std::move(json));
     return true;
 }
 
@@ -479,7 +481,7 @@ bool User::rejectGroup(GroupID group_id, UserID user_id)
     qjson::JObject json(qjson::JValueType::JDict);
     json["groupid"] = group_id.getOriginValue();
     json["type"] = "rejected_to_add_group";
-    sendToUser(user_id, json);
+    sendJsonToUser(user_id, std::move(json));
     return true;
 }
 

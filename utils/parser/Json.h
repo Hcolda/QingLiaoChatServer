@@ -135,6 +135,7 @@ namespace qjson
         JObject getBool(std::string_view data, std::size_t data_size, std::size_t& itor, long long error_line);
         JObject getNull(std::string_view data, std::size_t data_size, std::size_t& itor, long long error_line);
         std::string getLogicErrorString(long long error_line);
+        std::string getLogicErrorString(long long error_line, std::string_view error);
     };
 
     /**
