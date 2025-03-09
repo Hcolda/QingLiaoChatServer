@@ -186,6 +186,8 @@ awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
         serverLogger.error(std::string(e.what()));
     } catch (const std::exception& e) {
         serverLogger.error(std::string(e.what()));
+    } catch (...) {
+        serverLogger.error(ERROR_WITH_STACKTRACE("Error occured at Network::echo"));
     }
     serverManager.removeConnection(connection_ptr);
     co_return;
@@ -208,7 +210,7 @@ awaitable<void> qls::Network::listener()
     int cookie = 1;
     setsockopt(fd, IPPROTO_TCP, TCP_SYNCOOKIE, &cookie, sizeof(cookie));
 #endif
-    for (;;) {
+    while(true) {
         try {
             tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
             co_spawn(executor, echo(std::move(socket)), detached);

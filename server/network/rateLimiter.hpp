@@ -21,15 +21,24 @@ public:
     ~RateLimiter() noexcept = default;
 
     bool allow_connection(const asio::ip::address& addr) {
+        // Present timestamp
         auto now = std::chrono::steady_clock::now();
+        // Get lock to keep thread-safe
         std::unique_lock<spinlock_mutex> lock(m_token_buckets_mutex);
+        // Get bucket
         auto& bucket = m_token_buckets[addr];
+        // Update tokens of bucket to check
+        // if the host associated with address sent too much connections in a short time
         bucket.tokens = std::min(m_single_capacity.load(), 
             bucket.tokens + (now - bucket.last_update).count() * 1e-9 * m_single_capacity);
         bucket.last_update = now;
         bool allow = bucket.tokens-- > 0;
+        // Unlock the lock to keep speedy of the process
         lock.unlock();
+
+        // Get global token
         double local_global_token = m_global_token.load();
+        // Update global tokens of bucket
         local_global_token = std::min(m_global_capacity.load(),
             local_global_token + (now - m_last_update.load()).count() * 1e-9 * m_global_capacity);
         if (local_global_token <= 0)
@@ -59,14 +68,17 @@ public:
         return m_global_capacity;
     }
 
+    /**
+     * @brief clean the buckets out of date automatically
+    */
     asio::awaitable<void> auto_clean()
     {
         using namespace std::chrono_literals;
         asio::steady_timer timer(co_await asio::this_coro::executor);
-        for (;;) {
+        while(true) {
             timer.expires_after(30s);
             co_await timer.async_wait(asio::use_awaitable);
-            std::unique_lock<spinlock_mutex> lock(m_token_buckets_mutex);
+            std::lock_guard<spinlock_mutex> lock(m_token_buckets_mutex);
             for (auto i = m_token_buckets.begin(); i != m_token_buckets.end();) {
                 if (std::chrono::steady_clock::now() - i->second.last_update >= 1min)
                     i = m_token_buckets.erase(i);
