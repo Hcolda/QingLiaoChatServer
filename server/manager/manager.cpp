@@ -243,10 +243,9 @@ std::shared_ptr<User> Manager::addNewUser()
         // sql处理数据
     }
 
-    m_impl->m_user_map[newUserId] = std::allocate_shared<User>(
-        std::pmr::polymorphic_allocator<User>(&m_impl->m_user_sync_pool), newUserId, true);
-
-    return m_impl->m_user_map[newUserId];
+    auto [iter, _] = m_impl->m_user_map.emplace(newUserId, std::allocate_shared<User>(
+        std::pmr::polymorphic_allocator<User>(&m_impl->m_user_sync_pool), newUserId, true));
+    return iter->second;
 }
 
 bool Manager::hasUser(UserID user_id) const

@@ -26,6 +26,12 @@ struct MessageStructure
     MessageType type;
 };
 
+struct MessageResult
+{
+    std::chrono::utc_clock::time_point  time_point;
+    MessageStructure                    message_struct;
+};
+
 struct BaseRoomImpl;
 struct BaseRoomImplDeleter
 {

@@ -1,13 +1,9 @@
 #ifndef GROUP_ROOM_H
 #define GROUP_ROOM_H
 
-#include <atomic>
-#include <memory>
 #include <chrono>
-#include <vector>
-#include <shared_mutex>
-#include <unordered_map>
 #include <asio.hpp>
+#include <vector>
 
 #include "qls_error.h"
 #include "userid.hpp"
@@ -46,9 +42,9 @@ public:
     void sendMessage(UserID sender_user_id, std::string_view message);
     void sendTipMessage(UserID sender_user_id, std::string_view message);
     void sendUserTipMessage(UserID sender_user_id, std::string_view, UserID receiver_user_id);
-    void getMessage(
-        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
-        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
+    std::vector<MessageResult> getMessage(
+        const std::chrono::utc_clock::time_point& from,
+        const std::chrono::utc_clock::time_point& to);
 
     bool                                    hasUser(UserID user_id) const;
     std::unordered_map<UserID,
@@ -71,6 +67,9 @@ public:
 
     void removeThisRoom();
     bool canBeUsed() const;
+
+    asio::awaitable<void> auto_clean();
+    void stop_cleaning();
 
 private:
     std::unique_ptr<GroupRoomImpl, GroupRoomImplDeleter> m_impl;

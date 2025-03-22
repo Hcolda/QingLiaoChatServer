@@ -9,21 +9,35 @@ namespace qls
 
 class spinlock_mutex
 {
-private:
-    std::atomic_flag flag;
 public:
     spinlock_mutex() = default;
     ~spinlock_mutex() = default;
 
-    void lock()
+    spinlock_mutex(const spinlock_mutex&) = delete;
+    spinlock_mutex(spinlock_mutex&&) = delete;
+
+    spinlock_mutex& operator=(const spinlock_mutex&) = delete;
+    spinlock_mutex& operator=(spinlock_mutex&&) = delete;
+
+    void lock() noexcept
     {
-        while(flag.test_and_set(std::memory_order_acquire));
+        while (flag_.test_and_set(std::memory_order_acquire))
+            flag_.wait(true, std::memory_order_relaxed);
     }
 
-    void unlock()
+    bool try_lock() noexcept
     {
-        flag.clear(std::memory_order_release);
+        return !flag_.test_and_set(std::memory_order_acquire);
     }
+
+    void unlock() noexcept
+    {
+        flag_.clear(std::memory_order_release);
+        flag_.notify_one();
+    }
+
+private:
+    std::atomic_flag flag_;
 };
 
 }

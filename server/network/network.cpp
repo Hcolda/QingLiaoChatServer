@@ -1,6 +1,5 @@
 #include "network.h"
 
-#include <memory_resource>
 #include <asio/experimental/awaitable_operators.hpp>
 #include <logger.hpp>
 #include <system_error>
@@ -84,12 +83,15 @@ void qls::Network::run(std::string_view host, unsigned short port)
     }
 }
 
+asio::io_context &qls::Network::get_io_context() noexcept
+{
+    return this->m_io_context;
+}
+
 void qls::Network::stop()
 {
     m_io_context.stop();
 }
-
-static std::pmr::synchronized_pool_resource socket_sync_pool;
 
 awaitable<void> qls::Network::echo(ip::tcp::socket origin_socket)
 {

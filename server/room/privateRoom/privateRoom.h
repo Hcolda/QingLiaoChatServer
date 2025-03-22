@@ -28,19 +28,22 @@ public:
     PrivateRoom(const PrivateRoom&) = delete;
     PrivateRoom(PrivateRoom&&) = delete;
 
-    ~PrivateRoom() noexcept = default;
+    ~PrivateRoom() noexcept;
 
     void sendMessage(std::string_view message, UserID sender_user_id);
     void sendTipMessage(std::string_view message, UserID sender_user_id);
-    void getMessage(
-        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& from,
-        const std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>& to);
+    std::vector<MessageResult> getMessage(
+        const std::chrono::utc_clock::time_point& from,
+        const std::chrono::utc_clock::time_point& to);
         
     std::pair<UserID, UserID> getUserID() const;
     bool hasMember(UserID user_id) const;
 
     void removeThisRoom();
     bool canBeUsed() const;
+
+    asio::awaitable<void> auto_clean();
+    void stop_cleaning();
 
 private:
     std::unique_ptr<PrivateRoomImpl, PrivateRoomImplDeleter> m_impl;

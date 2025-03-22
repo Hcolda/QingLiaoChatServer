@@ -79,12 +79,8 @@ public:
             timer.expires_after(30s);
             co_await timer.async_wait(asio::use_awaitable);
             std::lock_guard<spinlock_mutex> lock(m_token_buckets_mutex);
-            for (auto i = m_token_buckets.begin(); i != m_token_buckets.end();) {
-                if (std::chrono::steady_clock::now() - i->second.last_update >= 1min)
-                    i = m_token_buckets.erase(i);
-                else
-                    ++i;
-            }
+            std::erase_if(m_token_buckets,
+                [](const auto& i){return std::chrono::steady_clock::now() - i.second.last_update >= 1min;});
         }
     }
 

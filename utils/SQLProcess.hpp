@@ -166,17 +166,17 @@ public:
     auto submit(CompletionToken&& token, Func&& func, Args&&... args)
     {
         return asio::async_initiate<CompletionToken, void(R)>(
-            [](auto handle, SQLDBProcess* process, auto&& func, auto&&... args) {
+            [this](auto handle, auto&& func, auto&&... args) {
                 {
-                    std::unique_lock<std::mutex> lock(process->m_function_queue_mutex);
-                    process->m_function_queue.push(std::bind(
+                    std::unique_lock<std::mutex> lock(this->m_function_queue_mutex);
+                    this->m_function_queue.push(std::bind(
                         [](auto handle, auto&& func, auto&&... args) {
                             handle(std::invoke(std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...));
                         }
                     ), handle, std::forward<decltype(func)>(func), std::forward<decltype(args)>(args)...);
                 }
-                process->m_cv.notify_all();
-            }, token, this, std::forward<Func>(func), std::forward<Args>(args)...);
+                this->m_cv.notify_all();
+            }, token, std::forward<Func>(func), std::forward<Args>(args)...);
     }
 
     /**

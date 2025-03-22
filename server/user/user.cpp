@@ -16,12 +16,10 @@
 extern Log::Logger serverLogger;
 extern qls::Manager serverManager;
 
-// memory resource
-static std::pmr::synchronized_pool_resource local_user_sync_pool;
-
 namespace qls
 {
 
+static std::pmr::synchronized_pool_resource local_user_sync_pool;
 struct UserImpl
 {
     UserID      user_id; ///< User ID

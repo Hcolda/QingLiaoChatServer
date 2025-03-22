@@ -11,6 +11,7 @@
 #include <condition_variable>
 #include <string>
 #include <memory>
+#include <memory_resource>
 
 #include "definition.hpp"
 #include "package.h"
@@ -66,6 +67,11 @@ public:
      */
     void stop();
 
+    /**
+     * @brief Gets the io_context for this network
+     */
+    asio::io_context& get_io_context() noexcept;
+
 private:
     /**
      * @brief Handles echo functionality for a socket.
@@ -87,6 +93,8 @@ private:
     asio::io_context                    m_io_context; ///< IO context for ASIO.
     std::shared_ptr<asio::ssl::context> m_ssl_context_ptr; ///< Shared pointer to the SSL context.
     RateLimiter                         m_rateLimiter;
+
+    inline static std::pmr::synchronized_pool_resource socket_sync_pool;
 };
 
 } // namespace qls
