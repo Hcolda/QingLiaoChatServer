@@ -1,12 +1,12 @@
-# Data package
-## Format
-Format: `length + requestID + data type + sequence + hash + binary data + double '\0'`
+# 数据包格式
+## 基本格式
+基本格式是：长度 + requestID + 类型 + 序列 + 消息验证码 + 消息 + 两个'\0'字符  
 
-| Type | Name | Value | Comment |
+| 类型 | 名称 | 值 | 注释 |
 | :---: | :---: | :---: | :---: |
-| int | length | Length of data package |  |
-| int | type | Default 0 | Type of data package, `1 for text, 2 for binary, 3 for file stream, 4 for heartbeat package` |
-| int | sequneceSize | Default 1 | Valid if data package is splitted |
-| int | sequence | Default 0 | Valid if data package is splitted |
-| long long | requestID |  |  |
-| char | data | Binary data | |
+| int | length | 数据包长度 |  |
+| int | type | 默认为0 | 数据包的类型，1为文本类型，2为二进制文件，3为持续文件流，4为心跳包 |
+| int | sequneceSize | 默认值： 1 | 数据包如果有分段的时候，序列就会用到 |
+| int | sequence | 默认值：-1 | 数据包如果有分段的时候，序列就会用到 |
+| long long | requestID | 数据包请求id |  |
+| char | data | 二进制数据 ||
