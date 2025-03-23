@@ -274,7 +274,8 @@ bool User::addFriend(UserID friend_user_id)
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasFriendRoomVerification(self_id, friend_user_id)) {
         ver.addFriendRoomVerification(self_id, friend_user_id);
-        ver.setFriendVerified(self_id, friend_user_id, self_id);
+        if (!ver.setFriendVerified(self_id, friend_user_id, self_id))
+            return false;
 
         // notify the other successfully adding a friend
         qjson::JObject json(qjson::JValueType::JDict);
@@ -422,7 +423,8 @@ bool User::addGroup(GroupID group_id)
     auto& ver = serverManager.getServerVerificationManager();
     if (!ver.hasGroupRoomVerification(group_id, self_id)) {
         ver.addGroupRoomVerification(group_id, self_id);
-        ver.setGroupRoomUserVerified(group_id, self_id);
+        if (!ver.setGroupRoomUserVerified(group_id, self_id))
+            return false;
 
         UserID adminID = serverManager.getGroupRoom(group_id)->getAdministrator();
         qjson::JObject json(qjson::JValueType::JDict);

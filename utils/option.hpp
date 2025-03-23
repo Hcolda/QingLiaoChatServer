@@ -255,7 +255,7 @@ public:
     * @param opt Option name
     * @return True if the option exists, false otherwise
     */
-    bool has_opt(std::string_view opt) const
+   [[nodiscard]] bool has_opt(std::string_view opt) const
     {
         return m_opt_map.find(opt) != m_opt_map.cend();
     }
@@ -265,7 +265,7 @@ public:
     * @param opt Option name
     * @return True if the option exists and has value, false otherwise
     */
-    bool has_opt_with_value(std::string_view opt) const
+   [[nodiscard]] bool has_opt_with_value(std::string_view opt) const
     {
         return m_opt_map.find(opt) != m_opt_map.cend() &&
             m_args_map.find(opt) != m_args_map.cend();
@@ -275,7 +275,7 @@ public:
     * @brief Get an option list
     * @return A list to show all the options
     */
-    auto get_opt_list() const
+   [[nodiscard]] auto get_opt_list() const
     {
         return m_opt_map;
     }
@@ -286,7 +286,7 @@ public:
     * @return Boolean value of the option
     * @throw std::logic_error If the option does not exist or is not a boolean
     */
-    bool get_bool(std::string_view opt) const
+   [[nodiscard]] bool get_bool(std::string_view opt) const
     {
         if (!has_opt(opt))
             throw std::logic_error("No such option: " + std::string(opt));
@@ -305,7 +305,7 @@ public:
     * @return String value of the option
     * @throw std::logic_error If the option does not exist
     */
-    std::string get_string(std::string_view opt) const
+   [[nodiscard]] std::string get_string(std::string_view opt) const
     {
         if (!has_opt(opt))
             throw std::logic_error("No such option: " + std::string(opt));
@@ -319,7 +319,7 @@ public:
     * @return Integer value of the option
     * @throw std::logic_error If the option does not exist or is not an integer
     */
-    long long get_int(std::string_view opt) const
+   [[nodiscard]] long long get_int(std::string_view opt) const
     {
         if (!has_opt(opt))
             throw std::logic_error("No such option: " + std::string(opt));
@@ -333,7 +333,7 @@ public:
     * @return Double value of the option
     * @throw std::logic_error If the option does not exist or is not a double
     */
-    long double get_double(std::string_view opt) const
+   [[nodiscard]] long double get_double(std::string_view opt) const
     {
         if (!has_opt(opt))
             throw std::logic_error("No such option: " + std::string(opt));

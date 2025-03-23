@@ -144,11 +144,15 @@ void GroupRoom::sendMessage(UserID sender_user_id, std::string_view message)
         }
     }
 
-    // 存储数据
+    // store the message
     {
         std::unique_lock<std::shared_mutex> lock(m_impl->m_message_map_mutex);
+        auto time_point = std::chrono::utc_clock::now();
+        while (m_impl->m_message_map.find(time_point) != m_impl->m_message_map.cend()) {
+            ++time_point;
+        }
         m_impl->m_message_map.insert({
-            std::chrono::utc_clock::now(),
+            time_point,
             {sender_user_id, std::string(message),
             MessageType::NOMAL_MESSAGE} });
     }
@@ -186,11 +190,15 @@ void GroupRoom::sendTipMessage(UserID sender_user_id,
         }
     }
 
-    // 存储数据
+    // store the message
     {
         std::unique_lock<std::shared_mutex> lock(m_impl->m_message_map_mutex);
+        auto time_point = std::chrono::utc_clock::now();
+        while (m_impl->m_message_map.find(time_point) != m_impl->m_message_map.cend()) {
+            ++time_point;
+        }
         m_impl->m_message_map.insert({
-            std::chrono::utc_clock::now(),
+            time_point,
             {sender_user_id, std::string(message),
             MessageType::TIP_MESSAGE} });
     }
@@ -226,6 +234,22 @@ void GroupRoom::sendUserTipMessage(UserID sender_user_id,
                 m_impl->m_muted_user_map.erase(sender_user_id);
             }
         }
+    }
+
+    // store the message
+    {
+        std::unique_lock<std::shared_mutex> lock(m_impl->m_message_map_mutex);
+        auto time_point = std::chrono::utc_clock::now();
+        while (m_impl->m_message_map.find(time_point) != m_impl->m_message_map.cend()) {
+            ++time_point;
+        }
+        m_impl->m_message_map.insert({
+            time_point,
+            {
+                sender_user_id, std::string(message),
+                MessageType::TIP_MESSAGE,
+                receiver_user_id
+            }});
     }
 
     qjson::JObject json;

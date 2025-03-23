@@ -70,7 +70,7 @@ public:
     /**
      * @brief Gets the io_context for this network
      */
-    asio::io_context& get_io_context() noexcept;
+    [[nodiscard]] asio::io_context& get_io_context() noexcept;
 
 private:
     /**

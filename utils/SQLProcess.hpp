@@ -185,7 +185,7 @@ public:
      * @return std::shared_ptr<sql::ResultSet> containing the query result.
      * @throws std::runtime_error if the connection is null.
      */
-    std::shared_ptr<sql::ResultSet> executeQuery(const std::string& command)
+    [[nodiscard]] std::shared_ptr<sql::ResultSet> executeQuery(const std::string& command)
     {
         if (!m_sqlconnection)
             throw std::runtime_error("Connection is null");
@@ -238,7 +238,7 @@ public:
      * @return std::shared_ptr<sql::ResultSet> containing the query result.
      * @throws std::runtime_error if the connection is null.
      */
-    std::shared_ptr<sql::ResultSet> preparedQuery(const std::string& preparedCommand,
+    [[nodiscard]] std::shared_ptr<sql::ResultSet> preparedQuery(const std::string& preparedCommand,
         std::function<void(std::shared_ptr<sql::PreparedStatement>&)> callback)
     {
         if (!m_sqlconnection)

@@ -4,6 +4,7 @@
   "dependencies": [
     "asio",
     "openssl",
-    "mariadb-connector-cpp"
+    "mariadb-connector-cpp",
+    "kcp"
   ]
 }

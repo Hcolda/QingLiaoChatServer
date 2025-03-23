@@ -53,7 +53,7 @@ public:
      * @param user2_id ID of the second user.
      * @return The ID of the created private room.
      */
-    GroupID addPrivateRoom(UserID user1_id, UserID user2_id);
+    [[nodiscard]] GroupID addPrivateRoom(UserID user1_id, UserID user2_id);
 
     /**
      * @brief Retrieves the private room ID between two users.
@@ -62,7 +62,7 @@ public:
      * @param user2_id ID of the second user.
      * @return The ID of the private room.
      */
-    GroupID getPrivateRoomId(UserID user1_id, UserID user2_id) const;
+    [[nodiscard]] GroupID getPrivateRoomId(UserID user1_id, UserID user2_id) const;
 
     /**
      * @brief Checks if a private room exists.
@@ -70,9 +70,9 @@ public:
      * @param private_room_id The ID of the private room.
      * @return True if the private room exists, false otherwise.
      */
-    bool hasPrivateRoom(GroupID private_room_id) const;
+    [[nodiscard]] bool hasPrivateRoom(GroupID private_room_id) const;
 
-    bool hasPrivateRoom(UserID user1_id, UserID user2_id) const;
+    [[nodiscard]] bool hasPrivateRoom(UserID user1_id, UserID user2_id) const;
 
     /**
      * @brief Retrieves a private room.
@@ -80,7 +80,7 @@ public:
      * @param private_room_id The ID of the private room.
      * @return Shared pointer to the private room.
      */
-    std::shared_ptr<qls::PrivateRoom> getPrivateRoom(GroupID private_room_id) const;
+    [[nodiscard]] std::shared_ptr<qls::PrivateRoom> getPrivateRoom(GroupID private_room_id) const;
 
     /**
      * @brief Removes a private room.
@@ -94,7 +94,7 @@ public:
      * @param operator_user_id ID of the user creating the group room.
      * @return The ID of the created group room.
      */
-    GroupID addGroupRoom(UserID operator_user_id);
+    [[nodiscard]] GroupID addGroupRoom(UserID operator_user_id);
 
     /**
      * @brief Checks if a group room exists.
@@ -102,7 +102,7 @@ public:
      * @param group_room_id The ID of the group room.
      * @return True if the group room exists, false otherwise.
      */
-    bool hasGroupRoom(GroupID group_room_id) const;
+    [[nodiscard]] bool hasGroupRoom(GroupID group_room_id) const;
 
     /**
      * @brief Retrieves a group room.
@@ -110,7 +110,7 @@ public:
      * @param group_room_id The ID of the group room.
      * @return Shared pointer to the group room.
      */
-    std::shared_ptr<qls::GroupRoom> getGroupRoom(GroupID group_room_id) const;
+    [[nodiscard]] std::shared_ptr<qls::GroupRoom> getGroupRoom(GroupID group_room_id) const;
 
     /**
      * @brief Removes a group room.
@@ -124,7 +124,7 @@ public:
      * 
      * @return Shared pointer to the new user.
      */
-    std::shared_ptr<qls::User> addNewUser();
+    [[nodiscard]] std::shared_ptr<qls::User> addNewUser();
 
     /**
      * @brief Checks if a user exists.
@@ -132,7 +132,7 @@ public:
      * @param user_id The ID of the user.
      * @return True if the user exists, false otherwise.
      */
-    bool hasUser(UserID user_id) const;
+    [[nodiscard]] bool hasUser(UserID user_id) const;
 
     /**
      * @brief Retrieves a user.
@@ -140,14 +140,14 @@ public:
      * @param user_id The ID of the user.
      * @return Shared pointer to the user.
      */
-    std::shared_ptr<qls::User> getUser(UserID user_id) const;
+    [[nodiscard]] std::shared_ptr<qls::User> getUser(UserID user_id) const;
 
     /**
      * @brief Retrieves the list of users.
      * 
      * @return Unordered map of user IDs to user shared pointers.
      */
-    std::unordered_map<UserID, std::shared_ptr<qls::User>> getUserList() const;
+    [[nodiscard]] std::unordered_map<UserID, std::shared_ptr<qls::User>> getUserList() const;
 
 
     /**
@@ -163,7 +163,7 @@ public:
      * @param socket_ptr A shared pointer to the socket to check.
      * @return true if the socket is registered, false otherwise.
      */
-    bool hasConnection(const std::shared_ptr<Connection>& socket_ptr) const;
+    [[nodiscard]] bool hasConnection(const std::shared_ptr<Connection>& socket_ptr) const;
 
     /**
      * @brief Checks if a socket is associated with a specific user ID.
@@ -172,7 +172,7 @@ public:
      * @param user_id The user ID to check against the socket.
      * @return true if the socket is associated with the specified user ID, false otherwise.
      */
-    bool matchUserOfConnection(const std::shared_ptr<Connection>& socket_ptr, UserID user_id) const;
+    [[nodiscard]] bool matchUserOfConnection(const std::shared_ptr<Connection>& socket_ptr, UserID user_id) const;
 
     /**
      * @brief Gets the user ID associated with a socket.
@@ -180,7 +180,7 @@ public:
      * @param socket_ptr A shared pointer to the Connection object.
      * @return The user ID associated with the socket.
      */
-    UserID getUserIDOfConnection(const std::shared_ptr<Connection>& socket_ptr) const;
+    [[nodiscard]] UserID getUserIDOfConnection(const std::shared_ptr<Connection>& socket_ptr) const;
 
     /**
      * @brief Modifies the user ID associated with a registered socket.
@@ -202,25 +202,25 @@ public:
      * @brief Retrieves the SQL process for the server.
      * @return Reference to the SQLDBProcess.
      */
-    qls::SQLDBProcess& getServerSqlProcess();
+    [[nodiscard]] qls::SQLDBProcess& getServerSqlProcess();
 
     /**
      * @brief Retrieves the data manager for the server.
      * @return Reference to the DataManager.
      */
-    qls::DataManager& getServerDataManager();
+    [[nodiscard]] qls::DataManager& getServerDataManager();
 
     /**
      * @brief Retrieves the verification manager for the server.
      * @return Reference to the VerificationManager.
      */
-    qls::VerificationManager& getServerVerificationManager();
+    [[nodiscard]] qls::VerificationManager& getServerVerificationManager();
 
     /**
      * @brief Retrieves the network for the server.
      * @return Reference to the Network.
      */
-    qls::Network& getServerNetwork();
+    [[nodiscard]] qls::Network& getServerNetwork();
 
 private:
     std::unique_ptr<ManagerImpl> m_impl;

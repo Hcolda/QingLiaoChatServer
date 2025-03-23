@@ -49,38 +49,38 @@ public:
      * @param data Original data to be stored in the data package.
      * @return Shared pointer to the created data package.
      */
-    static std::shared_ptr<DataPackage> makePackage(std::string_view data);
+    [[nodiscard]] static std::shared_ptr<DataPackage> makePackage(std::string_view data);
 
     /**
      * @brief Loads a data package from binary data.
      * @param data Binary data representing a data package.
      * @return Shared pointer to the loaded data package.
      */
-    static std::shared_ptr<DataPackage> stringToPackage(std::string_view data);
+    [[nodiscard]] static std::shared_ptr<DataPackage> stringToPackage(std::string_view data);
 
     /**
      * @brief Converts this data package to a binary string.
      * @return Binary data representing this data package.
      */
-    std::string packageToString() noexcept;
+    [[nodiscard]] std::string packageToString() noexcept;
 
     /**
      * @brief Gets the size of this data package.
      * @return Size of this data package.
      */
-    std::size_t getPackageSize() noexcept;
+    [[nodiscard]] std::size_t getPackageSize() noexcept;
 
     /**
      * @brief Gets the size of the original data in this data package.
      * @return Size of the original data in this data package.
      */
-    std::size_t getDataSize() noexcept;
+    [[nodiscard]] std::size_t getDataSize() noexcept;
 
     /**
      * @brief Gets the original data in this data package.
      * @return Original data in this data package.
      */
-    std::string getData();
+    [[nodiscard]] std::string getData();
 };
 
 } // namespace qls

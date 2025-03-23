@@ -19,7 +19,7 @@ public:
         m_group_id(u.m_group_id) {}
     constexpr ~GroupID() noexcept = default;
 
-    constexpr long long getOriginValue() const noexcept
+    [[nodiscard]] constexpr long long getOriginValue() const noexcept
     {
         return m_group_id;
     }

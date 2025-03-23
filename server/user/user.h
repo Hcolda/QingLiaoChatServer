@@ -77,28 +77,23 @@ public:
 
     // Methods to get user information
 
-    UserID      getUserID() const;
-    std::string getUserName() const;
-    long long   getRegisteredTime() const;
-    int         getAge() const;
-    std::string getUserEmail() const;
-    std::string getUserPhone() const;
-    std::string getUserProfile() const;
-    bool        isUserPassword(std::string_view) const;
+    [[nodiscard]] UserID      getUserID() const;
+    [[nodiscard]] std::string getUserName() const;
+    [[nodiscard]] long long   getRegisteredTime() const;
+    [[nodiscard]] int         getAge() const;
+    [[nodiscard]] std::string getUserEmail() const;
+    [[nodiscard]] std::string getUserPhone() const;
+    [[nodiscard]] std::string getUserProfile() const;
+    [[nodiscard]] bool        isUserPassword(std::string_view) const;
 
     // Methods to get user associated information
 
-    bool userHasFriend(UserID friend_user_id) const;
-    bool userHasGroup(GroupID group_id) const;
+    [[nodiscard]] bool userHasFriend(UserID friend_user_id) const;
+    [[nodiscard]] bool userHasGroup(GroupID group_id) const;
 
-    std::unordered_set<UserID> getFriendList() const;
-    std::unordered_set<GroupID> getGroupList() const;
+    [[nodiscard]] std::unordered_set<UserID> getFriendList() const;
+    [[nodiscard]] std::unordered_set<GroupID> getGroupList() const;
 
-    /**
-     * @brief Adds a friend to the user's friend list.
-     * @param friend_user_id The ID of the friend to add.
-     * @return true if adding friend was successful, false otherwise.
-     */
     bool addFriend(UserID friend_user_id);
     bool acceptFriend(UserID friend_user_id);
     bool rejectFriend(UserID friend_user_id);
@@ -108,7 +103,7 @@ public:
      * @brief Retrieves the list of friend verification entries.
      * @return unordered_map containing friend verification entries.
      */
-    std::unordered_map<UserID, Verification::UserVerification>
+    [[nodiscard]] std::unordered_map<UserID, Verification::UserVerification>
         getFriendVerificationList() const;
 
     /**
@@ -117,7 +112,7 @@ public:
      * @return true if adding group was successful, false otherwise.
      */
     bool    addGroup(GroupID group_id);
-    GroupID createGroup();
+    [[nodiscard]] GroupID createGroup();
     bool    acceptGroup(GroupID group_id, UserID user_id);
     bool    rejectGroup(GroupID group_id, UserID user_id);
     bool    removeGroup(GroupID group_id);
@@ -126,7 +121,7 @@ public:
      * @brief Retrieves the list of group verification entries.
      * @return multimap containing group verification entries.
      */
-    std::multimap<GroupID,
+    [[nodiscard]] std::multimap<GroupID,
         Verification::GroupVerification> getGroupVerificationList() const;
 
     /**
@@ -134,7 +129,7 @@ public:
      * @param connection_ptr Pointer to the socket to check.
      * @return true if user has the socket, false otherwise.
      */
-    bool hasConnection(
+    [[nodiscard]] bool hasConnection(
         const std::shared_ptr<qls::Connection>& connection_ptr) const;
 
     /**

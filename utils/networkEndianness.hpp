@@ -9,7 +9,7 @@ namespace qls
 
 /// @brief Determine if the system is big endianness
 /// @return True if it is big endianness
-inline bool isBigEndianness()
+[[nodiscard]] inline bool isBigEndianness()
 {
     constexpr union u_data
     {
@@ -25,7 +25,7 @@ inline bool isBigEndianness()
 /// @return Integral of new endianness
 template<typename T>
     requires std::integral<T>
-constexpr T swapEndianness(T value) {
+[[nodiscard]] constexpr T swapEndianness(T value) {
     T result = 0;
     for (std::size_t i = 0; i < sizeof(value); ++i) {
         result = (result << 8) | ((value >> (8 * i)) & 0xFF);
@@ -39,7 +39,7 @@ constexpr T swapEndianness(T value) {
 /// @return Integral of new endianness
 template<typename T>
     requires std::integral<T>
-inline T swapNetworkEndianness(T value)
+[[nodiscard]] inline T swapNetworkEndianness(T value)
 {
     if (!isBigEndianness())
         return swapEndianness(value);

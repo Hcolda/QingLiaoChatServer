@@ -10,6 +10,7 @@ project(Utils)
 find_package(OpenSSL REQUIRED)
 find_package(asio CONFIG REQUIRED)
 find_package(unofficial-mariadb-connector-cpp CONFIG REQUIRED)
+find_package(kcp CONFIG REQUIRED)
 
 if(MINGW)
     find_library(WSOCK32_LIBRARY wsock32)
@@ -28,13 +29,15 @@ target_include_directories(Utils PUBLIC
     network
     error
     parser
-    crypto)
+    crypto
+    kcp/include)
 
 target_link_libraries(Utils PUBLIC
     OpenSSL::SSL
     OpenSSL::Crypto
     unofficial::mariadb-connector-cpp::mariadbcpp
-    asio::asio)
+    asio::asio
+    kcp::kcp)
 
 if(MINGW)
     target_link_libraries(Utils PUBLIC wsock32 ws2_32)

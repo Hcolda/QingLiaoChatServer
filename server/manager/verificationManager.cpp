@@ -102,7 +102,7 @@ bool VerificationManager::setFriendVerified(UserID user_id_1, UserID user_id_2,
     }
 
     if (result) {
-        serverManager.addPrivateRoom(user_id_1, user_id_2);
+        auto id = serverManager.addPrivateRoom(user_id_1, user_id_2);
 
         // update the 1st user's friend list
         {

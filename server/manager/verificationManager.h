@@ -47,7 +47,7 @@ public:
      * @param user_id_2 ID of the second user.
      * @return True if there is a verification request, false otherwise.
      */
-    bool hasFriendRoomVerification(UserID user_id_1, UserID user_id_2) const;
+    [[nodiscard]] bool hasFriendRoomVerification(UserID user_id_1, UserID user_id_2) const;
 
     /**
      * @brief Sets a friend verification status.
@@ -56,7 +56,7 @@ public:
      * @param user_id ID of the user setting the verification.
      * @return True if verification status was successfully set, false otherwise.
      */
-    bool setFriendVerified(UserID user_id_1, UserID user_id_2, UserID user_id);
+    [[nodiscard]] bool setFriendVerified(UserID user_id_1, UserID user_id_2, UserID user_id);
 
     /**
      * @brief Removes a friend room verification request.
@@ -78,7 +78,7 @@ public:
      * @param user_id ID of the user requesting to join the group.
      * @return True if there is a verification request, false otherwise.
      */
-    bool hasGroupRoomVerification(GroupID group_id, UserID user_id) const;
+    [[nodiscard]] bool hasGroupRoomVerification(GroupID group_id, UserID user_id) const;
 
     /**
      * @brief Sets the group verification status for a group.
@@ -86,7 +86,7 @@ public:
      * @param user_id ID of the user setting the verification.
      * @return True if verification status was successfully set, false otherwise.
      */
-    bool setGroupRoomGroupVerified(GroupID group_id, UserID user_id);
+    [[nodiscard]] bool setGroupRoomGroupVerified(GroupID group_id, UserID user_id);
 
     /**
      * @brief Sets the user verification status for a group.
@@ -94,7 +94,7 @@ public:
      * @param user_id ID of the user setting the verification.
      * @return True if verification status was successfully set, false otherwise.
      */
-    bool setGroupRoomUserVerified(GroupID group_id, UserID user_id);
+    [[nodiscard]] bool setGroupRoomUserVerified(GroupID group_id, UserID user_id);
 
     /**
      * @brief Removes a group room verification request.

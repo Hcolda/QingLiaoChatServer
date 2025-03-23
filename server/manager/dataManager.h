@@ -28,28 +28,6 @@ public:
      * @brief Initializes the data manager.
      */
     void init();
-
-    /**
-     * @brief Adds a new user to the database.
-     * @param user_id The ID of the user.
-     * @param pwd_hash The hash of the user's password.
-     */
-    void addNewUser(UserID user_id, std::size_t pwd_hash);
-
-    /**
-     * @brief Changes the password of an existing user.
-     * @param user_id The ID of the user.
-     * @param pwd_hash The new hash of the user's password.
-     */
-    void changeUserPassword(UserID user_id, std::size_t pwd_hash);
-
-    /**
-     * @brief Verifies a user's password.
-     * @param user_id The ID of the user.
-     * @param pwd_hash The hash of the user's password.
-     * @return True if the password is verified successfully, false otherwise.
-     */
-    bool verifyUserPassword(UserID user_id, std::size_t pwd_hash);
 };
 
 } // namespace qls

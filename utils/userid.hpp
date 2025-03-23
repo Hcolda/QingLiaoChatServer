@@ -19,7 +19,7 @@ public:
         m_user_id(u.m_user_id) {}
     constexpr ~UserID() noexcept = default;
 
-    constexpr long long getOriginValue() const noexcept
+    [[nodiscard]] constexpr long long getOriginValue() const noexcept
     {
         return m_user_id;
     }

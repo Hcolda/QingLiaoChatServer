@@ -32,25 +32,25 @@ public:
      * @brief Checks if data can be read from the package.
      * @return true if data can be read, false otherwise.
      */
-    bool canRead() const;
+    [[nodiscard]] bool canRead() const;
 
     /**
      * @brief Gets the length of the first message in the package.
      * @return The length of the first message.
      */
-    std::size_t firstMsgLength() const;
+    [[nodiscard]] std::size_t firstMsgLength() const;
 
     /**
      * @brief Reads a data package.
      * @return The data package.
      */
-    std::string read();
+    [[nodiscard]] std::string read();
 
     /**
      * @brief Reads the buffer data in the package.
      * @return The buffer as a string.
      */
-    std::string_view readBuffer() const;
+    [[nodiscard]] std::string_view readBuffer() const;
 
     /**
      * @brief Sets the buffer with the given data.
@@ -63,7 +63,7 @@ public:
      * @param data The binary data.
      * @return The binary data wrapped in a data package.
      */
-    static std::string makePackage(std::string_view data);
+    [[nodiscard]] static std::string makePackage(std::string_view data);
 
 private:
     std::string m_buffer; ///< The buffer to store the data.

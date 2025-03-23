@@ -13,17 +13,4 @@ void DataManager::init()
 {
 }
 
-void DataManager::addNewUser(UserID user_id, std::size_t pwd_hash)
-{
-}
-
-void DataManager::changeUserPassword(UserID user_id, std::size_t pwd_hash)
-{
-}
-
-bool DataManager::verifyUserPassword(UserID user_id, std::size_t pwd_hash)
-{
-    return false;
-}
-
 } // namespace qls

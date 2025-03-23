@@ -21,9 +21,10 @@ enum class MessageType
 
 struct MessageStructure
 {
-    UserID user_id = UserID(-1ll);
+    UserID sender = UserID(-1ll);
     std::string message;
     MessageType type;
+    UserID receiver = UserID(-1ll);
 };
 
 struct MessageResult
@@ -32,40 +33,87 @@ struct MessageResult
     MessageStructure                    message_struct;
 };
 
-struct BaseRoomImpl;
-struct BaseRoomImplDeleter
-{
-    std::pmr::memory_resource* memory_resource;
-    void operator()(BaseRoomImpl*) noexcept;
-};
-
-class BaseRoom
+class RoomInterface
 {
 public:
-    BaseRoom(std::pmr::memory_resource* mr);
-    BaseRoom(const BaseRoom&) = delete;
-    BaseRoom(BaseRoom&&) = delete;
-    virtual ~BaseRoom() noexcept;
+    virtual ~RoomInterface() noexcept = default;
 
-    BaseRoom& operator=(const BaseRoom&) = delete;
-    BaseRoom& operator=(BaseRoom&&) = delete;
+    virtual void joinRoom(UserID user_id) = 0;
+    [[nodiscard]] virtual bool hasUser(UserID user_id) const = 0;
+    virtual void leaveRoom(UserID user_id) = 0;
+
+    virtual void sendData(std::string_view data) = 0;
+    virtual void sendData(std::string_view data, UserID user_id) = 0;
+};
+
+struct TCPRoomImpl;
+struct TCPRoomImplDeleter
+{
+    std::pmr::memory_resource* memory_resource;
+    void operator()(TCPRoomImpl*) noexcept;
+};
+
+class TCPRoom: public RoomInterface
+{
+public:
+    TCPRoom(std::pmr::memory_resource* mr);
+    TCPRoom(const TCPRoom&) = delete;
+    TCPRoom(TCPRoom&&) = delete;
+    virtual ~TCPRoom() noexcept;
+
+    TCPRoom& operator=(const TCPRoom&) = delete;
+    TCPRoom& operator=(TCPRoom&&) = delete;
 
     virtual void joinRoom(UserID user_id);
-    virtual bool hasUser(UserID user_id) const;
+    [[nodiscard]] virtual bool hasUser(UserID user_id) const;
     virtual void leaveRoom(UserID user_id);
 
     virtual void sendData(std::string_view data);
     virtual void sendData(std::string_view data, UserID user_id);
 
 private:
-    std::unique_ptr<BaseRoomImpl, BaseRoomImplDeleter> m_impl;
+    std::unique_ptr<TCPRoomImpl, TCPRoomImplDeleter> m_impl;
 };
 
-class TextDataRoom: public BaseRoom
+struct KCPRoomImpl;
+struct KCPRoomImplDeleter
+{
+    std::pmr::memory_resource* memory_resource;
+    void operator()(KCPRoomImpl*) noexcept;
+};
+
+class KCPRoom: public RoomInterface
+{
+public:
+    KCPRoom(std::pmr::memory_resource* mr);
+    KCPRoom(const KCPRoom&) = delete;
+    KCPRoom(KCPRoom&&) = delete;
+    virtual ~KCPRoom() noexcept;
+
+    KCPRoom& operator=(const KCPRoom&) = delete;
+    KCPRoom& operator=(KCPRoom&&) = delete;
+
+    virtual void joinRoom(UserID user_id);
+    [[nodiscard]] virtual bool hasUser(UserID user_id) const;
+    virtual void leaveRoom(UserID user_id);
+
+    virtual void addSocket(const std::shared_ptr<KCPSocket>& socket);
+    [[nodiscard]] virtual bool hasSocket(const std::shared_ptr<KCPSocket>& socket) const;
+    virtual void removeSocket(const std::shared_ptr<KCPSocket>& socket);
+
+    virtual void sendData(std::string_view data);
+    [[deprecated("This function is not useful at kcp connection")]]
+        virtual void sendData(std::string_view data, UserID user_id);
+
+private:
+    std::unique_ptr<KCPRoomImpl, KCPRoomImplDeleter> m_impl;
+};
+
+class TextDataRoom: public TCPRoom
 {
 public:
     TextDataRoom(std::pmr::memory_resource* mr):
-        BaseRoom(mr) {}
+        TCPRoom(mr) {}
     virtual ~TextDataRoom() noexcept = default;
 
 protected:
