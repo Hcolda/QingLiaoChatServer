@@ -63,7 +63,7 @@ jobs:
         runVcpkgInstall: true
         vcpkgGitCommitId: 0ca64b4e1c70fa6d9f53b369b8f3f0843797c20c
 
-    - name: Init Git Submodules
+    - name: Initiate Git submodules
       run: git submodule update --init
 
     - name: Configure CMake
